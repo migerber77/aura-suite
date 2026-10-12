@@ -1,0 +1,52 @@
+services:
+  auraplan:
+    build: .
+    container_name: auraplan
+    restart: unless-stopped
+    environment:
+      # Eigenen Zufallswert eintragen! Erzeugen z.B. mit: openssl rand -hex 32
+      - SESSION_SECRET=${SESSION_SECRET}
+      # Muss GENAU derselbe Wert wie auf dem Lizenz-Server (LICENSE_SECRET) sein -
+      # ohne das kann keine Lizenz geprüft werden.
+      - LICENSE_SECRET=${LICENSE_SECRET}
+    volumes:
+      - ./data:/app/data
+    networks:
+      - auraplan
+    depends_on:
+      - caddy
+
+  # Caddy Reverse Proxy - holt & erneuert automatisch Let's-Encrypt-Zertifikate.
+  # Die Domain wird NICHT hier eingetragen, sondern im Admin Panel von AuraPlan
+  # (Backend lädt sie live per Caddy Admin-API nach, siehe Caddyfile).
+  #
+  # WICHTIG, falls AuraPlan auf demselben Server wie AuraChat läuft: AuraChat belegt
+  # dort bereits die Standard-Ports 80/443 fest für sich. Diese beiden Dienste können
+  # NICHT gleichzeitig auf denselben Host-Ports laufen. Deshalb hier standardmässig
+  # auf 8080/8443 ausweichen - Let's Encrypt braucht für die automatische Erstausstellung
+  # trotzdem Port 80 von aussen erreichbar, d.h. der Router müsste extern Port 80 auf
+  # diesen Host-Port 8080 weiterleiten (nicht gleichzeitig auf AuraChats Port 80).
+  # Läuft AuraPlan auf einem ANDEREN Server/einer anderen IP als AuraChat, könnt ihr
+  # hier stattdessen ganz normal "80:80" und "443:443" eintragen.
+  caddy:
+    image: caddy:2-alpine
+    container_name: auraplan-caddy
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+      - "8443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - auraplan
+
+networks:
+  auraplan:
+    name: auraplan
+    external: false
+
+volumes:
+  caddy_data:
+  caddy_config:

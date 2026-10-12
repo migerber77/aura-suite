@@ -1,0 +1,59 @@
+version: '3.8'
+
+networks:
+  aura-net:
+    driver: bridge
+
+services:
+  # --- APPS ---
+  aurachat:
+    build: ./apps/aurachat
+    container_name: aurachat
+    restart: unless-stopped
+    networks:
+      - aura-net
+    environment:
+      - NODE_ENV=production
+
+  auraplan:
+    build: ./apps/auraplan
+    container_name: auraplan
+    restart: unless-stopped
+    networks:
+      - aura-net
+
+  auraticket:
+    build: ./apps/auraticket
+    container_name: auraticket
+    restart: unless-stopped
+    networks:
+      - aura-net
+
+  # --- SERVICES ---
+  auracall:
+    build: ./services/auracall
+    container_name: auracall
+    restart: unless-stopped
+    networks:
+      - aura-net
+
+  auradirect:
+    build: ./services/auradirect
+    container_name: auradirect
+    restart: unless-stopped
+    networks:
+      - aura-net
+
+  auramail:
+    build: ./services/auramail
+    container_name: auramail
+    restart: unless-stopped
+    networks:
+      - aura-net
+
+  auraproxy:
+    build: ./services/auraproxy
+    container_name: auraproxy
+    restart: unless-stopped
+    networks:
+      - aura-net

@@ -1,0 +1,12 @@
+services:
+  auraticket:
+    build: .
+    container_name: auraticket
+    restart: unless-stopped
+    ports:
+      - "3400:3000"
+    environment:
+      - SESSION_SECRET=${SESSION_SECRET}
+      - LICENSE_SECRET=${LICENSE_SECRET}
+    volumes:
+      - ./data:/app/data

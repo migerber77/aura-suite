@@ -1,0 +1,38 @@
+.folder-btn {
+    background: transparent;
+    color: #94a3b8;
+    border: 1px solid transparent;
+}
+.folder-btn:hover { background: rgba(148, 163, 184, 0.08); color: #e2e8f0; }
+.folder-btn.active { background: #1e293b; color: white; border-color: #334155; }
+
+.admin-tab-btn {
+    background: #0f172a;
+    border: 1px solid #1e293b;
+    color: #cbd5e1;
+}
+.admin-tab-btn:hover { background: #1e293b; }
+.admin-tab-btn.active { background: #2563eb; color: white; border-color: #2563eb; }
+
+.mailbox-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    border-radius: 10px;
+    font-size: 13px;
+    color: #cbd5e1;
+    cursor: pointer;
+    border: 1px solid transparent;
+}
+.mailbox-item:hover { background: rgba(148, 163, 184, 0.08); }
+.mailbox-item.active { background: #1e293b; border-color: #334155; color: white; }
+
+.message-item {
+    padding: 10px 14px;
+    border-bottom: 1px solid #1e293b;
+    cursor: pointer;
+}
+.message-item:hover { background: rgba(148, 163, 184, 0.06); }
+.message-item.active { background: #1e293b; }
+.message-item.unread .message-item-subject { font-weight: 700; color: white; }

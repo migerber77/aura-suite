@@ -1,0 +1,20 @@
+services:
+  auradirect:
+    build: .
+    container_name: auradirect
+    restart: unless-stopped
+    ports:
+      - "4000:4000"   # http://<Server-IP>:4000 - Port bei Bedarf anpassen
+      - "389:389"     # LDAP-Verzeichnisdienst - andere Programme können sich hierüber verbinden
+    environment:
+      # Eigene Zufallswerte eintragen! Erzeugen z.B. mit: openssl rand -hex 32
+      - SESSION_SECRET=${SESSION_SECRET}
+      - AURADIRECT_ADMIN_PASSWORD=${AURADIRECT_ADMIN_PASSWORD}
+      # Dieser Schlüssel muss identisch in AuraChat UND AuraPlan eingetragen werden -
+      # er ist das "Passwort", mit dem sich die beiden Produkte bei AuraDirect ausweisen.
+      - AURADIRECT_SERVICE_KEY=${AURADIRECT_SERVICE_KEY}
+      # Muss GENAU derselbe Wert wie auf dem Lizenz-Server (LICENSE_SECRET) sein -
+      # ohne das kann keine Lizenz geprüft werden.
+      - LICENSE_SECRET=${LICENSE_SECRET}
+    volumes:
+      - ./data:/app/data

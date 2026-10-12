@@ -1,0 +1,212 @@
+services:
+  # 1. Nginx Frontend (leitet /api intern an backend weiter, siehe nginx.conf)
+  aurachat:
+    build: .
+    container_name: aurachat-app
+    restart: unless-stopped
+    ports:
+      - "8091:80"   # Direkter LAN-Zugriff ohne HTTPS, z.B. http://NAS-IP:8091
+    volumes:
+      - ./html:/usr/share/nginx/html
+    networks:
+      - aurachat
+
+  # 2. Das SQLite Backend - kein Host-Port offen, nur intern über's Docker-Netz
+  #    erreichbar (Browser-Zugriff ausschliesslich über den nginx-Proxy unter /api)
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    image: aurachat-backend:latest   # fester Name: der Dienst "cockpit" unten startet dasselbe Image
+    pull_policy: never               # wird selbst gebaut, existiert nicht im Internet: "docker compose pull" überspringt es
+    container_name: aurachat-backend
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      # WICHTIG: eigenen Zufallswert eintragen! Erzeugen z.B. mit: openssl rand -hex 32
+      - SESSION_SECRET=${SESSION_SECRET}
+      # Geheimer Schlüssel fürs Lizenzsystem (Premium-Features). NIEMALS weitergeben -
+      # wer diesen Wert kennt, kann eigene gültige Lizenzen erzeugen!
+      - LICENSE_SECRET=${LICENSE_SECRET}
+      # Grenzen für Antworten der KI (Ollama), nur bei Bedarf in der .env ändern: maximale Wartezeit in Minuten und
+      # maximale Länge einer Antwort (Einheiten ~ Wortteile). Verhindert, dass ein Modell endlos weiterschreibt.
+      - OLLAMA_TIMEOUT_MINUTES=${OLLAMA_TIMEOUT_MINUTES:-20}
+      - OLLAMA_MAX_TOKENS=${OLLAMA_MAX_TOKENS:-2048}
+      # Cockpit (Admin Panel -> Cockpit): Adresse des Cockpit-Dienstes. Das Passwort legt der Dienst selbst an (siehe unten).
+      - COCKPIT_URL=http://cockpit:3600
+    volumes:
+      - ./data:/app/data
+      - ./models:/app/models        # hier landet Aura-AI-05b.gguf (Aura-Academy)
+      - ./server.js:/app/server.js  # beschreibbar, damit Selbst-Updates dauerhaft greifen (siehe Backup-Tab -> Update)
+      - ./html:/app/frontend        # gleicher Ordner wie beim nginx-Container - Updates landen so an der richtigen Stelle
+      - hf_cache:/root/.cache/huggingface   # Basis-Modell nur einmal herunterladen, nicht bei jedem Rebuild neu
+      - caddy_data:/caddy-data   # Zugriff auf Caddys Zertifikate fürs Admin Panel (Lesen + Löschen alter Zertifikate)
+      - cockpit_shared:/shared:ro   # Passwort für den Cockpit-Dienst (nur lesen)
+    networks:
+      - aurachat
+      - cockpit
+    depends_on:
+      - caddy
+
+  # 3. Caddy Reverse Proxy - holt & erneuert automatisch Let's-Encrypt-Zertifikate.
+  #    Die Domain wird NICHT hier eingetragen, sondern im Admin Panel von AuraChat
+  #    (Backend lädt sie live per Caddy Admin-API nach, siehe Caddyfile).
+  #
+  #    Läuft direkt auf den Standard-Ports 80/443 - dadurch ist AuraChat ohne Portnummer
+  #    in der URL erreichbar (https://eure-domain.de statt https://eure-domain.de:8443).
+  #    Falls diese Ports auf dem Host bereits von einem anderen Dienst belegt sind, hier
+  #    z.B. auf "8092:80"/"8443:443" ändern und am Router entsprechend weiterleiten
+  #    (Let's Encrypt braucht extern zwingend 80 & 443 - der Router darf das aber intern
+  #    auf einen beliebigen anderen Port übersetzen).
+  caddy:
+    image: caddy:2-alpine
+    container_name: aurachat-caddy
+    restart: unless-stopped
+    # Port 80/443 bewusst NICHT mehr nach aussen freigegeben - AuraProxy übernimmt jetzt
+    # zentral die Weiterleitung + Zertifikate für alle Domains, auch für AuraChat.
+    # Direkter Zugriff bleibt weiterhin über Port 8091 möglich (siehe aurachat-app unten).
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+      - ./data/custom-certs:/custom-certs:ro   # selbst hochgeladene Zertifikate (vom Backend geschrieben)
+    networks:
+      - aurachat
+    depends_on:
+      - aurachat
+
+  # 4. SearXNG - Meta-Suchmaschine für die Web-Suche im Chat. Läuft NUR intern
+  #    im Docker-Netz (kein Host-Port gemappt) - das Backend proxied Anfragen,
+  #    damit SearXNG nicht direkt aus dem Internet/LAN erreichbar ist.
+  searxng:
+    image: searxng/searxng:latest
+    container_name: aurachat-searxng
+    restart: unless-stopped
+    volumes:
+      - ./searxng:/etc/searxng:rw
+    networks:
+      - aurachat
+
+  # 5. TTS/STT-Server (Premium-Feature) - eigene Sprachausgabe/-erkennung statt
+  #    Browser-Sprachfunktionen. OpenAI-kompatibles API (Projekt "speaches").
+  #    Host-Port gemappt, da der BROWSER direkt darauf zugreift (wie beim
+  #    LLM-Server) - nicht übers Backend proxied.
+  #    Erster Start dauert länger (Modelle werden von HuggingFace geladen,
+  #    braucht Internetzugriff vom NAS aus). Ohne Lizenz mit Feature "tts_stt"
+  #    lässt sich dieser Server in AuraChat nicht auswählen (Browser bleibt
+  #    dann Standard) - der Container kann trotzdem einfach mitlaufen.
+  tts-stt:
+    image: ghcr.io/speaches-ai/speaches:latest-cpu
+    container_name: aurachat-tts-stt
+    restart: unless-stopped
+    ports:
+      - "8096:8000"
+    environment:
+      - WHISPER__COMPUTE_TYPE=int8
+      - WHISPER__INFERENCE_DEVICE=cpu
+      # Lädt diese Modelle direkt beim Start (vermeidet Wartezeit beim ersten
+      # Chat-Aufruf). Für andere/deutsche Stimmen: siehe speaches.ai/docs und
+      # das Modell im Admin Panel -> TTS/STT eintragen.
+      - PRELOAD_MODELS=["Systran/faster-whisper-small","speaches-ai/piper-de_DE-kerstin-low"]
+    volumes:
+      - tts_stt_cache:/home/ubuntu/.cache/huggingface/hub
+    networks:
+      - aurachat
+
+  # 6) Piper (Wyoming) - Stimme für die Sprachausgabe.
+  #    Wird im Admin Panel -> TTS/STT mit der Plattform "Piper (Wyoming)" ausgewählt (Host "piper", Port 10200
+  #    sind dort schon voreingetragen). Nur im Docker-Netzwerk erreichbar, es wird kein Port nach aussen geöffnet.
+  #    Beim ersten Start lädt Piper die Stimme herunter (braucht Internet), sie bleibt danach im Volume.
+  #    Standard ist die weibliche Stimme "kerstin". Andere Stimmen lassen sich im Admin Panel -> TTS/STT -> Piper
+  #    direkt auswählen und laden. Als Voreinstellung des Containers: in der Datei ".env" eintragen, z.B.
+  #        PIPER_ARGS=--voice de_DE-mls-medium --speaker 198
+  #    Stimmen: rhasspy.github.io/piper-samples   (danach: docker compose up -d piper)
+  piper:
+    image: rhasspy/wyoming-piper:latest
+    container_name: aurachat-piper
+    restart: unless-stopped
+    command: ${PIPER_ARGS:---voice de_DE-kerstin-low}
+    volumes:
+      - piper_data:/data
+    networks:
+      - aurachat
+
+  # 7) Cockpit - Gesundheit des Servers im Admin Panel (Tab "Cockpit"): Docker-Container, Arbeitsspeicher, Prozessor,
+  #    Speicherplatz, Schwachstellen. Das ist ein EIGENER kleiner Dienst (selbes Image wie das Backend), der als Einziger
+  #    auf Docker schaut, und zwar nur lesend und nur mit ein paar festen Abfragen (keine Umgebungsvariablen anderer
+  #    Container, keine Protokolle, keine Dateien). Das von aussen erreichbare Backend bekommt KEINEN Zugriff auf Docker.
+  #    Er hat keinen Port nach aussen, liegt in einem eigenen internen Netz (nur das Backend kommt heran) und erzeugt
+  #    sein Zugangs-Passwort beim ersten Start selbst. Entfernen: diesen Block und im Backend "cockpit_shared" streichen.
+  cockpit:
+    image: aurachat-backend:latest
+    pull_policy: never               # lokal gebautes Image (siehe backend), nie aus dem Internet holen
+    container_name: aurachat-cockpit
+    command: ["node", "cockpit/agent.js"]
+    restart: unless-stopped
+    depends_on:
+      - backend
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 256m
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3600/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro   # nur dieser Dienst, nur lesende Abfragen
+      - cockpit_shared:/shared                          # hier legt er sein Passwort ab
+      - cockpit_reports:/reports:ro                     # Berichte des Schwachstellen-Scanners
+      - /var/lib/aura-cockpit:/hostcheck:ro             # Ergebnis der Host-Prüfung (siehe cockpit/README.md, optional)
+    networks:
+      - cockpit
+
+  # 8) Schwachstellen-Scanner "Trivy" (OPTIONAL, startet nur mit:  docker compose --profile scan up -d ).
+  #    Prüft einmal täglich alle Docker-Images dieses Servers und legt die Berichte für das Cockpit ab. Beim ersten Lauf lädt
+  #    er seine Datenbank herunter (Internet nötig) und der Scan des grossen Backend-Images dauert einige Minuten.
+  #    Das Skript holt er sich vom Cockpit-Dienst (kein Ordner auf dem Host nötig).
+  trivy:
+    image: aquasec/trivy:latest
+    container_name: aurachat-trivy
+    profiles: ["scan"]
+    restart: unless-stopped
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        until wget -q -O /tmp/scan.sh --header "Authorization: Bearer $$(cat /shared/token 2>/dev/null)" http://cockpit:3600/scan.sh; do
+          echo "Warte auf den Cockpit-Dienst ..."; sleep 5
+        done
+        exec sh /tmp/scan.sh
+    environment:
+      - SCAN_INTERVAL_HOURS=${SCAN_INTERVAL_HOURS:-24}
+    mem_limit: 3g
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - trivy_cache:/root/.cache/trivy
+      - cockpit_reports:/reports
+      - cockpit_shared:/shared:ro
+    networks:
+      - aurachat   # Internet für die Datenbank
+      - cockpit
+
+networks:
+  aurachat:
+    name: aurachat
+    external: false
+  # internes Netz nur für Backend, Cockpit-Dienst und Scanner (kein Zugang nach aussen)
+  cockpit:
+    name: aurachat-cockpit
+    internal: true
+
+volumes:
+  caddy_data:
+  caddy_config:
+  tts_stt_cache:
+  hf_cache:
+  piper_data:
+  cockpit_shared:
+  cockpit_reports:
+  trivy_cache:

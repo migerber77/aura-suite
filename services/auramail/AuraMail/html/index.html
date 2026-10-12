@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="de" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AuraMail</title>
+    <link rel="icon" type="image/png" href="images/icon.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="h-full bg-slate-950 text-slate-100">
+
+    <!-- Login -->
+    <div id="login-screen" class="min-h-screen flex items-center justify-center p-4">
+        <div class="w-full max-w-sm">
+            <div class="flex items-center gap-2 justify-center mb-6">
+                <img src="images/logo.png" alt="AuraMail" class="h-10 w-auto rounded-lg">
+            </div>
+
+            <form id="login-step-credentials" class="bg-slate-900 border border-slate-800 rounded-2xl p-6 flex flex-col gap-4">
+                <div id="login-error" class="hidden bg-red-500/10 border border-red-500/30 text-red-300 rounded-xl px-3 py-2 text-xs"></div>
+                <input type="text" id="login-username" placeholder="Benutzername" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
+                <input type="password" id="login-password" placeholder="Passwort" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
+                <button type="submit" class="bg-blue-600 hover:bg-blue-500 text-white font-medium py-2.5 rounded-xl text-sm transition">Anmelden</button>
+            </form>
+
+            <div id="login-step-2fa-setup" class="hidden bg-slate-900 border border-slate-800 rounded-2xl p-6 flex flex-col items-center gap-3">
+                <p class="text-xs text-slate-400 text-center">Zwei-Faktor-Authentifizierung einrichten: QR-Code scannen, dann Code eingeben.</p>
+                <img id="twofa-qr-code" class="rounded-xl bg-white p-2" alt="QR-Code">
+                <input type="text" id="twofa-setup-code" inputmode="numeric" maxlength="6" placeholder="123456" class="w-full max-w-xs text-center tracking-widest bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white">
+                <button id="twofa-setup-confirm-btn" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium py-2.5 rounded-xl text-sm transition">Aktivieren</button>
+            </div>
+
+            <div id="login-step-2fa" class="hidden bg-slate-900 border border-slate-800 rounded-2xl p-6 flex flex-col gap-3">
+                <p class="text-xs text-slate-400 text-center">Code aus deiner Authenticator-App:</p>
+                <input type="text" id="twofa-code" inputmode="numeric" maxlength="6" placeholder="123456" class="w-full text-center tracking-widest bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white">
+                <button id="twofa-confirm-btn" class="bg-blue-600 hover:bg-blue-500 text-white font-medium py-2.5 rounded-xl text-sm transition">Bestätigen</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lizenz fehlt -->
+    <div id="modal-license" class="hidden fixed inset-0 bg-slate-950/95 backdrop-blur-md z-[70] flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl w-full max-w-md shadow-2xl flex flex-col gap-4">
+            <div class="flex items-center gap-2 border-b border-slate-800 pb-3">
+                <span class="text-lg">🔑</span>
+                <h3 class="text-sm font-bold text-white">AuraMail ist nicht lizenziert</h3>
+            </div>
+            <p id="license-modal-text" class="text-xs text-slate-400">Für diese Installation ist keine gültige Lizenz hinterlegt. Bitte wendet euch an eure Administrator:innen.</p>
+            <div id="license-modal-admin-form" class="hidden flex flex-col gap-3">
+                <textarea id="license-key-input" rows="4" placeholder="Lizenzschlüssel hier einfügen" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white font-mono"></textarea>
+                <div id="license-modal-error" class="hidden text-xs text-red-400"></div>
+                <button id="license-save-btn" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium py-2.5 rounded-xl text-sm transition">Lizenz aktivieren</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- App -->
+    <div id="app" class="hidden h-screen flex flex-col">
+        <header class="h-14 border-b border-slate-800 flex items-center justify-between px-4 shrink-0">
+            <div class="flex items-center gap-2">
+                <img src="images/icon.png" alt="AuraMail" class="h-7 w-7 rounded-md">
+                <h1 class="text-sm font-bold text-white">AuraMail</h1>
+            </div>
+            <div class="flex items-center gap-3">
+                <span id="user-name" class="text-xs text-slate-400"></span>
+                <button id="admin-panel-btn" class="admin-only hidden text-xs px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 hover:bg-slate-800">🛠️ Admin Panel</button>
+                <button id="change-password-btn" class="text-xs px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 hover:bg-slate-800">🔒 Passwort</button>
+                <a href="/api/logout" id="logout-btn" class="text-xs px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 hover:bg-slate-800">Abmelden</a>
+            </div>
+        </header>
+
+        <div class="flex-1 flex overflow-hidden">
+            <!-- Sidebar: Postfächer -->
+            <aside class="w-64 border-r border-slate-800 flex flex-col shrink-0 p-3 gap-3 overflow-y-auto">
+                <button id="compose-btn" class="bg-blue-600 hover:bg-blue-500 text-white font-medium py-2.5 rounded-xl text-sm transition">✏️ Neue Nachricht</button>
+                <div id="mailbox-list" class="flex flex-col gap-1"></div>
+            </aside>
+
+            <!-- Nachrichtenliste -->
+            <section class="w-80 border-r border-slate-800 flex flex-col shrink-0 overflow-hidden">
+                <div class="flex gap-1 p-2 border-b border-slate-800 shrink-0">
+                    <button data-folder="inbox" class="folder-btn active flex-1 text-xs py-1.5 rounded-lg">Posteingang</button>
+                    <button data-folder="sent" class="folder-btn flex-1 text-xs py-1.5 rounded-lg">Gesendet</button>
+                    <button data-folder="trash" class="folder-btn flex-1 text-xs py-1.5 rounded-lg">Papierkorb</button>
+                </div>
+                <div id="message-list" class="flex-1 overflow-y-auto"></div>
+            </section>
+
+            <!-- Nachrichtenansicht -->
+            <section class="flex-1 overflow-y-auto p-6">
+                <div id="message-view-empty" class="text-slate-500 text-sm text-center mt-20">Wähle eine Nachricht aus.</div>
+                <div id="message-view" class="hidden max-w-3xl flex flex-col gap-4">
+                    <div>
+                        <h2 id="message-subject" class="text-lg font-bold text-white mb-1"></h2>
+                        <div class="text-xs text-slate-400">
+                            <span id="message-from"></span> → <span id="message-to"></span>
+                            <span id="message-date" class="ml-2 text-slate-500"></span>
+                        </div>
+                    </div>
+                    <div id="message-attachments" class="flex flex-wrap gap-2"></div>
+                    <div id="message-body" class="text-sm text-slate-200 leading-relaxed whitespace-pre-wrap border-t border-slate-800 pt-4"></div>
+                    <div class="flex gap-2 pt-2">
+                        <button id="message-reply-btn" class="text-xs px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 hover:bg-slate-800">↩️ Antworten</button>
+                        <button id="message-delete-btn" class="text-xs px-3 py-1.5 rounded-lg bg-red-500/10 border border-red-500/30 text-red-300 hover:bg-red-500/20">🗑️ Löschen</button>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <!-- Verfassen -->
+    <div id="modal-compose" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-2xl p-6 flex flex-col gap-3">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <h3 class="text-sm font-bold text-white">✏️ Neue Nachricht</h3>
+                <button id="compose-close-btn" class="text-slate-500 hover:text-white text-xl leading-none cursor-pointer">×</button>
+            </div>
+            <select id="compose-from" class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white"></select>
+            <input type="text" id="compose-to" placeholder="An (mehrere mit Komma trennen)" class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white">
+            <input type="text" id="compose-cc" placeholder="Cc (optional)" class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white">
+            <input type="text" id="compose-subject" placeholder="Betreff" class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white">
+            <textarea id="compose-body" rows="8" placeholder="Nachricht..." class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white resize-none"></textarea>
+            <div id="compose-error" class="hidden text-xs text-red-400"></div>
+            <button id="compose-send-btn" class="bg-blue-600 hover:bg-blue-500 text-white font-medium py-2.5 rounded-xl text-sm transition self-start px-6">Senden</button>
+        </div>
+    </div>
+
+    <!-- Admin Panel -->
+    <div id="modal-admin" class="hidden fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto p-6 flex flex-col gap-6">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <h2 class="text-base font-bold text-white flex items-center gap-2">🛠️ Admin Panel</h2>
+                <button id="admin-close-btn" class="text-slate-500 hover:text-white text-2xl leading-none cursor-pointer">×</button>
+            </div>
+
+            <div class="flex flex-wrap gap-1.5 text-xs">
+                <button data-admin-tab="mailconfig" class="admin-tab-btn px-3 py-1.5 rounded-lg">📡 Mail-Anbindung</button>
+                <button data-admin-tab="mailboxes" class="admin-tab-btn px-3 py-1.5 rounded-lg">📮 Postfächer</button>
+                <button data-admin-tab="users" class="admin-tab-btn px-3 py-1.5 rounded-lg">👥 Benutzer</button>
+                <button data-admin-tab="auradirect" class="admin-tab-btn px-3 py-1.5 rounded-lg">🗂️ AuraDirect</button>
+                <button data-admin-tab="security" class="admin-tab-btn px-3 py-1.5 rounded-lg">🛡️ Sicherheit</button>
+                <button data-admin-tab="license" class="admin-tab-btn px-3 py-1.5 rounded-lg">🔑 Lizenz</button>
+                <button data-admin-tab="backup" class="admin-tab-btn px-3 py-1.5 rounded-lg">💾 Backup</button>
+            </div>
+
+            <!-- Mail-Anbindung -->
+            <div id="admin-tab-mailconfig" class="admin-tab hidden flex flex-col gap-4">
+                <div class="bg-slate-950 border border-slate-800 rounded-xl p-4">
+                    <p class="text-xs text-slate-500 mb-3">Wähle, wie AuraMail E-Mails empfängt und versendet.</p>
+                    <select id="mail-mode-select" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white">
+                        <option value="internal">Interner Mailserver (vereinfacht, selbst gehostet)</option>
+                        <option value="o365">Microsoft 365 / Exchange Online</option>
+                        <option value="external">Anderer IMAP/SMTP-Server</option>
+                    </select>
+                </div>
+
+                <div id="mailconfig-internal" class="bg-slate-950 border border-slate-800 rounded-xl p-4 flex flex-col gap-2">
+                    <span class="text-xs font-semibold text-white">Interner Mailserver</span>
+                    <p class="text-[10px] text-amber-400">⚠️ Vereinfachte Eigenbau-Lösung, kein Ersatz für Postfix/Dovecot. Für zuverlässige Zustellung wird ein Relay/Smarthost dringend empfohlen (sonst landen ausgehende Mails leicht im Spam).</p>
+                    <input type="text" id="internal-domain" placeholder="Domain für Postfächer, z.B. firma.ch" class="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white">
+                    <input type="text" id="internal-relay-host" placeholder="Relay/Smarthost-Host (optional, empfohlen)" class="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white">
+                    <input type="text" id="internal-relay-port" placeholder="Relay-Port (z.B. 587)" class="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white">
+                    <input type="text" id="internal-relay-username" placeholder="Relay-Benutzername" class="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white">
+                    <input type="password" id="internal-relay-password" placeholder="Relay-Passwort (leer = unverändert)" class="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white">
+                    <button id="internal-save-btn" class="self-start bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white font-medium px-3 py-1.5 rounded-lg text-xs transition">Speichern</button>
+                </div>
+
+                <div id="mailconfig-o365" class="bg-slate-950 border border-slate-800 rounded-xl p-4 flex flex-col gap-2">
+                    <span class="text-xs font-semibold text-white">Microsoft 365 / Exchange Online</span>
+                    <p class="text-[10px] text-slate-500">Braucht eine App-Registrierung in eurem Azure AD (Anwendungsberechtigungen "Mail.Send" und "Mail.ReadWrite", für die Konten-Auswahl im Reiter "Postfächer" zusätzlich "User.Read.All" - jeweils mit Administratorzustimmung).</p>
+                    <input type="text" id="o365-tenant-id" placeholder="Tenant-ID" class="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white">
+                    <input type="text" id="o365-client-id" placeholder="Client-ID (Anwendungs-ID)" class="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white">
+                    <input type="password" id="o365-client-secret" placeholder="Client-Secret (leer = unverändert)" class="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white">
+                    <button id="o365-save-btn" class="self-start bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white font-medium px-3 py-1.5 rounded-lg text-xs transition">Speichern</button>
+                </div>
+
+                <div id="mailconfig-external" class="bg-slate-950 border border-slate-800 rounded-xl p-4 flex flex-col gap-2">
+                    <span class="text-xs font-semibold text-white">Anderer IMAP/SMTP-Server</span>
+                    <p class="text-[10px] text-slate-500">Diese Server-Adressen gelten für alle Postfächer dieses Modus - Benutzername/Passwort werden pro Postfach eingetragen.</p>
+                    <input type="text" id="external-imap-host" placeholder="IMAP-Host" class="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white">
+                    <input type="text" id="external-imap-port" placeholder="IMAP-Port (z.B. 993)" class="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white">
+                    <input type="text" id="external-smtp-host" placeholder="SMTP-Host" class="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white">
+                    <input type="text" id="external-smtp-port" placeholder="SMTP-Port (z.B. 587)" class="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white">
+                    <button id="external-save-btn" class="self-start bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white font-medium px-3 py-1.5 rounded-lg text-xs transition">Speichern</button>
+                </div>
+
+                <button id="mailconfig-test-btn" class="self-start bg-blue-600 hover:bg-blue-500 text-white font-medium px-4 py-2 rounded-xl text-sm transition">Verbindung testen</button>
+                <div id="mailconfig-test-result" class="hidden text-xs"></div>
+
+                <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 flex flex-col gap-2 mt-2">
+                    <span class="text-xs font-semibold text-white">📨 Echte Testmail senden</span>
+                    <p class="text-[10px] text-slate-500">Schickt tatsächlich eine Nachricht über die aktuelle Anbindung - der zuverlässigste Weg, um zu prüfen, ob wirklich alles funktioniert.</p>
+                    <select id="test-send-mailbox" class="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white"></select>
+                    <input type="email" id="test-send-to" placeholder="Empfänger-Adresse" class="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white">
+                    <button id="test-send-btn" class="self-start bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white font-medium px-3 py-1.5 rounded-lg text-xs transition">Testmail senden</button>
+                    <div id="test-send-result" class="hidden text-xs"></div>
+                </div>
+            </div>
+
+            <!-- Postfächer -->
+            <div id="admin-tab-mailboxes" class="admin-tab hidden flex flex-col gap-4">
+                <div id="o365-import-section" class="hidden bg-slate-950 border border-slate-800 rounded-xl p-4 flex flex-col gap-3">
+                    <h3 class="text-xs font-semibold text-white">☁️ Aus Microsoft 365 auswählen</h3>
+                    <p class="text-[10px] text-slate-500">Lädt die vorhandenen Konten aus eurem Microsoft-365-Verzeichnis, damit ihr sie ankreuzen könnt, statt Adressen von Hand einzutippen. Braucht in der Azure-App zusätzlich die Anwendungsberechtigung "User.Read.All" (mit Administratorzustimmung). Geteilte Postfächer (z.B. info@) erscheinen hier ebenfalls, meist als deaktivierte Konten.</p>
+                    <div class="flex items-center gap-3">
+                        <button id="o365-load-btn" class="bg-blue-600 hover:bg-blue-500 text-white font-medium px-4 py-2 rounded-xl text-xs transition">Konten aus Microsoft 365 laden</button>
+                        <label id="o365-select-all-wrap" class="hidden flex items-center gap-2 text-[11px] text-slate-300 cursor-pointer">
+                            <input type="checkbox" id="o365-select-all" class="w-4 h-4 accent-blue-600"> alle noch nicht angelegten auswählen
+                        </label>
+                    </div>
+                    <div id="o365-load-error" class="hidden text-xs text-red-400"></div>
+                    <div id="o365-mailbox-list" class="flex flex-col gap-1 max-h-72 overflow-y-auto"></div>
+                    <button id="o365-import-btn" class="hidden self-start bg-emerald-600 hover:bg-emerald-500 text-white font-medium px-4 py-2 rounded-xl text-xs transition">Ausgewählte als Postfächer übernehmen</button>
+                    <div id="o365-import-result" class="hidden text-xs"></div>
+                </div>
+                <div class="bg-slate-950 border border-slate-800 rounded-xl p-4">
+                    <h3 class="text-xs font-semibold text-white mb-3">Neues Postfach anlegen</h3>
+                    <div class="grid grid-cols-2 gap-2 mb-2">
+                        <input type="text" id="new-mailbox-address" placeholder="Adresse, z.B. info@firma.ch" class="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white">
+                        <input type="text" id="new-mailbox-displayname" placeholder="Anzeigename" class="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white">
+                        <select id="new-mailbox-type" class="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white">
+                            <option value="shared">Geteilt (z.B. info@)</option>
+                            <option value="personal">Persönlich</option>
+                        </select>
+                        <select id="new-mailbox-owner" class="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white"><option value="">Kein:e Eigentümer:in</option></select>
+                    </div>
+                    <div id="new-mailbox-external-fields" class="hidden grid grid-cols-2 gap-2 mb-2">
+                        <input type="text" id="new-mailbox-username" placeholder="Externer Benutzername" class="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white">
+                        <input type="password" id="new-mailbox-password" placeholder="Externes Passwort" class="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white">
+                    </div>
+                    <button id="new-mailbox-btn" class="bg-blue-600 hover:bg-blue-500 text-white font-medium px-4 py-2 rounded-xl text-xs transition">Anlegen</button>
+                </div>
+                <div id="mailbox-admin-list" class="flex flex-col gap-2"></div>
+            </div>
+
+            <!-- Benutzer -->
+            <div id="admin-tab-users" class="admin-tab hidden flex flex-col gap-4">
+                <div class="bg-slate-950 border border-slate-800 rounded-xl p-4">
+                    <h3 class="text-xs font-semibold text-white mb-3">Neue Person anlegen</h3>
+                    <div class="grid grid-cols-2 gap-2 mb-2">
+                        <input type="text" id="new-user-username" placeholder="Benutzername" class="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white">
+                        <input type="password" id="new-user-password" placeholder="Passwort" class="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white">
+                        <input type="text" id="new-user-firstname" placeholder="Vorname" class="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white">
+                        <input type="text" id="new-user-lastname" placeholder="Nachname" class="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white">
+                        <select id="new-user-role" class="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white col-span-2">
+                            <option value="user">Person</option>
+                            <option value="admin">Administrator:in</option>
+                        </select>
+                    </div>
+                    <button id="new-user-btn" class="bg-blue-600 hover:bg-blue-500 text-white font-medium px-4 py-2 rounded-xl text-xs transition">Anlegen</button>
+                </div>
+                <div id="user-admin-list" class="flex flex-col gap-2"></div>
+            </div>
+
+            <!-- AuraDirect -->
+            <div id="admin-tab-auradirect" class="admin-tab hidden flex flex-col gap-4">
+                <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 flex flex-col gap-2">
+                    <span class="text-xs font-semibold text-white">AuraDirect (zentrale Benutzerverwaltung)</span>
+                    <p class="text-[10px] text-slate-500">Optional - richtet automatisch persönliche Postfächer für alle aktiven Personen aus AuraDirect ein.</p>
+                    <div id="auradirect-servicekey-status" class="text-xs"></div>
+                    <input type="text" id="auradirect-url-input" placeholder="z.B. http://10.0.55.251:4000" class="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white">
+                    <input type="password" id="auradirect-servicekey-input" placeholder="Dienst-Schlüssel (aus AuraDirect → Benutzer)" class="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white">
+                    <button id="auradirect-save-btn" class="self-start bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white font-medium px-3 py-1.5 rounded-lg text-xs transition">Speichern</button>
+                    <button id="auradirect-sync-users-btn" class="self-start bg-blue-600 hover:bg-blue-500 text-white font-medium px-4 py-2 rounded-xl text-xs transition mt-2">👥 Personen aus AuraDirect übernehmen</button>
+                    <p class="text-[10px] text-slate-500">Übernimmt alle Personen, die in AuraDirect für AuraMail freigeschaltet sind (samt Rolle) - ohne dass sie sich vorher anmelden müssen, und ohne Mail-Domain. Läuft zusätzlich automatisch alle 6 Stunden. Die Personen erscheinen danach im Reiter "Benutzer" und lassen sich bei Postfächern als Eigentümer:in wählen.</p>
+                    <button id="auradirect-sync-btn" class="self-start bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white font-medium px-4 py-2 rounded-xl text-xs transition mt-2">📮 Personen + persönliche Postfächer anlegen (braucht Mail-Domain)</button>
+                    <div id="auradirect-sync-result" class="hidden text-xs mt-1"></div>
+                </div>
+            </div>
+
+            <!-- Sicherheit -->
+            <div id="admin-tab-security" class="admin-tab hidden flex flex-col gap-4">
+                <div class="bg-slate-950 border border-slate-800 rounded-xl p-4">
+                    <h2 class="text-sm font-bold text-white mb-1">🛡️ Zwei-Faktor-Authentifizierung</h2>
+                    <p class="text-xs text-slate-500 mb-3">Verlangt von allen Konten beim nächsten Login eine zusätzliche Bestätigung per Authenticator-App.</p>
+                    <label class="flex items-center gap-2 text-xs text-slate-300">
+                        <input type="checkbox" id="twofa-required-toggle" class="w-4 h-4 accent-blue-600 cursor-pointer">
+                        Zwei-Faktor-Authentifizierung für alle Konten verlangen
+                    </label>
+                </div>
+                <div class="bg-slate-950 border border-slate-800 rounded-xl p-4">
+                    <h2 class="text-sm font-bold text-white mb-1">🔌 Externe API</h2>
+                    <p class="text-xs text-slate-500 mb-3">Für andere Aura-Produkte (z.B. AuraTicket), um Postfächer zu lesen/zu versenden. Anfragen brauchen den Header <code class="text-slate-300">X-Service-Key</code>.</p>
+                    <div class="flex items-center gap-2 mb-2">
+                        <input readonly id="external-api-key-field" value="" class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 font-mono" onclick="this.select()">
+                        <button type="button" id="external-api-key-copy-btn" class="text-xs px-3 py-2 rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700 shrink-0">📋 Kopieren</button>
+                    </div>
+                    <button id="external-api-key-regenerate-btn" class="text-xs px-3 py-1.5 rounded-lg bg-red-500/10 border border-red-500/30 text-red-300 hover:bg-red-500/20">Neu erzeugen (alter Schlüssel wird ungültig)</button>
+                </div>
+            </div>
+
+            <!-- Lizenz -->
+            <div id="admin-tab-license" class="admin-tab hidden flex flex-col gap-4">
+                <div class="bg-slate-950 border border-slate-800 rounded-xl p-4">
+                    <h2 class="text-sm font-bold text-white mb-1">🔑 Lizenz</h2>
+                    <div id="license-admin-status" class="text-xs text-slate-400 mb-3">Wird geladen…</div>
+                    <textarea id="license-admin-key-input" rows="4" placeholder="Neuen Lizenzschlüssel eintragen" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white font-mono mb-2"></textarea>
+                    <div>
+                        <button id="license-admin-save-btn" class="bg-blue-600 hover:bg-blue-500 text-white font-medium px-4 py-2 rounded-xl text-sm transition">Speichern</button>
+                        <button id="license-admin-remove-btn" class="hidden bg-red-500/10 border border-red-500/30 text-red-300 hover:bg-red-500/20 font-medium px-4 py-2 rounded-xl text-sm transition ml-2">Lizenz entfernen</button>
+                    </div>
+                    <div id="license-admin-error" class="hidden text-xs text-red-400 mt-2"></div>
+                </div>
+            </div>
+
+            <!-- Backup -->
+            <div id="admin-tab-backup" class="admin-tab hidden flex flex-col gap-4">
+                <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 flex flex-col gap-3">
+                    <h2 class="text-sm font-bold text-white">💾 Backup</h2>
+                    <p class="text-xs text-slate-500">Lädt die komplette AuraMail-Datenbank herunter (Postfächer, Nachrichten, Benutzer, Einstellungen).</p>
+                    <button id="backup-create-btn" class="self-start bg-blue-600 hover:bg-blue-500 text-white font-medium px-4 py-2 rounded-xl text-sm transition">Backup herunterladen</button>
+                </div>
+                <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 flex flex-col gap-3">
+                    <h2 class="text-sm font-bold text-white">⚠️ Wiederherstellen</h2>
+                    <input type="file" id="backup-restore-file" accept=".zip" class="w-full text-xs text-slate-400 bg-slate-900 border border-slate-700 rounded-xl p-2">
+                    <button id="backup-restore-btn" class="self-start bg-amber-600 hover:bg-amber-500 text-white font-medium px-4 py-2 rounded-xl text-sm transition">Wiederherstellen</button>
+                    <div id="backup-restore-status" class="hidden text-xs"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Passwort ändern -->
+    <div id="modal-password" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-sm p-6 flex flex-col gap-3">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <h3 class="text-sm font-bold text-white">🔒 Passwort ändern</h3>
+                <button id="password-close-btn" class="text-slate-500 hover:text-white text-xl leading-none cursor-pointer">×</button>
+            </div>
+            <input type="password" id="password-current" placeholder="Aktuelles Passwort" class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white">
+            <input type="password" id="password-new" placeholder="Neues Passwort" class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white">
+            <input type="password" id="password-new-repeat" placeholder="Neues Passwort wiederholen" class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white">
+            <div id="password-error" class="hidden text-xs text-red-400"></div>
+            <div id="password-success" class="hidden text-xs text-emerald-400"></div>
+            <button id="password-save-btn" class="bg-blue-600 hover:bg-blue-500 text-white font-medium py-2.5 rounded-xl text-sm transition">Speichern</button>
+        </div>
+    </div>
+
+    <!-- Postfach zuweisen -->
+    <div id="modal-mailbox-assign" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md max-h-[85vh] overflow-y-auto p-6 flex flex-col gap-3">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <h3 id="assign-title" class="text-sm font-bold text-white">Postfach zuweisen</h3>
+                <button id="assign-close-btn" class="text-slate-500 hover:text-white text-xl leading-none cursor-pointer">×</button>
+            </div>
+            <input type="hidden" id="assign-mailbox-id">
+            <label class="text-[11px] font-semibold text-slate-300">Eigentümer:in</label>
+            <select id="assign-owner" class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white"></select>
+            <label class="text-[11px] font-semibold text-slate-300 mt-1">Darf das Postfach zusätzlich nutzen (lesen und senden)</label>
+            <div id="assign-access-list" class="flex flex-col gap-1 max-h-56 overflow-y-auto"></div>
+            <div id="assign-error" class="hidden text-xs text-red-400"></div>
+            <button id="assign-save-btn" class="bg-blue-600 hover:bg-blue-500 text-white font-medium py-2.5 rounded-xl text-sm transition self-start px-6">Speichern</button>
+        </div>
+    </div>
+
+    <script src="js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,22 @@
+AuraChat-Website: Update (Oktober 2026)
+
+Was neu ist
+  - Neuer Abschnitt AuraCall (Telefonassistent) mit Datenblatt in 5 Sprachen
+  - Neue Funktionskarten: Hotel & Gäste (Apaleo), Aura am Telefon, Kiosk & Bildschirmformat;
+    Gedächtnis (Bilder/Dokumente im Chat), Cockpit und Befehle ergänzt
+  - Produktübersicht (#produkte) mit allen sechs Produkten; AuraMail, AuraTicket und AuraProxy mit Abschnitt,
+    Datenblättern und Schnellstart-Paketen
+  - Schnellstart-Text auf das tatsächliche Docker-Hub-Verfahren (docker compose -f oci://docker.io/migerber77/aurachat:latest)
+    umgestellt. Bisher zeigte die Seite noch das alte Verfahren (Paket herunterladen), obwohl aurachat-quickstart.zip schon
+    in der neuen Fassung dabei war; jetzt passen Text und Paket zusammen
+  - Suchmaschinen: Beschreibung und Merkmalsliste um Telefon und Apaleo ergänzt (Ollama, Websuche, Microsoft 365 bleiben);
+    die deutschen Texte im HTML stehen jetzt vollständig im Quelltext (bei AuraPlan/AuraDirect waren Karten leer)
+  - Kopfzeile: Sprachtasten und Kontakt-Knopf bleiben auf Handy, Tablet und Laptop erreichbar (vorher abgeschnitten)
+
+Einspielen (auf dem Server, im Ordner der Webseite, z. B. /docker/AuraChat-Website)
+  1. ZIP über den Ordner entpacken (ersetzt html/index.html, html/translations.js, html/style.css und ergänzt html/downloads/).
+     Die Installer (AuraChat-Setup-Windows.exe, AuraChat-Setup-macOS.zip) bleiben unverändert.
+  2. docker compose restart
+  3. Im Browser hart neu laden (Strg+Shift+R).
+
+Der Ordner build/ ist nur für die Pflege der Texte (siehe README.md), der Server braucht ihn nicht.

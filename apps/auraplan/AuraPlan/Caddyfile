@@ -1,0 +1,14 @@
+{
+    admin 0.0.0.0:2019 {
+        origins http://caddy:2019
+        enforce_origin
+    }
+}
+
+# Fallback, solange im Admin Panel noch keine Domain gesetzt wurde:
+# einfacher HTTP-Proxy ohne TLS. Sobald eine Domain eingetragen wird, ersetzt
+# das Backend diese Konfiguration live über die Caddy Admin-API durch einen
+# Domain-Block mit automatischem Let's-Encrypt-Zertifikat.
+:80 {
+    reverse_proxy auraplan:3002
+}

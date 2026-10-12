@@ -1,0 +1,13 @@
+{
+  "admin": {
+    "listen": "0.0.0.0:2019",
+    "origins": ["http://auraproxy-admin"]
+  },
+  "apps": {
+    "http": {
+      "servers": {
+        "port_80": { "listen": [":80"], "routes": [] }
+      }
+    }
+  }
+}

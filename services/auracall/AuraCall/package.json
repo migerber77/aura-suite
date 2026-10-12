@@ -1,0 +1,9 @@
+{
+  "name": "auracall",
+  "version": "0.1.0",
+  "description": "AuraCall - Telefon-Anbindung fuer AuraChat: Aura nimmt Anrufe an und ruft an (Asterisk). Ohne fremde Pakete, nur Node.js.",
+  "main": "server.js",
+  "scripts": { "start": "node --disable-warning=ExperimentalWarning server.js" },
+  "engines": { "node": ">=22.13" },
+  "dependencies": {}
+}

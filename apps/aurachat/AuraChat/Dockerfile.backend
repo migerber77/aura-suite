@@ -1,0 +1,84 @@
+# Debian-basiert (nicht Alpine) - PyTorch/transformers brauchen glibc, das gibt es unter
+# Alpine (musl) nicht als fertiges Paket. Macht das Image spürbar größer, ist aber nötig
+# für Aura-Academy (siehe unten).
+#
+# Basis: Debian 13 "trixie" mit Python 3.13 (vorher Debian 12 mit Python 3.11). Die Python-Pakete (scripts/requirements.txt) sind alle ohne feste
+# Version angegeben, es werden also Pakete mit Python-3.13-Unterstützung geholt; PyTorch kommt als CPU-Paket. Wichtig beim ersten Bau: danach die
+# Aura-Academy einmal ausprobieren (Training starten). Macht sie Probleme, geht es mit einer Zeile zurück auf Debian 12:
+#   docker compose build --build-arg NODE_IMAGE=node:24-bookworm-slim
+# Hinweis: Der frühere Fehler "At least one invalid signature" bei "apt-get update" (und danach "not enough free space") kam vermutlich nicht von Debian,
+# sondern von einem fast vollen Laufwerk (Docker-Zwischenspeicher vom häufigen Bauen). Bei Platzmangel zuerst aufräumen:
+#   docker builder prune -f && docker image prune -a -f   (NIE "docker volume prune" - dort liegen die Daten)
+ARG NODE_IMAGE=node:24-trixie-slim
+FROM ${NODE_IMAGE}
+
+WORKDIR /app
+
+# --- Node-Teil (wie bisher) ---
+COPY package*.json ./
+RUN npm install
+# Prüft gleich beim Bauen, dass JEDE Abhängigkeit unter dieser Node-Version lädt (auch die nativen Module wie sqlite3 und bcrypt). Sonst bricht der Bau
+# mit dem Namen des Moduls ab, statt dass der Fehler erst im Betrieb auffällt.
+RUN node -e 'const d = Object.keys(require("./package.json").dependencies); for (const m of d) { try { require(m); } catch (e) { console.error("Modul " + m + " laesst sich unter Node " + process.version + " nicht laden: " + e.message); process.exit(1); } } console.log("Alle " + d.length + " Module laden unter Node " + process.version)'
+
+
+# --- Python-Teil für Aura-Academy (nächtliches Feintuning, siehe scripts/) ---
+# Bewusst im selben Container statt als eigenes Deployment (anders als der frühere
+# Versuch) - node ruft die Python-Skripte per child_process auf, siehe server.js.
+# "apt-get update" bis zu dreimal versuchen: Debian-Spiegelserver sind manchmal kurz in einem unfertigen Zustand
+# (Fehler "invalid signature"), der nach Sekunden bis Minuten von selbst verschwindet.
+RUN set -eux; \
+    for i in 1 2 3; do \
+        apt-get update && break; \
+        echo "apt-get update fehlgeschlagen (Versuch $i von 3), warte 15 Sekunden ..."; \
+        sleep 15; \
+    done; \
+    apt-get upgrade -y --no-install-recommends; \
+    apt-get install -y --no-install-recommends python3 python3-pip curl; \
+    rm -rf /var/lib/apt/lists/*
+
+# CPU-Variante von Torch (siehe README.md im Projekt für den Umstieg auf GPU, sobald
+# echte GPU-Hardware verfügbar ist). --extra-index-url (nicht nur --index-url) lässt pip
+# bei Bedarf auf PyPI zurückfallen - der reine PyTorch-Index hat nicht jedes Hilfspaket
+# (z.B. flit_core für den Build von typing-extensions), was sonst zu einem Build-Fehler führt.
+RUN pip install --no-cache-dir --break-system-packages torch \
+    --index-url https://download.pytorch.org/whl/cpu \
+    --extra-index-url https://pypi.org/simple
+
+# GGUF-Konvertierung braucht mittlerweile mehrere zusammenhängende Dateien aus llama.cpp
+# (nicht mehr nur die eine Skript-Datei wie früher - llama.cpp hat sein Skript seither auf
+# eigene Hilfsmodule umgestellt, siehe "ModuleNotFoundError: No module named 'conversion'").
+# Deshalb das ganze Projekt als .tar.gz per HTTPS holen (weiterhin NICHT "git clone" - manche
+# Netzwerke blockieren das Git-Protokoll gezielt, ein reiner HTTPS-Download bleibt zuverlässig)
+# und komplett entpacken, damit alle vom Hauptskript benötigten Hilfsmodule automatisch
+# mitkommen, unabhängig davon, wie sie aktuell heissen oder künftig umbenannt werden.
+# WICHTIG: kommt bewusst VOR unserer eigenen scripts/requirements.txt - llama.cpps eigene
+# Anforderungsdatei schreibt eine ältere transformers-Version vor, die sonst unsere neuere
+# (für den Qwen-Tokenizer nötige) Version nachträglich wieder überschreiben würde.
+RUN curl -fsSL -o /tmp/llamacpp.tar.gz \
+    https://github.com/ggerganov/llama.cpp/archive/refs/heads/master.tar.gz \
+    && mkdir -p /app/llama.cpp \
+    && tar -xzf /tmp/llamacpp.tar.gz --strip-components=1 -C /app/llama.cpp \
+    && rm /tmp/llamacpp.tar.gz \
+    && (pip install --no-cache-dir --break-system-packages -r /app/llama.cpp/requirements/requirements-convert_hf_to_gguf.txt || true)
+
+COPY scripts/requirements.txt ./scripts/requirements.txt
+RUN pip install --no-cache-dir --break-system-packages -r scripts/requirements.txt
+
+COPY scripts/train.py scripts/convert_to_gguf.py ./scripts/
+
+# Eigener Code ganz zum Schluss, weil er sich ständig ändert. So bleiben die schweren Schritte darüber (apt, Torch,
+# llama.cpp) beim erneuten Bauen im Zwischenspeicher und werden nicht bei jedem kleinen Update neu geladen.
+# Zur Laufzeit werden npm und Yarn nicht gebraucht (Start: "node server.js"). Sie samt ihren Bibliotheken (tar, glob, minimatch ...) aus dem
+# fertigen Image zu entfernen verkleinert die Angriffsfläche und die Zahl der Schwachstellen-Meldungen ohne Nutzen.
+RUN rm -rf /usr/local/lib/node_modules /usr/local/bin/npm /usr/local/bin/npx /usr/local/bin/corepack /opt/yarn-* /usr/local/bin/yarn /usr/local/bin/yarnpkg
+
+COPY server.js ./
+# Cockpit-Agent und Scanner-Skript (derselbe Image startet als eigener Dienst "cockpit", siehe docker-compose.yml)
+COPY cockpit/agent.js cockpit/scan.sh ./cockpit/
+COPY html/images/logo.png ./assets/logo.png
+COPY html/images/logo-icon.png ./assets/logo-icon.png
+
+EXPOSE 3000
+
+CMD ["node", "server.js"]

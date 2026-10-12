@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="de" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AuraTicket</title>
+    <link rel="icon" type="image/png" href="images/icon.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="h-full bg-slate-950 text-slate-100">
+
+    <!-- Login -->
+    <div id="login-screen" class="min-h-screen flex items-center justify-center p-4">
+        <div class="w-full max-w-sm">
+            <div class="flex items-center gap-2 justify-center mb-6">
+                <img src="images/logo.png" alt="AuraTicket" class="h-10 w-auto rounded-lg">
+            </div>
+
+            <form id="login-step-credentials" class="bg-slate-900 border border-slate-800 rounded-2xl p-6 flex flex-col gap-4">
+                <div id="login-error" class="hidden bg-red-500/10 border border-red-500/30 text-red-300 rounded-xl px-3 py-2 text-xs"></div>
+                <input type="text" id="login-username" placeholder="Benutzername" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
+                <input type="password" id="login-password" placeholder="Passwort" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
+                <button type="submit" class="bg-blue-600 hover:bg-blue-500 text-white font-medium py-2.5 rounded-xl text-sm transition">Anmelden</button>
+            </form>
+
+            <div id="login-step-2fa-setup" class="hidden bg-slate-900 border border-slate-800 rounded-2xl p-6 flex flex-col items-center gap-3">
+                <p class="text-xs text-slate-400 text-center">Zwei-Faktor-Authentifizierung einrichten: QR-Code scannen, dann Code eingeben.</p>
+                <img id="twofa-qr-code" class="rounded-xl bg-white p-2" alt="QR-Code">
+                <input type="text" id="twofa-setup-code" inputmode="numeric" maxlength="6" placeholder="123456" class="w-full max-w-xs text-center tracking-widest bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white">
+                <button id="twofa-setup-confirm-btn" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium py-2.5 rounded-xl text-sm transition">Aktivieren</button>
+            </div>
+
+            <div id="login-step-2fa" class="hidden bg-slate-900 border border-slate-800 rounded-2xl p-6 flex flex-col gap-3">
+                <p class="text-xs text-slate-400 text-center">Code aus deiner Authenticator-App:</p>
+                <input type="text" id="twofa-code" inputmode="numeric" maxlength="6" placeholder="123456" class="w-full text-center tracking-widest bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white">
+                <button id="twofa-confirm-btn" class="bg-blue-600 hover:bg-blue-500 text-white font-medium py-2.5 rounded-xl text-sm transition">Bestätigen</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lizenz fehlt -->
+    <div id="modal-license" class="hidden fixed inset-0 bg-slate-950/95 backdrop-blur-md z-[70] flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl w-full max-w-md shadow-2xl flex flex-col gap-4">
+            <div class="flex items-center gap-2 border-b border-slate-800 pb-3">
+                <span class="text-lg">🔑</span>
+                <h3 class="text-sm font-bold text-white">AuraTicket ist nicht lizenziert</h3>
+            </div>
+            <p id="license-modal-text" class="text-xs text-slate-400">Für diese Installation ist keine gültige Lizenz hinterlegt.</p>
+            <div id="license-modal-admin-form" class="hidden flex flex-col gap-3">
+                <textarea id="license-key-input" rows="4" placeholder="Lizenzschlüssel hier einfügen" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white font-mono"></textarea>
+                <div id="license-modal-error" class="hidden text-xs text-red-400"></div>
+                <button id="license-save-btn" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium py-2.5 rounded-xl text-sm transition">Lizenz aktivieren</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- App -->
+    <div id="app" class="hidden h-screen flex flex-col">
+        <header class="h-14 border-b border-slate-800 flex items-center justify-between px-4 shrink-0">
+            <div class="flex items-center gap-2">
+                <img src="images/icon.png" alt="AuraTicket" class="h-7 w-7 rounded-md">
+                <h1 class="text-sm font-bold text-white">AuraTicket</h1>
+            </div>
+            <nav class="flex items-center gap-1">
+                <button data-view="tickets" class="view-btn active text-xs px-3 py-1.5 rounded-lg">🎫 Tickets</button>
+                <button data-view="campaigns" class="view-btn text-xs px-3 py-1.5 rounded-lg">📣 Kampagnen</button>
+            </nav>
+            <div class="flex items-center gap-3">
+                <span id="user-name" class="text-xs text-slate-400"></span>
+                <button id="admin-panel-btn" class="admin-only hidden text-xs px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 hover:bg-slate-800">🛠️ Admin Panel</button>
+                <button id="change-password-btn" class="text-xs px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 hover:bg-slate-800">🔒 Passwort</button>
+                <a href="/api/logout" id="logout-btn" class="text-xs px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 hover:bg-slate-800">Abmelden</a>
+            </div>
+        </header>
+
+        <!-- Tickets-Ansicht -->
+        <div id="view-tickets" class="flex-1 flex overflow-hidden">
+            <aside class="w-56 border-r border-slate-800 flex flex-col shrink-0 p-3 gap-3 overflow-y-auto">
+                <button id="new-ticket-btn" class="bg-blue-600 hover:bg-blue-500 text-white font-medium py-2.5 rounded-xl text-sm transition">➕ Neues Ticket</button>
+                <div class="flex flex-col gap-1">
+                    <button data-status="" class="status-filter-btn active text-xs text-left px-3 py-1.5 rounded-lg">Alle</button>
+                    <button data-status="open" class="status-filter-btn text-xs text-left px-3 py-1.5 rounded-lg">🟢 Offen</button>
+                    <button data-status="pending" class="status-filter-btn text-xs text-left px-3 py-1.5 rounded-lg">🟡 Wartet</button>
+                    <button data-status="resolved" class="status-filter-btn text-xs text-left px-3 py-1.5 rounded-lg">✅ Gelöst</button>
+                    <button data-status="closed" class="status-filter-btn text-xs text-left px-3 py-1.5 rounded-lg">⚫ Geschlossen</button>
+                </div>
+            </aside>
+            <section class="w-80 border-r border-slate-800 flex flex-col shrink-0 overflow-y-auto" id="ticket-list"></section>
+            <section class="flex-1 overflow-y-auto p-6">
+                <div id="ticket-view-empty" class="text-slate-500 text-sm text-center mt-20">Wähle ein Ticket aus.</div>
+                <div id="ticket-view" class="hidden max-w-3xl flex flex-col gap-4">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <div class="text-xs text-slate-500 mb-1" id="ticket-number"></div>
+                            <h2 id="ticket-subject" class="text-lg font-bold text-white mb-1"></h2>
+                            <div class="text-xs text-slate-400" id="ticket-requester"></div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <select id="ticket-status-select" class="bg-slate-900 border border-slate-800 rounded-lg px-2 py-1.5 text-xs text-white">
+                                <option value="open">🟢 Offen</option>
+                                <option value="pending">🟡 Wartet</option>
+                                <option value="resolved">✅ Gelöst</option>
+                                <option value="closed">⚫ Geschlossen</option>
+                            </select>
+                            <select id="ticket-priority-select" class="bg-slate-900 border border-slate-800 rounded-lg px-2 py-1.5 text-xs text-white">
+                                <option value="low">Niedrig</option>
+                                <option value="normal">Normal</option>
+                                <option value="high">Hoch</option>
+                                <option value="urgent">Dringend</option>
+                            </select>
+                            <select id="ticket-assignee-select" class="bg-slate-900 border border-slate-800 rounded-lg px-2 py-1.5 text-xs text-white"><option value="">Nicht zugewiesen</option></select>
+                        </div>
+                    </div>
+                    <div id="ticket-messages" class="flex flex-col gap-3 border-t border-slate-800 pt-4"></div>
+                    <div class="border-t border-slate-800 pt-4 flex flex-col gap-2">
+                        <textarea id="reply-text" rows="4" placeholder="Antwort schreiben..." class="bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white resize-none"></textarea>
+                        <div class="flex items-center gap-2">
+                            <button id="reply-send-btn" class="bg-blue-600 hover:bg-blue-500 text-white font-medium px-4 py-2 rounded-xl text-sm transition">Antworten (per E-Mail)</button>
+                            <button id="reply-note-btn" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white font-medium px-4 py-2 rounded-xl text-sm transition">Interne Notiz</button>
+                        </div>
+                        <div id="reply-error" class="hidden text-xs text-red-400"></div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- Kampagnen-Ansicht -->
+        <div id="view-campaigns" class="hidden flex-1 overflow-y-auto p-6">
+            <div class="max-w-4xl mx-auto flex flex-col gap-6">
+                <div class="flex items-center justify-between">
+                    <h2 class="text-lg font-bold text-white">📣 Massenmail-Kampagnen</h2>
+                    <button id="new-campaign-btn" class="admin-only hidden bg-blue-600 hover:bg-blue-500 text-white font-medium px-4 py-2 rounded-xl text-sm transition">➕ Neue Kampagne</button>
+                </div>
+                <div id="campaign-list" class="flex flex-col gap-2"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Neues Ticket -->
+    <div id="modal-new-ticket" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg p-6 flex flex-col gap-3">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <h3 class="text-sm font-bold text-white">➕ Neues Ticket</h3>
+                <button id="new-ticket-close-btn" class="text-slate-500 hover:text-white text-xl leading-none cursor-pointer">×</button>
+            </div>
+            <input type="text" id="new-ticket-subject" placeholder="Betreff" class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white">
+            <input type="email" id="new-ticket-email" placeholder="Anfragende-Adresse" class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white">
+            <input type="text" id="new-ticket-name" placeholder="Name (optional)" class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white">
+            <textarea id="new-ticket-body" rows="5" placeholder="Beschreibung..." class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white resize-none"></textarea>
+            <div id="new-ticket-error" class="hidden text-xs text-red-400"></div>
+            <button id="new-ticket-create-btn" class="bg-blue-600 hover:bg-blue-500 text-white font-medium py-2.5 rounded-xl text-sm transition self-start px-6">Erstellen</button>
+        </div>
+    </div>
+
+    <!-- Neue Kampagne -->
+    <div id="modal-new-campaign" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg p-6 flex flex-col gap-3">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <h3 class="text-sm font-bold text-white">➕ Neue Kampagne</h3>
+                <button id="new-campaign-close-btn" class="text-slate-500 hover:text-white text-xl leading-none cursor-pointer">×</button>
+            </div>
+            <input type="text" id="new-campaign-name" placeholder="Interner Name der Kampagne" class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white">
+            <input type="text" id="new-campaign-mailbox" placeholder="Absender-Postfach, z.B. info@firma.ch" class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white">
+            <input type="text" id="new-campaign-subject" placeholder="Betreff" class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white">
+            <textarea id="new-campaign-body" rows="5" placeholder="Nachricht... ({{name}} wird durch den Namen aus der CSV ersetzt)" class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white resize-none"></textarea>
+            <div>
+                <label class="text-[10px] text-slate-500 block mb-1">Empfänger-CSV (Format pro Zeile: E-Mail,Name)</label>
+                <input type="file" id="new-campaign-file" accept=".csv" class="w-full text-xs text-slate-400 bg-slate-950 border border-slate-800 rounded-xl p-2">
+            </div>
+            <div id="new-campaign-error" class="hidden text-xs text-red-400"></div>
+            <button id="new-campaign-create-btn" class="bg-blue-600 hover:bg-blue-500 text-white font-medium py-2.5 rounded-xl text-sm transition self-start px-6">Als Entwurf anlegen</button>
+        </div>
+    </div>
+
+    <!-- Kampagne Details -->
+    <div id="modal-campaign-detail" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg max-h-[85vh] overflow-y-auto p-6 flex flex-col gap-3">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <h3 id="campaign-detail-name" class="text-sm font-bold text-white"></h3>
+                <button id="campaign-detail-close-btn" class="text-slate-500 hover:text-white text-xl leading-none cursor-pointer">×</button>
+            </div>
+            <div id="campaign-detail-status" class="text-xs"></div>
+            <button id="campaign-send-btn" class="admin-only hidden bg-blue-600 hover:bg-blue-500 text-white font-medium py-2 rounded-xl text-sm transition self-start px-6">Jetzt versenden</button>
+            <div id="campaign-detail-recipients" class="flex flex-col gap-1 text-xs"></div>
+        </div>
+    </div>
+
+    <!-- Passwort ändern -->
+    <div id="modal-password" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-sm p-6 flex flex-col gap-3">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <h3 class="text-sm font-bold text-white">🔒 Passwort ändern</h3>
+                <button id="password-close-btn" class="text-slate-500 hover:text-white text-xl leading-none cursor-pointer">×</button>
+            </div>
+            <input type="password" id="password-current" placeholder="Aktuelles Passwort" class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white">
+            <input type="password" id="password-new" placeholder="Neues Passwort" class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white">
+            <input type="password" id="password-new-repeat" placeholder="Neues Passwort wiederholen" class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white">
+            <div id="password-error" class="hidden text-xs text-red-400"></div>
+            <div id="password-success" class="hidden text-xs text-emerald-400"></div>
+            <button id="password-save-btn" class="bg-blue-600 hover:bg-blue-500 text-white font-medium py-2.5 rounded-xl text-sm transition">Speichern</button>
+        </div>
+    </div>
+
+    <!-- Admin Panel -->
+    <div id="modal-admin" class="hidden fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto p-6 flex flex-col gap-6">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <h2 class="text-base font-bold text-white flex items-center gap-2">🛠️ Admin Panel</h2>
+                <button id="admin-close-btn" class="text-slate-500 hover:text-white text-2xl leading-none cursor-pointer">×</button>
+            </div>
+
+            <div class="flex flex-wrap gap-1.5 text-xs">
+                <button data-admin-tab="auradirect" class="admin-tab-btn px-3 py-1.5 rounded-lg">🗂️ AuraDirect</button>
+                <button data-admin-tab="auramail" class="admin-tab-btn px-3 py-1.5 rounded-lg">📬 AuraMail-Anbindung</button>
+                <button data-admin-tab="users" class="admin-tab-btn px-3 py-1.5 rounded-lg">👥 Benutzer</button>
+                <button data-admin-tab="security" class="admin-tab-btn px-3 py-1.5 rounded-lg">🛡️ Sicherheit</button>
+                <button data-admin-tab="license" class="admin-tab-btn px-3 py-1.5 rounded-lg">🔑 Lizenz</button>
+                <button data-admin-tab="backup" class="admin-tab-btn px-3 py-1.5 rounded-lg">💾 Backup</button>
+            </div>
+
+            <div id="admin-tab-auradirect" class="admin-tab hidden flex flex-col gap-4">
+                <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 flex flex-col gap-2">
+                    <span class="text-xs font-semibold text-white">AuraDirect (zentrale Benutzerverwaltung)</span>
+                    <p class="text-[10px] text-slate-500">Optional - Personen mit AuraTicket-Zugriff in AuraDirect können sich dann mit demselben Konto/Passwort hier anmelden.</p>
+                    <div id="auradirect-servicekey-status" class="text-xs"></div>
+                    <input type="text" id="auradirect-url-input" placeholder="z.B. http://10.0.55.251:4000" class="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white">
+                    <input type="password" id="auradirect-servicekey-input" placeholder="Dienst-Schlüssel (aus AuraDirect → Benutzer)" class="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white">
+                    <button id="auradirect-save-btn" class="self-start bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white font-medium px-3 py-1.5 rounded-lg text-xs transition">Speichern</button>
+                </div>
+            </div>
+
+            <div id="admin-tab-auramail" class="admin-tab hidden flex flex-col gap-4">
+                <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 flex flex-col gap-2">
+                    <span class="text-xs font-semibold text-white">AuraMail (E-Mail-Versand &amp; -Empfang)</span>
+                    <p class="text-[10px] text-slate-500">Eingehende Mails am angegebenen Postfach werden automatisch zu Tickets. Antworten und Kampagnen werden über dasselbe Postfach versendet.</p>
+                    <div id="auramail-servicekey-status" class="text-xs"></div>
+                    <input type="text" id="auramail-url-input" placeholder="z.B. http://10.0.55.251:3300" class="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white">
+                    <input type="password" id="auramail-servicekey-input" placeholder="Dienst-Schlüssel (aus AuraMail → Sicherheit)" class="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white">
+                    <input type="text" id="auramail-mailbox-input" placeholder="Beobachtetes Postfach, z.B. support@firma.ch" class="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white">
+                    <button id="auramail-save-btn" class="self-start bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white font-medium px-3 py-1.5 rounded-lg text-xs transition">Speichern</button>
+                    <button id="auramail-poll-btn" class="self-start bg-blue-600 hover:bg-blue-500 text-white font-medium px-4 py-2 rounded-xl text-xs transition mt-2">🔄 Jetzt nach neuen Mails prüfen</button>
+                    <div id="auramail-poll-result" class="hidden text-xs mt-1"></div>
+                </div>
+            </div>
+
+            <div id="admin-tab-users" class="admin-tab hidden flex flex-col gap-4">
+                <div class="bg-slate-950 border border-slate-800 rounded-xl p-4">
+                    <h3 class="text-xs font-semibold text-white mb-3">Neue Person anlegen</h3>
+                    <div class="grid grid-cols-2 gap-2 mb-2">
+                        <input type="text" id="new-user-username" placeholder="Benutzername" class="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white">
+                        <input type="password" id="new-user-password" placeholder="Passwort" class="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white">
+                        <input type="text" id="new-user-firstname" placeholder="Vorname" class="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white">
+                        <input type="text" id="new-user-lastname" placeholder="Nachname" class="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white">
+                        <select id="new-user-role" class="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white col-span-2">
+                            <option value="agent">Agent:in</option>
+                            <option value="admin">Administrator:in</option>
+                        </select>
+                    </div>
+                    <button id="new-user-btn" class="bg-blue-600 hover:bg-blue-500 text-white font-medium px-4 py-2 rounded-xl text-xs transition">Anlegen</button>
+                </div>
+                <div id="user-admin-list" class="flex flex-col gap-2"></div>
+            </div>
+
+            <div id="admin-tab-security" class="admin-tab hidden flex flex-col gap-4">
+                <div class="bg-slate-950 border border-slate-800 rounded-xl p-4">
+                    <h2 class="text-sm font-bold text-white mb-1">🛡️ Zwei-Faktor-Authentifizierung</h2>
+                    <p class="text-xs text-slate-500 mb-3">Verlangt von allen Konten beim nächsten Login eine zusätzliche Bestätigung per Authenticator-App.</p>
+                    <label class="flex items-center gap-2 text-xs text-slate-300">
+                        <input type="checkbox" id="twofa-required-toggle" class="w-4 h-4 accent-blue-600 cursor-pointer">
+                        Zwei-Faktor-Authentifizierung für alle Konten verlangen
+                    </label>
+                </div>
+                <div class="bg-slate-950 border border-slate-800 rounded-xl p-4">
+                    <h2 class="text-sm font-bold text-white mb-1">🔌 Externe API</h2>
+                    <p class="text-xs text-slate-500 mb-3">Für AuraChat, um Tickets per Chat/Sprache zu steuern. Anfragen brauchen den Header <code class="text-slate-300">X-Service-Key</code>.</p>
+                    <div class="flex items-center gap-2 mb-2">
+                        <input readonly id="external-api-key-field" value="" class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 font-mono" onclick="this.select()">
+                        <button type="button" id="external-api-key-copy-btn" class="text-xs px-3 py-2 rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700 shrink-0">📋 Kopieren</button>
+                    </div>
+                    <button id="external-api-key-regenerate-btn" class="text-xs px-3 py-1.5 rounded-lg bg-red-500/10 border border-red-500/30 text-red-300 hover:bg-red-500/20">Neu erzeugen (alter Schlüssel wird ungültig)</button>
+                </div>
+            </div>
+
+            <div id="admin-tab-license" class="admin-tab hidden flex flex-col gap-4">
+                <div class="bg-slate-950 border border-slate-800 rounded-xl p-4">
+                    <h2 class="text-sm font-bold text-white mb-1">🔑 Lizenz</h2>
+                    <div id="license-admin-status" class="text-xs text-slate-400 mb-3">Wird geladen…</div>
+                    <textarea id="license-admin-key-input" rows="4" placeholder="Neuen Lizenzschlüssel eintragen" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white font-mono mb-2"></textarea>
+                    <div>
+                        <button id="license-admin-save-btn" class="bg-blue-600 hover:bg-blue-500 text-white font-medium px-4 py-2 rounded-xl text-sm transition">Speichern</button>
+                        <button id="license-admin-remove-btn" class="hidden bg-red-500/10 border border-red-500/30 text-red-300 hover:bg-red-500/20 font-medium px-4 py-2 rounded-xl text-sm transition ml-2">Lizenz entfernen</button>
+                    </div>
+                    <div id="license-admin-error" class="hidden text-xs text-red-400 mt-2"></div>
+                </div>
+            </div>
+
+            <div id="admin-tab-backup" class="admin-tab hidden flex flex-col gap-4">
+                <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 flex flex-col gap-3">
+                    <h2 class="text-sm font-bold text-white">💾 Backup</h2>
+                    <button id="backup-create-btn" class="self-start bg-blue-600 hover:bg-blue-500 text-white font-medium px-4 py-2 rounded-xl text-sm transition">Backup herunterladen</button>
+                </div>
+                <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 flex flex-col gap-3">
+                    <h2 class="text-sm font-bold text-white">⚠️ Wiederherstellen</h2>
+                    <input type="file" id="backup-restore-file" accept=".zip" class="w-full text-xs text-slate-400 bg-slate-900 border border-slate-700 rounded-xl p-2">
+                    <button id="backup-restore-btn" class="self-start bg-amber-600 hover:bg-amber-500 text-white font-medium px-4 py-2 rounded-xl text-sm transition">Wiederherstellen</button>
+                    <div id="backup-restore-status" class="hidden text-xs"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/app.js"></script>
+</body>
+</html>

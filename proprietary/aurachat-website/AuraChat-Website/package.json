@@ -1,0 +1,14 @@
+{
+  "name": "aurachat-website-backend",
+  "version": "1.0.0",
+  "description": "Kleines Backend für die AuraChat-Werbewebseite (aktuell nur Bewertungen)",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "express-rate-limit": "^7.4.0",
+    "sqlite3": "^5.1.7"
+  }
+}

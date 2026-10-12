@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AuraPlan</title>
+<link rel="icon" type="image/png" href="images/icon.png">
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen">
+
+<!-- Intro-Video (einmal pro Browser-Sitzung) - bewusst NICHT bildschirmfüllend, gleiche
+     Darstellung wie bei AuraChat: begrenzter, quadratischer Rahmen statt hochskaliertem Video -->
+<div id="intro-overlay" class="fixed inset-0 z-[80] bg-slate-950 flex items-center justify-center">
+    <div class="w-full max-w-md aspect-square rounded-2xl overflow-hidden shadow-2xl border border-slate-800">
+        <video id="intro-video" src="images/intro/auraplan-start.mp4" autoplay muted playsinline class="w-full h-full object-cover"></video>
+    </div>
+    <button id="intro-skip-btn" class="absolute bottom-6 right-6 text-xs text-slate-400 hover:text-white bg-slate-900/70 border border-slate-700 rounded-full px-4 py-2 transition cursor-pointer">Überspringen</button>
+</div>
+
+<!-- Datenschutz-Zustimmung - blockierend, kein Schliessen-Button -->
+<div id="modal-privacy" class="hidden fixed inset-0 bg-slate-950/95 backdrop-blur-md z-[70] flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl w-full max-w-lg shadow-2xl flex flex-col gap-4 max-h-[85vh]">
+        <div class="flex items-center gap-2 border-b border-slate-800 pb-3 shrink-0">
+            <span class="text-lg">🔒</span>
+            <h3 class="text-sm font-bold text-white">Datenschutzerklärung</h3>
+        </div>
+        <div id="privacy-policy-text" class="text-xs text-slate-300 overflow-y-auto pr-1 leading-relaxed whitespace-pre-wrap"></div>
+        <button id="privacy-accept-btn" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium py-2.5 rounded-xl text-xs transition cursor-pointer shrink-0">Ich akzeptiere</button>
+    </div>
+</div>
+
+<!-- Lizenz fehlt/ungültig - blockierend, nur Admin kann eine eintragen -->
+<div id="modal-license" class="hidden fixed inset-0 bg-slate-950/95 backdrop-blur-md z-[70] flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl w-full max-w-md shadow-2xl flex flex-col gap-4">
+        <div class="flex items-center gap-2 border-b border-slate-800 pb-3">
+            <span class="text-lg">🔑</span>
+            <h3 class="text-sm font-bold text-white">AuraPlan ist nicht lizenziert</h3>
+        </div>
+        <p id="license-modal-text" class="text-xs text-slate-400">Für diese Installation ist keine gültige Lizenz hinterlegt. Bitte wendet euch an eure Administrator:innen.</p>
+        <div id="license-modal-admin-form" class="hidden flex flex-col gap-3">
+            <textarea id="license-key-input" rows="4" placeholder="Lizenzschlüssel hier einfügen" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white font-mono"></textarea>
+            <label class="text-center text-xs px-3 py-2 rounded-xl bg-slate-800 text-slate-300 hover:bg-slate-700 cursor-pointer transition">
+                📁 Oder .lic-Datei auswählen
+                <input type="file" id="license-key-file" accept=".lic,text/plain" class="hidden">
+            </label>
+            <div id="license-modal-error" class="hidden text-xs text-red-400"></div>
+            <button id="license-save-btn" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium py-2.5 rounded-xl text-sm transition">Lizenz aktivieren</button>
+        </div>
+    </div>
+</div>
+
+<!-- Login -->
+<div id="login-screen" class="min-h-screen flex items-center justify-center p-6">
+    <form id="login-form" class="w-full max-w-sm bg-slate-900 border border-slate-800 rounded-2xl p-8 flex flex-col gap-4">
+        <img src="images/logo.png" alt="AuraPlan" class="h-10 mx-auto mb-2">
+        <p class="text-center text-xs text-slate-500 -mt-2 mb-2">Zeiterfassung · Schichtplanung · Ferien</p>
+        <div id="login-error" class="hidden bg-red-500/10 border border-red-500/30 text-red-300 rounded-xl px-3 py-2 text-xs"></div>
+        <div id="login-step-credentials" class="flex flex-col gap-4">
+            <div>
+                <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Benutzername</label>
+                <input type="text" id="login-username" required autofocus class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Passwort</label>
+                <input type="password" id="login-password" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
+            </div>
+            <button type="submit" class="bg-blue-600 hover:bg-blue-500 text-white font-medium py-2.5 rounded-xl text-sm transition">Anmelden</button>
+        </div>
+        <div id="login-step-2fa-setup" class="hidden flex flex-col gap-3 items-center">
+            <p class="text-xs text-slate-400 text-center">Zwei-Faktor-Authentifizierung ist Pflicht. QR-Code mit einer Authenticator-App (z.B. Google Authenticator) scannen und den 6-stelligen Code eingeben:</p>
+            <img id="twofa-qr-code" class="rounded-xl bg-white p-2" alt="QR-Code">
+            <input type="text" id="twofa-setup-code" inputmode="numeric" maxlength="6" placeholder="123456" class="w-full text-center tracking-widest bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white">
+            <button type="button" id="twofa-setup-confirm-btn" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium py-2.5 rounded-xl text-sm transition">Bestätigen</button>
+        </div>
+        <div id="login-step-2fa" class="hidden flex flex-col gap-3">
+            <p class="text-xs text-slate-400 text-center">Code aus deiner Authenticator-App eingeben:</p>
+            <input type="text" id="twofa-code" inputmode="numeric" maxlength="6" placeholder="123456" class="w-full text-center tracking-widest bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white">
+            <button type="button" id="twofa-confirm-btn" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium py-2.5 rounded-xl text-sm transition">Bestätigen</button>
+        </div>
+    </form>
+</div>
+
+<!-- Hauptapp -->
+<div id="app" class="hidden min-h-screen flex flex-col">
+    <header class="border-b border-slate-800 bg-slate-900/50">
+        <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between flex-wrap gap-3">
+            <div class="flex items-center gap-2">
+                <img src="images/logo.png" alt="AuraPlan" class="h-6">
+            </div>
+            <nav class="flex gap-1.5 text-xs flex-wrap">
+                <button data-view="zeiterfassung" class="nav-btn px-3 py-1.5 rounded-lg transition">🕐 Zeiterfassung</button>
+                <button data-view="team-zeiten" class="nav-btn teamlead-or-admin-only hidden px-3 py-1.5 rounded-lg transition">🛡️ Team-Zeiten</button>
+                <button data-view="uebersicht" class="nav-btn teamlead-or-admin-only hidden px-3 py-1.5 rounded-lg transition">👥 Übersicht</button>
+                <button data-view="schichtplan" class="nav-btn px-3 py-1.5 rounded-lg transition">📋 Schichtplan</button>
+                <button data-view="ferien" class="nav-btn px-3 py-1.5 rounded-lg transition">🏖️ Ferien</button>
+                <button data-view="admin-mitarbeiter" class="nav-btn admin-only px-3 py-1.5 rounded-lg transition hidden">⚙️ Admin Panel</button>
+            </nav>
+            <div class="flex items-center gap-2 text-xs">
+                <span id="user-name" class="text-slate-400"></span>
+                <button id="change-password-btn" class="px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:bg-slate-800 hover:text-slate-200 transition">🔑 Passwort</button>
+                <button id="logout-btn" class="px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:bg-slate-800 hover:text-slate-200 transition">Abmelden</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 max-w-6xl mx-auto w-full px-4 py-6">
+
+        <!-- Zeiterfassung -->
+        <section id="view-zeiterfassung" class="view-section flex flex-col gap-6">
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-8 flex flex-col items-center gap-4 text-center">
+                <div id="clock-status-label" class="text-sm text-slate-400">Status wird geladen…</div>
+                <button id="clock-btn" class="px-8 py-4 rounded-2xl font-bold text-lg transition">–</button>
+                <div id="clock-since" class="text-xs text-slate-500"></div>
+            </div>
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5">
+                <h2 class="text-sm font-bold text-white mb-3">✏️ Manuell erfassen</h2>
+                <p class="text-xs text-slate-500 mb-3">Alternative zum Ein-/Ausstempeln - z.B. nachträglich, oder mit Vormittag und Nachmittag getrennt.</p>
+                <form id="manual-entry-form" class="flex flex-col gap-3">
+                    <div>
+                        <label class="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Datum</label>
+                        <input type="date" id="manual-date" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white">
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Vormittag von</label>
+                            <input type="time" id="manual-am-from" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Vormittag bis</label>
+                            <input type="time" id="manual-am-to" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Nachmittag von</label>
+                            <input type="time" id="manual-pm-from" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Nachmittag bis</label>
+                            <input type="time" id="manual-pm-to" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Zeitart</label>
+                            <select id="manual-activity-type" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white"></select>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Kostenstelle (optional)</label>
+                            <select id="manual-cost-center" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white">
+                                <option value="">— keine —</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button type="submit" class="bg-blue-600 hover:bg-blue-500 text-white font-medium py-2.5 rounded-xl text-sm transition self-start px-6">Erfassen</button>
+                    <div id="manual-entry-status" class="text-xs"></div>
+                </form>
+            </div>
+
+            <div class="flex items-center justify-between">
+                <h2 class="text-sm font-bold text-white">Letzte Einträge</h2>
+                <div class="flex gap-2">
+                    <button id="close-day-btn" class="text-xs px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 hover:bg-slate-800">🔒 Heutigen Tag abschliessen</button>
+                    <button id="export-csv-btn" class="admin-only hidden text-xs px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 hover:bg-slate-800">⬇ Als CSV exportieren</button>
+                </div>
+            </div>
+            <div id="time-entries-list" class="flex flex-col gap-2 text-sm"></div>
+        </section>
+
+        <!-- Team-Zeiten (Teamleitung & Admin): alle Einträge einsehen, bearbeiten, sperren -->
+        <section id="view-team-zeiten" class="view-section hidden flex flex-col gap-4">
+            <div class="flex items-center justify-between flex-wrap gap-2">
+                <h2 class="text-sm font-bold text-white">🛡️ Team-Zeiterfassung</h2>
+                <div class="flex gap-2 items-end flex-wrap">
+                    <select id="lock-user-select" class="bg-slate-950 border border-slate-800 rounded-xl px-2 py-1.5 text-xs text-white">
+                        <option value="all">Alle Mitarbeitenden</option>
+                    </select>
+                    <input type="date" id="lock-date-input" class="bg-slate-950 border border-slate-800 rounded-xl px-2 py-1.5 text-xs text-white">
+                    <button id="lock-day-btn" class="text-xs px-3 py-1.5 rounded-lg bg-red-500/10 border border-red-500/30 text-red-300 hover:bg-red-500/20">🔒 Tag sperren</button>
+                    <button id="lock-week-btn" class="text-xs px-3 py-1.5 rounded-lg bg-red-500/10 border border-red-500/30 text-red-300 hover:bg-red-500/20">🔒 Woche sperren</button>
+                    <button id="unlock-day-btn" class="text-xs px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 hover:bg-slate-800">🔓 Tag entsperren</button>
+                    <button id="unlock-week-btn" class="text-xs px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 hover:bg-slate-800">🔓 Woche entsperren</button>
+                </div>
+            </div>
+            <div id="lock-status" class="text-xs"></div>
+            <div id="team-entries-list" class="flex flex-col gap-2 text-sm"></div>
+        </section>
+
+        <!-- Übersicht: eine Zeile pro Person (wie in Aplano) -->
+        <section id="view-uebersicht" class="view-section hidden flex flex-col gap-4">
+            <div class="flex items-center justify-between flex-wrap gap-2">
+                <div class="flex gap-1.5 text-xs">
+                    <button data-overview-tab="hours" class="overview-subnav-btn px-3 py-1.5 rounded-lg transition">🕐 Arbeitszeiten</button>
+                    <button data-overview-tab="shifts" class="overview-subnav-btn px-3 py-1.5 rounded-lg transition">📋 Schichtplan</button>
+                    <button data-overview-tab="vacation" class="overview-subnav-btn px-3 py-1.5 rounded-lg transition">🏖️ Ferien</button>
+                </div>
+                <div id="overview-week-nav" class="flex items-center gap-2">
+                    <button id="overview-week-prev" class="px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 hover:bg-slate-800 text-sm">←</button>
+                    <span id="overview-week-label" class="text-sm font-semibold text-white min-w-[150px] text-center"></span>
+                    <button id="overview-week-next" class="px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 hover:bg-slate-800 text-sm">→</button>
+                </div>
+            </div>
+
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
+                <table class="w-full text-sm">
+                    <thead id="overview-table-head" class="bg-slate-950 text-left text-[10px] font-semibold text-slate-400 uppercase tracking-wider"></thead>
+                    <tbody id="overview-table-body"></tbody>
+                </table>
+            </div>
+
+            <div id="vacation-timeline-wrap" class="hidden flex flex-col gap-2">
+                <h2 class="text-sm font-bold text-white">Ganzjährige Übersicht {{YEAR}}</h2>
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl overflow-x-auto">
+                    <table id="vacation-timeline-table" class="text-sm border-separate" style="border-spacing:0;"></table>
+                </div>
+                <div class="flex items-center gap-4 text-[10px] text-slate-500">
+                    <span class="flex items-center gap-1"><span class="inline-block w-3 h-3 rounded-sm bg-slate-500"></span> genehmigt</span>
+                    <span class="flex items-center gap-1"><span class="inline-block w-3 h-3 rounded-sm bg-slate-500 opacity-40"></span> offen/beantragt</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Schichtplan -->
+        <section id="view-schichtplan" class="view-section hidden flex flex-col gap-4">
+            <div class="flex items-center justify-between flex-wrap gap-2">
+                <div class="flex items-center gap-2">
+                    <button id="week-prev" class="px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 hover:bg-slate-800 text-sm">←</button>
+                    <span id="week-label" class="text-sm font-semibold text-white min-w-[180px] text-center"></span>
+                    <button id="week-next" class="px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 hover:bg-slate-800 text-sm">→</button>
+                </div>
+                <div class="flex gap-2">
+                    <button id="add-availability-btn" class="px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 hover:bg-slate-800 text-xs">🚫 Ich kann an einem Tag nicht</button>
+                    <button id="add-shift-btn" class="admin-only hidden px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-medium">+ Schicht</button>
+                </div>
+            </div>
+            <div id="shift-grid" class="grid grid-cols-7 gap-2"></div>
+        </section>
+
+        <!-- Ferien -->
+        <section id="view-ferien" class="view-section hidden flex flex-col gap-6">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 text-center">
+                    <div class="text-2xl font-bold text-white" id="balance-total">–</div>
+                    <div class="text-xs text-slate-500 mt-1">Tage/Jahr gesamt</div>
+                </div>
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 text-center">
+                    <div class="text-2xl font-bold text-amber-400" id="balance-used">–</div>
+                    <div class="text-xs text-slate-500 mt-1">bereits genommen</div>
+                </div>
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 text-center">
+                    <div class="text-2xl font-bold text-emerald-400" id="balance-remaining">–</div>
+                    <div class="text-xs text-slate-500 mt-1">verbleibend</div>
+                </div>
+            </div>
+
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5">
+                <h2 class="text-sm font-bold text-white mb-3">Neuer Antrag</h2>
+                <form id="absence-form" class="flex flex-col gap-3">
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Von</label>
+                            <input type="date" id="absence-start" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Bis</label>
+                            <input type="date" id="absence-end" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Art</label>
+                        <select id="absence-type" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white">
+                            <option value="vacation">Ferien</option>
+                            <option value="sick">Krankheit</option>
+                            <option value="other">Sonstiges</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Notiz (optional)</label>
+                        <input type="text" id="absence-note" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white">
+                    </div>
+                    <button type="submit" class="bg-blue-600 hover:bg-blue-500 text-white font-medium py-2.5 rounded-xl text-sm transition self-start px-6">Antrag stellen</button>
+                    <div id="absence-form-status" class="text-xs"></div>
+                </form>
+            </div>
+
+            <div>
+                <h2 class="text-sm font-bold text-white mb-3">Anträge</h2>
+                <div id="absences-list" class="flex flex-col gap-2 text-sm"></div>
+            </div>
+        </section>
+
+        <!-- Admin Panel -->
+        <section id="view-admin-mitarbeiter" class="view-section hidden flex flex-col gap-6">
+            <div class="flex gap-1.5 text-xs border-b border-slate-800 pb-3">
+                <button data-subview="mitarbeiter" class="admin-subnav-btn px-3 py-1.5 rounded-lg transition">👥 Mitarbeiter</button>
+                <button data-subview="zeitarten" class="admin-subnav-btn px-3 py-1.5 rounded-lg transition">🏷️ Zeitarten &amp; Kostenstellen</button>
+                <button data-subview="domain" class="admin-subnav-btn px-3 py-1.5 rounded-lg transition">🔒 Domain &amp; SSL</button>
+                <button data-subview="sicherheit" class="admin-subnav-btn px-3 py-1.5 rounded-lg transition">🛡️ Sicherheit</button>
+                <button data-subview="backup" class="admin-subnav-btn px-3 py-1.5 rounded-lg transition">💾 Backup</button>
+                <button data-subview="importexport" class="admin-subnav-btn px-3 py-1.5 rounded-lg transition">📤 Import/Export</button>
+            </div>
+
+            <div id="admin-subview-zeitarten" class="admin-subview hidden flex flex-col gap-6">
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5">
+                    <h2 class="text-sm font-bold text-white mb-1">🏷️ Zeitarten</h2>
+                    <p class="text-xs text-slate-500 mb-3">Erscheinen beim Einstempeln als Auswahl - z.B. Arbeitszeit, Militär, Krankheit, Unfall.</p>
+                    <form id="activity-type-form" class="flex gap-2 mb-3">
+                        <input type="text" id="new-activity-type-name" placeholder="Neue Zeitart, z.B. Weiterbildung" class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white">
+                        <button type="submit" class="bg-blue-600 hover:bg-blue-500 text-white font-medium px-4 py-2 rounded-xl text-sm transition">Hinzufügen</button>
+                    </form>
+                    <div id="activity-types-list" class="flex flex-col gap-2 text-sm"></div>
+                </div>
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5">
+                    <h2 class="text-sm font-bold text-white mb-1">🏢 Kostenstellen</h2>
+                    <p class="text-xs text-slate-500 mb-3">Optional bei der Zeiterfassung wählbar, z.B. zur Zuordnung auf Projekte oder Abteilungen.</p>
+                    <form id="cost-center-form" class="flex gap-2 mb-3">
+                        <input type="text" id="new-cost-center-name" placeholder="Name, z.B. Projekt Alpha" class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white">
+                        <input type="text" id="new-cost-center-code" placeholder="Code (optional)" class="w-32 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white">
+                        <button type="submit" class="bg-blue-600 hover:bg-blue-500 text-white font-medium px-4 py-2 rounded-xl text-sm transition">Hinzufügen</button>
+                    </form>
+                    <div id="cost-centers-list" class="flex flex-col gap-2 text-sm"></div>
+                </div>
+            </div>
+
+            <div id="admin-subview-sicherheit" class="admin-subview hidden flex flex-col gap-6">
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5">
+                    <h2 class="text-sm font-bold text-white mb-1">🔑 Lizenz</h2>
+                    <div id="license-admin-status" class="text-xs text-slate-400 mb-3">Wird geladen…</div>
+                    <textarea id="license-admin-key-input" rows="4" placeholder="Neuen Lizenzschlüssel eintragen" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white font-mono mb-2"></textarea>
+                    <label class="inline-block text-xs px-3 py-2 rounded-xl bg-slate-800 text-slate-300 hover:bg-slate-700 cursor-pointer transition mb-2">
+                        📁 Oder .lic-Datei auswählen
+                        <input type="file" id="license-admin-key-file" accept=".lic,text/plain" class="hidden">
+                    </label>
+                    <div>
+                    <button id="license-admin-save-btn" class="bg-blue-600 hover:bg-blue-500 text-white font-medium px-4 py-2 rounded-xl text-sm transition">Speichern</button>
+                    <button id="license-admin-remove-btn" class="hidden bg-red-500/10 border border-red-500/30 text-red-300 hover:bg-red-500/20 font-medium px-4 py-2 rounded-xl text-sm transition ml-2">Lizenz entfernen</button>
+                    </div>
+                    <div id="license-admin-error" class="hidden text-xs text-red-400 mt-2"></div>
+                </div>
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5">
+                    <h2 class="text-sm font-bold text-white mb-1">🛡️ Zwei-Faktor-Authentifizierung</h2>
+                    <p class="text-xs text-slate-500 mb-3">Verlangt von allen Konten beim nächsten Login eine zusätzliche Bestätigung per Authenticator-App (z.B. Google Authenticator).</p>
+                    <label class="flex items-center gap-2 text-sm text-slate-300 cursor-pointer">
+                        <input type="checkbox" id="twofa-required-toggle" class="w-4 h-4">
+                        Zwei-Faktor-Authentifizierung für alle Konten verlangen
+                    </label>
+                    <div id="twofa-status" class="text-xs mt-2"></div>
+                </div>
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5">
+                    <h2 class="text-sm font-bold text-white mb-3">📄 Datenschutzerklärung bearbeiten</h2>
+                    <p class="text-xs text-slate-500 mb-3">Beim Speichern wird die Version erhöht - alle Mitarbeitenden müssen dann beim nächsten Login erneut zustimmen.</p>
+                    <textarea id="privacy-policy-editor" rows="10" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-blue-500"></textarea>
+                    <button id="privacy-policy-save-btn" class="mt-2 bg-blue-600 hover:bg-blue-500 text-white font-medium px-4 py-2 rounded-xl text-sm transition">Speichern (erhöht Version)</button>
+                    <div id="privacy-policy-status" class="text-xs mt-2"></div>
+                </div>
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5">
+                    <h2 class="text-sm font-bold text-white mb-1">🗂️ AuraDirect (zentrale Benutzerverwaltung)</h2>
+                    <p class="text-xs text-slate-500 mb-3">Optional - falls eingerichtet, prüft die Anmeldung zuerst dort (inkl. Active-Directory-Anbindung). Ohne Eintrag läuft alles wie bisher rein lokal.</p>
+                    <form id="auradirect-form" class="flex gap-2 flex-wrap">
+                        <input type="text" id="auradirect-url" placeholder="http://10.0.55.251:4000" class="flex-1 min-w-[220px] bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white">
+                        <input type="text" id="auradirect-key" placeholder="Dienst-Schlüssel (wie in AuraDirect)" class="flex-1 min-w-[220px] bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white">
+                        <button type="submit" class="bg-blue-600 hover:bg-blue-500 text-white font-medium px-4 py-2 rounded-xl text-sm transition">Speichern</button>
+                    </form>
+                    <div id="auradirect-status" class="text-xs mt-2"></div>
+                </div>
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5">
+                    <h2 class="text-sm font-bold text-white mb-1">💬 Zeiterfassung per Chat/Sprache (AuraChat)</h2>
+                    <p class="text-xs text-slate-500 mb-3">Diesen Schlüssel in AuraChat eintragen (Admin Panel → API → "AuraPlan verbinden"), damit Ein-/Ausstempeln, Ferienanträge und Schichtplan-Abfragen per Chat oder Sprachbefehl möglich werden.</p>
+                    <div class="flex items-center gap-2">
+                        <input readonly id="aurachat-service-key-field" value="" class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 font-mono" onclick="this.select()">
+                        <button type="button" id="aurachat-service-key-copy-btn" class="text-xs px-3 py-2 rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700 shrink-0">📋 Kopieren</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="admin-subview-backup" class="admin-subview hidden flex flex-col gap-6">
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5">
+                    <h2 class="text-sm font-bold text-white mb-1">💾 Backup</h2>
+                    <p class="text-xs text-slate-500 mb-3">Lädt die komplette AuraPlan-Datenbank herunter (Mitarbeiter, Zeiterfassung, Schichtpläne, Ferien, Einstellungen).</p>
+                    <button id="backup-create-btn" class="bg-blue-600 hover:bg-blue-500 text-white font-medium px-4 py-2 rounded-xl text-sm transition">Backup herunterladen</button>
+                </div>
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5">
+                    <h2 class="text-sm font-bold text-white mb-1">⚠️ Wiederherstellen</h2>
+                    <p class="text-xs text-slate-500 mb-3">Ersetzt die komplette aktuelle Datenbank durch den Inhalt der hochgeladenen Sicherung. Der Server startet danach automatisch neu.</p>
+                    <input type="file" id="backup-restore-file" accept=".zip" class="w-full text-xs text-slate-400 bg-slate-950 border border-slate-800 rounded-xl p-2 mb-2">
+                    <button id="backup-restore-btn" class="bg-amber-600 hover:bg-amber-500 text-white font-medium px-4 py-2 rounded-xl text-sm transition">Wiederherstellen</button>
+                    <div id="backup-restore-status" class="hidden text-xs mt-2"></div>
+                </div>
+            </div>
+
+            <div id="admin-subview-importexport" class="admin-subview hidden flex flex-col gap-6">
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5">
+                    <h2 class="text-sm font-bold text-white mb-1">📤 Export</h2>
+                    <p class="text-xs text-slate-500 mb-3">Als CSV-Datei herunterladen (öffnet sich direkt in Excel). Zeiterfassung/Schichtplan/Ferien optional auf einen Zeitraum eingrenzen.</p>
+                    <div class="grid grid-cols-2 gap-2 mb-3 max-w-md">
+                        <div><label class="text-[10px] text-slate-500 block mb-1">Von</label><input type="date" id="export-from" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-2 py-1.5 text-xs text-white"></div>
+                        <div><label class="text-[10px] text-slate-500 block mb-1">Bis</label><input type="date" id="export-to" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-2 py-1.5 text-xs text-white"></div>
+                    </div>
+                    <div class="flex flex-wrap gap-2">
+                        <button id="export-employees-btn" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white font-medium px-3 py-2 rounded-xl text-xs transition">👥 Mitarbeiter</button>
+                        <button id="export-time-btn" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white font-medium px-3 py-2 rounded-xl text-xs transition">🕐 Zeiterfassung</button>
+                        <button id="export-shifts-btn" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white font-medium px-3 py-2 rounded-xl text-xs transition">📋 Schichtplan</button>
+                        <button id="export-absences-btn" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white font-medium px-3 py-2 rounded-xl text-xs transition">🏖️ Ferien/Absenzen</button>
+                    </div>
+                </div>
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5">
+                    <h2 class="text-sm font-bold text-white mb-1">📥 Mitarbeiter importieren</h2>
+                    <p class="text-xs text-slate-500 mb-3">CSV-Datei mit den Spalten <code class="text-slate-300">username, name</code> (mindestens) sowie optional <code class="text-slate-300">role, vacationDaysPerYear, pensumPercent, weeklyHours, color</code>. Bestehende Benutzernamen werden aktualisiert, neue angelegt.</p>
+                    <input type="file" id="import-employees-file" accept=".csv" class="w-full text-xs text-slate-400 bg-slate-950 border border-slate-800 rounded-xl p-2 mb-2">
+                    <button id="import-employees-btn" class="bg-blue-600 hover:bg-blue-500 text-white font-medium px-4 py-2 rounded-xl text-sm transition">Importieren</button>
+                    <div id="import-employees-status" class="hidden text-xs mt-2"></div>
+                </div>
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5">
+                    <h2 class="text-sm font-bold text-white mb-1">🔌 Externe API</h2>
+                    <p class="text-xs text-slate-500 mb-3">Lesezugriff für Drittsysteme (z.B. Buchhaltungsprogramme) auf Mitarbeiter, Zeiterfassung und Absenzen als JSON. Anfragen brauchen den Header <code class="text-slate-300">X-API-Key</code>. Endpunkte: <code class="text-slate-300">/api/external/employees</code>, <code class="text-slate-300">/api/external/time-entries?from=&amp;to=</code>, <code class="text-slate-300">/api/external/absences?from=&amp;to=</code>.</p>
+                    <div class="flex items-center gap-2 mb-2">
+                        <input readonly id="external-api-key-field" value="" class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 font-mono" onclick="this.select()">
+                        <button type="button" id="external-api-key-copy-btn" class="text-xs px-3 py-2 rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700 shrink-0">📋 Kopieren</button>
+                    </div>
+                    <button id="external-api-key-regenerate-btn" class="text-xs px-3 py-1.5 rounded-lg bg-red-500/10 border border-red-500/30 text-red-300 hover:bg-red-500/20">Neu erzeugen (alter Schlüssel wird ungültig)</button>
+                </div>
+            </div>
+
+
+            <div id="admin-subview-domain" class="admin-subview hidden flex flex-col gap-6">
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5">
+                    <h2 class="text-sm font-bold text-white mb-3">🔒 Eigene Domain mit SSL</h2>
+                    <p class="text-xs text-slate-500 mb-3">Sobald eine Domain eingetragen ist, kümmert sich AuraPlan automatisch um ein Let's-Encrypt-Zertifikat. Die Domain muss vorher per DNS auf diesen Server zeigen.</p>
+                    <form id="domain-form" class="flex gap-2 flex-wrap">
+                        <input type="text" id="domain-input" placeholder="auraplan.eure-domain.de" class="flex-1 min-w-[220px] bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white">
+                        <input type="email" id="domain-email-input" placeholder="E-Mail für Let's Encrypt (optional)" class="flex-1 min-w-[220px] bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white">
+                        <button type="submit" class="bg-blue-600 hover:bg-blue-500 text-white font-medium px-4 py-2 rounded-xl text-sm transition">Speichern</button>
+                    </form>
+                    <div id="domain-form-status" class="text-xs mt-2"></div>
+                </div>
+            </div>
+
+            <div id="admin-subview-mitarbeiter" class="admin-subview hidden flex flex-col gap-6">
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5">
+                <h2 class="text-sm font-bold text-white mb-3">Neue:n Mitarbeiter:in anlegen</h2>
+                <form id="user-form" class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Name</label>
+                        <input type="text" id="new-user-name" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Benutzername</label>
+                        <input type="text" id="new-user-username" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Passwort</label>
+                        <input type="password" id="new-user-password" required minlength="8" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Ferientage/Jahr</label>
+                        <input type="number" id="new-user-vacation" value="25" step="0.5" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Pensum (%)</label>
+                        <input type="number" id="new-user-pensum" value="100" min="1" max="100" step="1" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Wochenstunden</label>
+                        <input type="number" id="new-user-weekly-hours" value="42" min="1" step="0.5" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Rolle</label>
+                        <select id="new-user-role" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white">
+                            <option value="employee">Mitarbeiter:in</option>
+                            <option value="teamleiter">Teamleiter:in / Kader</option>
+                            <option value="admin">Administrator:in</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Farbe (Kalender)</label>
+                        <input type="color" id="new-user-color" value="#3270FD" class="w-full bg-slate-950 border border-slate-800 rounded-xl h-[38px]">
+                    </div>
+                    <button type="submit" class="col-span-2 bg-blue-600 hover:bg-blue-500 text-white font-medium py-2.5 rounded-xl text-sm transition">Anlegen</button>
+                    <div id="user-form-status" class="col-span-2 text-xs"></div>
+                </form>
+            </div>
+            <div>
+                <h2 class="text-sm font-bold text-white mb-3">Alle Mitarbeiter:innen</h2>
+                <div id="users-list" class="flex flex-col gap-2 text-sm"></div>
+            </div>
+            </div>
+        </section>
+
+    </main>
+</div>
+
+<!-- Modal für Schicht hinzufügen/bearbeiten -->
+<div id="shift-modal" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50">
+    <form id="shift-form" class="bg-slate-900 border border-slate-800 rounded-2xl p-6 w-full max-w-sm flex flex-col gap-3">
+        <h2 class="text-sm font-bold text-white mb-1" id="shift-modal-title">Schicht hinzufügen</h2>
+        <input type="hidden" id="shift-id">
+        <div>
+            <label class="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Mitarbeiter:in</label>
+            <select id="shift-user" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white"></select>
+        </div>
+        <div>
+            <label class="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Datum</label>
+            <input type="date" id="shift-date" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white">
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+            <div>
+                <label class="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Von</label>
+                <input type="time" id="shift-start" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white">
+            </div>
+            <div>
+                <label class="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Bis</label>
+                <input type="time" id="shift-end" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white">
+            </div>
+        </div>
+        <div>
+            <label class="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Rolle/Position (optional)</label>
+            <input type="text" id="shift-role" placeholder="z.B. Kasse, Lager" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white">
+        </div>
+        <div class="flex gap-2 mt-2">
+            <button type="submit" class="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-medium py-2.5 rounded-xl text-sm transition">Speichern</button>
+            <button type="button" id="shift-delete-btn" class="hidden px-4 py-2.5 rounded-xl text-sm bg-red-500/10 border border-red-500/30 text-red-300 hover:bg-red-500/20 transition">Löschen</button>
+            <button type="button" id="shift-cancel-btn" class="px-4 py-2.5 rounded-xl text-sm bg-slate-800 text-slate-300 hover:bg-slate-700 transition">Abbrechen</button>
+        </div>
+    </form>
+</div>
+
+<!-- Modal für Einstempeln (Zeitart & Kostenstelle wählen) -->
+<div id="clockin-modal" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50">
+    <form id="clockin-form" class="bg-slate-900 border border-slate-800 rounded-2xl p-6 w-full max-w-sm flex flex-col gap-3">
+        <h2 class="text-sm font-bold text-white mb-1">▶ Einstempeln</h2>
+        <div>
+            <label class="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Zeitart</label>
+            <select id="clockin-activity-type" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white"></select>
+        </div>
+        <div>
+            <label class="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Kostenstelle (optional)</label>
+            <select id="clockin-cost-center" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white">
+                <option value="">— keine —</option>
+            </select>
+        </div>
+        <div class="flex gap-2 mt-2">
+            <button type="submit" class="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-medium py-2.5 rounded-xl text-sm transition">Einstempeln</button>
+            <button type="button" id="clockin-cancel-btn" class="px-4 py-2.5 rounded-xl text-sm bg-slate-800 text-slate-300 hover:bg-slate-700 transition">Abbrechen</button>
+        </div>
+    </form>
+</div>
+
+<!-- Modal für Passwort ändern -->
+<div id="password-modal" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50">
+    <form id="password-form" class="bg-slate-900 border border-slate-800 rounded-2xl p-6 w-full max-w-sm flex flex-col gap-3">
+        <h2 class="text-sm font-bold text-white mb-1">🔑 Passwort ändern</h2>
+        <div>
+            <label class="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Aktuelles Passwort</label>
+            <input type="password" id="current-password-input" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white">
+        </div>
+        <div>
+            <label class="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Neues Passwort</label>
+            <input type="password" id="new-password-input" required minlength="8" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white">
+        </div>
+        <div id="password-form-status" class="text-xs"></div>
+        <div class="flex gap-2 mt-2">
+            <button type="submit" class="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-medium py-2.5 rounded-xl text-sm transition">Speichern</button>
+            <button type="button" id="password-cancel-btn" class="px-4 py-2.5 rounded-xl text-sm bg-slate-800 text-slate-300 hover:bg-slate-700 transition">Abbrechen</button>
+        </div>
+    </form>
+</div>
+
+<script src="js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,21 @@
+{
+  "name": "auraplan",
+  "version": "1.0.0",
+  "description": "Zeiterfassung, Schichtplanung und Ferienverwaltung - eigenständig, mit AuraChat verknüpfbar",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "express-session": "^1.18.0",
+    "express-rate-limit": "^7.4.0",
+    "sqlite3": "^5.1.7",
+    "bcrypt": "^5.1.1",
+    "otplib": "^12.0.1",
+    "qrcode": "^1.5.3",
+    "connect-sqlite3": "^0.9.13",
+    "adm-zip": "^0.5.16",
+    "multer": "^2.0.2"
+  }
+}
