@@ -8,7 +8,6 @@ services:
     environment:
       - SESSION_SECRET=${SESSION_SECRET}
       - LICENSE_SECRET=${LICENSE_SECRET}
-      - AURA_SUITE_VERSION=${AURA_SUITE_VERSION:-}   # optional: Version der Aura-Suite, erscheint unter "Über Aura-Suite"
       - CADDY_ADMIN_URL=http://caddy:2019
       # Zusätzliche, fest vorbereitete externe Ports - bei Bedarf hier erweitern und
       # Container neu starten (Docker kann Ports nicht ohne Neustart nachträglich öffnen).

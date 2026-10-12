@@ -291,16 +291,6 @@ async function getStoredLicenseInfo() {
     return { ...base, licenseValid: base.valid, trial: false, trialDaysRemaining: 0, freeTier: false };
 }
 
-// --- Aura-Suite: "Über Aura-Suite" (Dialog in der Oberfläche, Datei about.js) ---
-// Programmversion aus package.json; die Version der Aura-Suite setzt, wer sie betreibt (Umgebungswert AURA_SUITE_VERSION, z. B. in der .env). Nur für angemeldete Personen.
-const AURA_APP_NAME = 'AuraDirect';
-const AURA_APP_VERSION = String(require('./package.json').version);
-const AURA_SUITE_INSTALLED = /^\d{1,4}\.\d{1,4}(\.\d{1,4})?$/.test(String(process.env.AURA_SUITE_VERSION || '').trim()) ? String(process.env.AURA_SUITE_VERSION).trim() : null;
-app.get('/api/version', (req, res) => {
-    if (!(req.session && req.session.isSuperAdmin)) return res.status(401).json({ error: 'Anmeldung erforderlich.' });
-    res.set('Cache-Control', 'no-store').json({ product: AURA_APP_NAME, installed: AURA_APP_VERSION, suiteInstalled: AURA_SUITE_INSTALLED, suite: null, updateAvailable: false });
-});
-
 function requireSuperAdmin(req, res, next) {
     if (!(req.session && req.session.isSuperAdmin)) return res.redirect('/login');
     const exempt = ['/privacy-policy', '/privacy-policy/accept', '/license', '/license/save'];
@@ -330,13 +320,11 @@ function layout(title, body, activeNav) {
       <a href="/license" class="px-3 py-1.5 rounded-lg ${activeNav === 'license' ? 'bg-blue-600 text-white' : 'bg-slate-900 border border-slate-800 text-slate-300 hover:bg-slate-800'}">🔑 Lizenz</a>
       <a href="/backup" class="px-3 py-1.5 rounded-lg ${activeNav === 'backup' ? 'bg-blue-600 text-white' : 'bg-slate-900 border border-slate-800 text-slate-300 hover:bg-slate-800'}">💾 Backup</a>
       <a href="/change-password" class="px-3 py-1.5 rounded-lg ${activeNav === 'password' ? 'bg-blue-600 text-white' : 'bg-slate-900 border border-slate-800 text-slate-300 hover:bg-slate-800'}">🔒 Passwort</a>
-      <button id="about-btn" type="button" class="px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 hover:bg-slate-800">ℹ️ Über</button>
       <a href="/logout" class="px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 hover:bg-slate-800">Abmelden</a>
     </nav>
   </div>
 </header>
 <main class="max-w-5xl mx-auto px-4 py-6">${body}</main>
-<script src="/static/about.js" defer></script>
 </body></html>`;
 }
 function loginLayout(title, body) {

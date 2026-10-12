@@ -1,264 +1,44 @@
-# Aura-Suite: alle Produkte in einer Compose-Datei.
-#   cp .env.example .env   (alle Werte eintragen, siehe Kommentare dort)
-#   docker compose up -d
-# Optional (Sprache für AuraChat):  docker compose --profile voice up -d
-#
-# Die Ports und Datenordner stammen aus den Compose-Dateien und Dockerfiles der einzelnen Produkte.
-# Annahme: jedes Image "migerber77/aura-suite:<name>" wird aus dem Dockerfile des jeweiligen Produkts gebaut (gleiche interne Ports, gleiche Pfade).
-name: aura-suite
-
-x-env: &env
-  TZ: ${TZ:-Europe/Zurich}
-
 services:
-  # ---------------------------------------------------------------- AuraChat (App + Backend + eigener Caddy + Suche)
   chat:
-    image: migerber77/aura-suite:chat                 # nginx mit der Oberfläche, hört INTERN auf Port 80
-    restart: unless-stopped
-    environment: *env
-    ports:
-      - "${CHAT_PORT:-8091}:80"
-    depends_on:
-      - chat-backend
-    networks:
-      chat:
-        aliases: [aurachat]                           # der Caddy von AuraChat leitet an "aurachat:80" weiter
-
-  chat-backend:
-    image: migerber77/aura-suite:chat-backend         # Node-Server (Port 3000 intern); nginx erwartet ihn unter dem Namen "backend"
-    restart: unless-stopped
-    environment:
-      <<: *env
-      NODE_ENV: production
-      SESSION_SECRET: ${CHAT_SESSION_SECRET:?CHAT_SESSION_SECRET fehlt}
-      DISPOSITION_ENCRYPTION_KEY: ${CHAT_DISPOSITION_KEY:?CHAT_DISPOSITION_KEY fehlt}
-      LICENSE_SECRET: ${LICENSE_SECRET:?LICENSE_SECRET fehlt}
-      OLLAMA_TIMEOUT_MINUTES: ${OLLAMA_TIMEOUT_MINUTES:-20}
-      OLLAMA_MAX_TOKENS: ${OLLAMA_MAX_TOKENS:-2048}
-    volumes:
-      - ./data/chat:/app/data
-      - chat_custom_certs:/app/data/custom-certs      # eigene Zertifikate: der Caddy von AuraChat liest dieselben Dateien
-      - chat_models:/app/models
-      - chat_hf_cache:/root/.cache/huggingface
-      - chat_caddy_data:/caddy-data
-    depends_on:
-      - chat-caddy
-    networks:
-      chat:
-        aliases: [backend]
-
-  chat-caddy:
-    image: migerber77/aurachat:caddy                  # schon veröffentlicht; Name im Netz: "caddy" (so erwartet es das Backend)
-    restart: unless-stopped
-    environment: *env
-    # KEINE veröffentlichten Ports: 80/443 gehören in dieser Suite dem Caddy von AuraProxy (proxy-caddy, unten)
-    volumes:
-      - chat_caddy_data:/data
-      - chat_caddy_config:/config
-      - chat_custom_certs:/custom-certs:ro
-    networks:
-      chat:
-        aliases: [caddy]
-
-  searxng:
-    image: migerber77/aurachat:searxng
-    restart: unless-stopped
-    environment: *env
-    networks: [chat]
-
-  tts-stt:
-    image: ghcr.io/speaches-ai/speaches:latest-cpu
-    profiles: ["voice"]
+    image: migerber77/aura-suite:chat
     restart: unless-stopped
     ports:
-      - "${TTS_PORT:-8096}:8000"
+      - "8091:80"
     environment:
-      <<: *env
-      WHISPER__COMPUTE_TYPE: int8
-      WHISPER__INFERENCE_DEVICE: cpu
-      PRELOAD_MODELS: '["Systran/faster-whisper-small","speaches-ai/piper-de_DE-kerstin-low"]'
-    volumes:
-      - tts_stt_cache:/home/ubuntu/.cache/huggingface/hub
-    networks: [chat]
+      - TZ=Europe/Zurich
 
-  piper:
-    image: rhasspy/wyoming-piper:latest
-    profiles: ["voice"]
-    restart: unless-stopped
-    command: ${PIPER_ARGS:---voice de_DE-kerstin-low}
-    environment: *env
-    volumes:
-      - piper_data:/data
-    networks: [chat]
-
-  # ---------------------------------------------------------------- AuraPlan
   plan:
-    image: migerber77/aura-suite:plan                 # Node-Server auf Port 3002 (kein eigener Caddy nötig)
+    image: migerber77/aura-suite:plan
     restart: unless-stopped
-    environment:
-      <<: *env
-      SESSION_SECRET: ${PLAN_SESSION_SECRET:?PLAN_SESSION_SECRET fehlt}
-      LICENSE_SECRET: ${LICENSE_SECRET:?LICENSE_SECRET fehlt}
     ports:
-      - "${PLAN_PORT:-8080}:3002"
-    volumes:
-      - ./data/plan:/app/data
+      - "3002:3000"
 
-  # ---------------------------------------------------------------- AuraTicket
   ticket:
     image: migerber77/aura-suite:ticket
     restart: unless-stopped
-    environment:
-      <<: *env
-      SESSION_SECRET: ${TICKET_SESSION_SECRET:?TICKET_SESSION_SECRET fehlt}
-      LICENSE_SECRET: ${LICENSE_SECRET:?LICENSE_SECRET fehlt}
     ports:
-      - "${TICKET_PORT:-3400}:3000"
-    volumes:
-      - ./data/ticket:/app/data
+      - "3400:3000"
 
-  # ---------------------------------------------------------------- AuraMail
   mail:
     image: migerber77/aura-suite:mail
     restart: unless-stopped
-    environment:
-      <<: *env
-      SESSION_SECRET: ${MAIL_SESSION_SECRET:?MAIL_SESSION_SECRET fehlt}
-      CREDENTIAL_ENCRYPTION_KEY: ${MAIL_ENCRYPTION_KEY:?MAIL_ENCRYPTION_KEY fehlt}
-      LICENSE_SECRET: ${LICENSE_SECRET:?LICENSE_SECRET fehlt}
-      INTERNAL_SMTP_PORT: "2525"
     ports:
-      - "${MAIL_PORT:-3300}:3000"                     # Web-Oberfläche
-      - "${MAIL_SMTP_PORT:-2525}:2525"                # interner Mailserver-Empfang (nur im Modus "internal")
-    volumes:
-      - ./data/mail:/app/data
+      - "2525:2525"
+      - "3300:3000"
 
-  # ---------------------------------------------------------------- AuraDirect
   direct:
     image: migerber77/aura-suite:direct
     restart: unless-stopped
-    environment:
-      <<: *env
-      SESSION_SECRET: ${DIRECT_SESSION_SECRET:?DIRECT_SESSION_SECRET fehlt}
-      AURADIRECT_ADMIN_PASSWORD: ${DIRECT_ADMIN_PASSWORD:?DIRECT_ADMIN_PASSWORD fehlt}
-      AURADIRECT_SERVICE_KEY: ${DIRECT_SERVICE_KEY:?DIRECT_SERVICE_KEY fehlt}
-      LICENSE_SECRET: ${LICENSE_SECRET:?LICENSE_SECRET fehlt}
     ports:
-      - "${DIRECT_PORT:-4000}:4000"
-      - "${DIRECT_LDAP_PORT:-389}:389"                # LDAP-Verzeichnisdienst
-    volumes:
-      - ./data/direct:/app/data
+      - "389:389"
+      - "4000:4000"
 
-  # ---------------------------------------------------------------- AuraProxy (Web-Oberfläche + eigener Caddy als Eingang für alle Dienste)
   proxy:
-    image: migerber77/aura-suite:proxy                # Web-Oberfläche, Port 3000 intern
+    image: migerber77/aura-suite:proxy
     restart: unless-stopped
-    environment:
-      <<: *env
-      SESSION_SECRET: ${PROXY_SESSION_SECRET:?PROXY_SESSION_SECRET fehlt}
-      LICENSE_SECRET: ${LICENSE_SECRET:?LICENSE_SECRET fehlt}
-      CADDY_ADMIN_URL: http://caddy:2019              # "caddy" = proxy-caddy im Netz "edge"
-      EXTRA_PORTS: "8090,8092,8093,8094,8095,8097,8099"   # muss genau zu den Ports von proxy-caddy unten passen (deshalb fest eingetragen)
     ports:
-      - "${PROXY_UI_BIND:-127.0.0.1}:${PROXY_UI_PORT:-3500}:3000"   # NICHT öffentlich freigeben (Standard: nur dieser Rechner)
-    volumes:
-      - ./data/proxy:/app/data
-      - proxy_caddy_data:/caddy-data                  # Lesezugriff auf die ausgestellten Zertifikate
-      - ./data/proxy-custom-certs:/app/custom-certs   # eigene, hochgeladene Zertifikate pro Domain
-    depends_on:
-      - proxy-caddy
-    networks: [edge]
-
-  proxy-caddy:
-    image: caddy:2-alpine
-    restart: unless-stopped
-    command: caddy run --config /etc/caddy/init.json
-    environment: *env
-    ports:
-      - "${HTTP_PORT:-80}:80"
-      - "${HTTPS_PORT:-443}:443"
-      - "8090:8090"
-      - "8092:8092"
-      - "8093:8093"
-      - "8094:8094"
-      - "8095:8095"
-      - "8097:8097"
-      - "8099:8099"
-    extra_hosts:
-      - "host.docker.internal:host-gateway"           # AuraProxy leitet an die veröffentlichten Ports dieses Rechners weiter
-    volumes:
-      - proxy_caddy_data:/data
-      - proxy_caddy_config:/config
-      - ./proxy/caddy-init.json:/etc/caddy/init.json:ro   # Datei aus dem Ordner von AuraProxy hierher kopieren
-    networks:
-      edge:
-        aliases: [caddy]
-
-  # ---------------------------------------------------------------- AuraCall (Telefon): braucht das Host-Netzwerk (SIP und Ton)
-  call-asterisk:
-    image: migerber77/aura-suite:call-asterisk
-    restart: unless-stopped
-    network_mode: host
-    environment:
-      <<: *env
-      AMI_SECRET: ${CALL_AMI_SECRET:?CALL_AMI_SECRET fehlt (openssl rand -hex 24)}
-    volumes:
-      - ./data/call-asterisk-conf:/etc/asterisk/auracall:ro   # hier legt AuraCall die Leitung und den Dialplan ab
-      - call_asterisk_lib:/var/lib/asterisk
-      - call_asterisk_log:/var/log/asterisk
-    cap_drop: [ALL]
-    security_opt: ["no-new-privileges:true"]
+      - "3500:3000"
 
   call:
     image: migerber77/aura-suite:call
     restart: unless-stopped
-    network_mode: host                                # Verwaltung auf Port 8110 des Rechners (AURACALL_PORT)
-    depends_on: [call-asterisk]
-    environment:
-      <<: *env
-      AMI_SECRET: ${CALL_AMI_SECRET:?CALL_AMI_SECRET fehlt (openssl rand -hex 24)}
-      AURACALL_PORT: ${CALL_PORT:-8110}
-      AURACALL_BIND: ${CALL_BIND:-0.0.0.0}
-      TRUST_PROXY: ${CALL_TRUST_PROXY:-false}
-      ADMIN_PASSWORD: ${CALL_ADMIN_PASSWORD:-}
-      AURACALL_RESET_2FA: ${CALL_RESET_2FA:-}
-      LICENSE_SECRET: ${LICENSE_SECRET:?LICENSE_SECRET fehlt}
-      LICENSE_CHECKIN_HOST: ${LICENSE_CHECKIN_HOST-auralic.gerber-backoffice-solutions.com}
-    volumes:
-      - ./data/call:/data
-      - ./data/call-asterisk-conf:/asterisk-conf
-    cap_drop: [ALL]
-    security_opt: ["no-new-privileges:true"]
-    read_only: true
-    tmpfs: ["/tmp"]
-
-  # ---------------------------------------------------------------- AuraLic (Lizenzserver)
-  lic:
-    image: migerber77/aura-suite:lic
-    restart: unless-stopped
-    environment:
-      <<: *env
-      LICENSE_SECRET: ${LICENSE_SECRET:?LICENSE_SECRET fehlt}
-      LICENSE_SERVER_PASSWORD: ${LIC_ADMIN_PASSWORD:?LIC_ADMIN_PASSWORD fehlt}
-      SESSION_SECRET: ${LIC_SESSION_SECRET:?LIC_SESSION_SECRET fehlt}
-    ports:
-      - "${LIC_PORT:-8451}:3001"
-    volumes:
-      - ./data/lic:/app/data
-
-networks:
-  chat:
-  edge:
-
-volumes:
-  chat_custom_certs:
-  chat_models:
-  chat_hf_cache:
-  chat_caddy_data:
-  chat_caddy_config:
-  tts_stt_cache:
-  piper_data:
-  proxy_caddy_data:
-  proxy_caddy_config:
-  call_asterisk_lib:
-  call_asterisk_log:
