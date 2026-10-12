@@ -1,0 +1,17 @@
+# Secrets & Env
+.env
+.env.local
+secrets/
+*.key
+*.pem
+
+# Docker Daten & Volumes
+data/
+database/
+volumes/
+*.sqlite
+
+# Logs & temporäre Dateien
+logs/
+*.log
+.DS_Store
