@@ -15,3 +15,5 @@ volumes/
 logs/
 *.log
 .DS_Store
+apps/aurachat/AuraChat/models/
+proprietary/aurachat-website/AuraChat-Website/html/downloads/
