@@ -418,6 +418,23 @@ function isVersionOlder(installed, latest) {
     return false;
 }
 
+// --- Aura-Suite-Version: wird in jeder Installation unter "Über Aura-Suite" angezeigt (Abgleich alle 12 Stunden) ---
+// Dieselbe Zahl ("latest_version") steuert auch die Markierung "veraltet" bei den Kunden. Dazu kommen das Datum ("Stand") und ein kurzer Hinweis.
+// Alles wird streng geprüft: Die Installationen zeigen es an, ohne es zu hinterfragen.
+const SUITE_VERSION_RE = /^\d{1,4}\.\d{1,4}(\.\d{1,4})?$/;
+function isSuiteDate(v) { if (!/^\d{4}-\d{2}-\d{2}$/.test(String(v))) return false; const d = new Date(v + 'T00:00:00Z'); return !isNaN(d) && d.toISOString().slice(0, 10) === v; }
+const cleanSuiteNote = (v) => String(v === undefined || v === null ? '' : v).replace(/[\u0000-\u001f\u007f<>]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 120);
+const escSuite = (v) => String(v === undefined || v === null ? '' : v).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+// Liefert { version, date, note } oder null, wenn keine (gültige) Version gesetzt ist
+function readSuite() {
+    return new Promise((resolve) => db.all(`SELECT key, value FROM settings WHERE key IN ('latest_version', 'latest_version_date', 'latest_version_note')`, [], (err, rows) => {
+        if (err) return resolve(null);
+        const m = Object.fromEntries((rows || []).map((r) => [r.key, r.value]));
+        const version = String(m.latest_version || '').trim(); if (!SUITE_VERSION_RE.test(version)) return resolve(null);
+        resolve({ version, date: isSuiteDate(m.latest_version_date) ? m.latest_version_date : null, note: cleanSuiteNote(m.latest_version_note) });
+    }));
+}
+
 // Eigene Richtpreise (Endkundenpreis) je Lizenzstufe - nur zur Anzeige/Orientierung für
 // Reseller, keine feste Regel. Bei Änderungen an den echten Preisen (Datenblatt/Webseite)
 // hier mit nachziehen.
@@ -879,8 +896,9 @@ app.get('/customers', (req, res) => {
         : `SELECT l.*, r.name AS resellerName FROM licenses l LEFT JOIN resellers r ON r.id = l.resellerId ORDER BY l.id DESC`;
     const params = isReseller ? [req.session.resellerId] : [];
 
-    db.get(`SELECT value FROM settings WHERE key = 'latest_version'`, [], (verErr, verRow) => {
-    const latestVersion = verRow ? verRow.value : '';
+    db.all(`SELECT key, value FROM settings WHERE key IN ('latest_version', 'latest_version_date', 'latest_version_note')`, [], (verErr, verRows) => {
+    const sv = Object.fromEntries((verRows || []).map((r) => [r.key, r.value]));
+    const latestVersion = sv.latest_version || '', latestDate = sv.latest_version_date || '', latestNote = sv.latest_version_note || '';
 
     db.all(query, params, (err, rows) => {
         if (err) return res.status(500).send('Fehler: ' + err.message);
@@ -947,11 +965,23 @@ app.get('/customers', (req, res) => {
                 </div>
             </div>
             ${!isReseller ? `
-            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex items-center gap-3">
-                <span class="text-xs text-slate-400">Neueste AuraChat-Version (für die "Update verfügbar"-Markierung):</span>
-                <form method="POST" action="/settings/latest-version" class="flex gap-2">
-                    <input type="text" name="latestVersion" value="${latestVersion}" placeholder="z.B. 1.00" class="bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-white w-28 focus:outline-none focus:border-blue-500">
-                    <button type="submit" class="bg-blue-600 hover:bg-blue-500 text-white text-xs px-3 rounded-lg transition">Setzen</button>
+            <div id="suite-version-card" class="bg-slate-900 border border-slate-800 rounded-2xl p-5 flex flex-col gap-3">
+                <div class="flex items-center gap-2">
+                    <h3 class="text-sm font-bold text-white">🏷️ Aura-Suite-Version</h3>
+                    <span class="text-[10px] px-2 py-0.5 rounded bg-slate-800 text-slate-300">${latestVersion ? 'aktuell: v' + escSuite(latestVersion) : 'nicht gesetzt'}</span>
+                </div>
+                <p class="text-[11px] text-slate-500">Diese Angaben erscheinen in jeder Installation unter „Über Aura-Suite“ und werden beim nächsten Abgleich (alle 12 Stunden) übernommen. Installationen mit einer älteren Version werden unten als „veraltet“ markiert. Die Version leer lassen und speichern schaltet die Anzeige ab.</p>
+                <form method="POST" action="/settings/latest-version" class="flex flex-wrap items-end gap-3">
+                    <label class="flex flex-col gap-1 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Version
+                        <input type="text" name="latestVersion" value="${escSuite(latestVersion)}" placeholder="z. B. 2.1.0" maxlength="14" pattern="[0-9]{1,4}\\.[0-9]{1,4}(\\.[0-9]{1,4})?" title="Zahlen mit Punkten, z. B. 1.00 oder 2.1.0" class="bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-white w-28 normal-case font-normal focus:outline-none focus:border-blue-500">
+                    </label>
+                    <label class="flex flex-col gap-1 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Stand
+                        <input type="date" name="suiteDate" value="${escSuite(latestDate)}" class="bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-white normal-case font-normal focus:outline-none focus:border-blue-500">
+                    </label>
+                    <label class="flex flex-col gap-1 text-[10px] font-semibold text-slate-400 uppercase tracking-wider flex-1" style="min-width:200px">Hinweis (optional, höchstens 120 Zeichen)
+                        <input type="text" name="suiteNote" value="${escSuite(latestNote)}" maxlength="120" placeholder="z. B. Neu: AuraCall und Docker-Hub-Installation" class="bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-white normal-case font-normal focus:outline-none focus:border-blue-500">
+                    </label>
+                    <button type="submit" class="bg-blue-600 hover:bg-blue-500 text-white text-xs px-4 py-2 rounded-lg transition">Speichern</button>
                 </form>
             </div>` : ''}
             <div class="grid gap-3">${rowsHtml}</div>
@@ -961,11 +991,16 @@ app.get('/customers', (req, res) => {
 });
 
 app.post('/settings/latest-version', requireSuperAdmin, (req, res) => {
-    const value = (req.body.latestVersion || '').trim();
-    db.run(`INSERT INTO settings (key, value) VALUES ('latest_version', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value`, [value], (err) => {
-        if (err) return res.status(500).send('Speichern fehlgeschlagen: ' + err.message);
-        res.redirect('/customers');
-    });
+    const version = String((req.body && req.body.latestVersion) || '').trim(), dateIn = String((req.body && req.body.suiteDate) || '').trim(), note = cleanSuiteNote(req.body && req.body.suiteNote);
+    const fail = (msg) => res.status(400).send(layout('Aura-Suite-Version', `<div class="bg-slate-900 border border-red-500/40 rounded-2xl p-5 text-sm text-red-300">${msg}<div class="mt-3"><a href="/customers" class="text-blue-400">← Zurück</a></div></div>`, 'customers', req.session));
+    if (!req.body || req.body.latestVersion === undefined) return fail('Die Eingabe fehlt (das Feld "Version" wurde nicht mitgeschickt). Es wurde nichts geändert.');   // nur ein leeres Feld schaltet die Anzeige ab, nie ein fehlendes
+    if (version && !SUITE_VERSION_RE.test(version)) return fail('Die Version ist ungültig. Erlaubt sind z. B. 1.00, 2.1 oder 2.1.0 (nur Zahlen und Punkte).');
+    if (dateIn && !isSuiteDate(dateIn)) return fail('Das Datum ist ungültig.');
+    // Ohne Version ist die Anzeige abgeschaltet (alles leer). Ohne Datum gilt heute.
+    const values = version ? [['latest_version', version], ['latest_version_date', dateIn || new Date().toISOString().slice(0, 10)], ['latest_version_note', note]] : [['latest_version', ''], ['latest_version_date', ''], ['latest_version_note', '']];
+    Promise.all(values.map(([k, v]) => new Promise((resolve, reject) => db.run(`INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value`, [k, v], (err) => (err ? reject(err) : resolve())))))
+        .then(() => res.redirect('/customers'))
+        .catch((err) => res.status(500).send('Speichern fehlgeschlagen: ' + err.message));
 });
 
 // --- Kunde bearbeiten (Adresse/Kontakt/Preise - NICHT die Lizenz selbst, dafür einfach
@@ -1243,6 +1278,7 @@ app.post('/api/checkin', checkinLimiter, async (req, res) => {
     const stableId = installationId || `license:${licenseKey}`;
     const ip = (req.ip || '').replace(/^::ffff:/, ''); // siehe geolocateIp() - Node liefert IPv4 oft als "::ffff:x.x.x.x"
     const geo = await geolocateIp(ip);
+    const suite = await readSuite();   // Aura-Suite-Version für "Über Aura-Suite" in der Installation (leer, wenn keine gesetzt ist)
 
     db.run(
         `INSERT INTO installations (installationId, licenseId, ip, country, city, lat, lon, lastSeen, version, totalUsers, totalAdmins)
@@ -1256,7 +1292,7 @@ app.post('/api/checkin', checkinLimiter, async (req, res) => {
          new Date().toISOString(), (version || '').slice(0, 30), totalUsers ?? null, totalAdmins ?? null],
         (err) => {
             if (err) return res.status(500).json({ error: err.message });
-            res.json({ ok: true });
+            res.json(suite ? { ok: true, suite } : { ok: true });
         }
     );
 });

@@ -165,7 +165,7 @@
       </div>
       <p style="color:#94a3b8; font-size:13px; max-width:640px; margin:16px auto 0;" data-i18n="quickstart.note">Voraussetzung: Docker Engine 25 oder neuer. Auf älteren Systemen (z.B. manche NAS) stattdessen die Compose-Datei herunterladen und mit „docker compose up -d“ starten.</p>
       <p style="margin-top:16px;"><a href="downloads/aurachat-quickstart.zip" download class="btn btn-ghost" data-i18n="quickstart.button">⬇ Compose-Datei für ältere Systeme herunterladen</a></p>
-      <p style="margin-top:12px;"><a href="#installation" style="color:var(--cyan); font-size:13px; text-decoration:none;" data-i18n="quickstart.suiteLink">Alternativ: die ganze Aura-Suite aus dem GitHub-Repository installieren →</a></p>
+      <p style="margin-top:12px;"><a href="#installation" style="color:var(--cyan); font-size:13px; text-decoration:none;" data-i18n="quickstart.suiteLink">Alternativ: die ganze Aura-Suite mit einer Compose-Datei installieren →</a></p>
       <div style="margin-top:36px; padding-top:28px; border-top:1px solid rgba(255,255,255,0.08);">
         <p style="color:#94a3b8; font-size:13px; margin-bottom:14px;" data-i18n="quickstart.desktopLead">⚠ Kein eigenständiges Programm — verbindet sich mit einer bereits laufenden AuraChat-Installation (siehe oben). Praktisch als App statt Browser-Tab, sobald AuraChat läuft:</p>
         <div style="display:flex; gap:12px; justify-content:center; flex-wrap:wrap;">
@@ -179,41 +179,50 @@
   <section id="installation">
     <div class="wrap" style="max-width:820px;">
       <h2 data-i18n="suiteinstall.title">Aura-Suite: Installation &amp; Deployment</h2>
-      <p style="color:#94a3b8; max-width:640px; margin:0 0 8px;" data-i18n="suiteinstall.lead">So richtest du die Aura-Suite auf einem neuen Server aus dem GitHub-Repository ein und startest sie.</p>
+      <p style="color:#94a3b8; max-width:640px; margin:0 0 8px;" data-i18n="suiteinstall.lead">So installierst du die Aura-Suite auf einem neuen Server: fertige Compose-Datei laden, Geheimnisse erzeugen, starten.</p>
       <div class="card" style="text-align:left; margin-top:16px;">
         <h3 data-i18n="suiteinstall.req.title">Voraussetzungen</h3>
         <ul style="color:#cbd5e1; font-size:14px; margin:10px 0 0 18px; line-height:1.7; list-style:disc;">
           <li data-i18n="suiteinstall.req.r1">Ein Linux-Server (z. B. Ubuntu oder Debian)</li>
-          <li data-i18n="suiteinstall.req.r2">Docker und Docker Compose sind auf dem Zielsystem installiert</li>
-          <li data-i18n="suiteinstall.req.r3">Git ist installiert</li>
+          <li data-i18n="suiteinstall.req.r2">Docker und Docker Compose sind installiert</li>
+          <li data-i18n="suiteinstall.req.r3">curl und openssl sind installiert (Git nur, wenn du das Repository klonen willst)</li>
         </ul>
       </div>
       <div class="card" style="text-align:left; margin-top:16px;">
-        <h3 data-i18n="suiteinstall.s1.title">Schritt 1: Repository klonen</h3>
-        <p style="color:#94a3b8; font-size:14px; margin:10px 0;" data-i18n="suiteinstall.s1.desc">Klone das zentrale Repository auf deinen Server in das gewünschte Verzeichnis (z. B. /docker/aura-suite):</p>
-        <div class="codeblock" style="background:#0b1220; border:1px solid rgba(255,255,255,0.1); border-radius:12px; padding:16px 20px; text-align:left; font-family:'Courier New',monospace; font-size:13px; color:#e2e8f0; overflow-x:auto; white-space:pre;"><div>sudo mkdir -p /docker</div><div>cd /docker</div><div>git clone https://github.com/migerber77/aura-suite.git</div><div>cd aura-suite</div></div>
+        <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+          <span style="flex:none; width:28px; height:28px; border-radius:50%; background:rgba(50,112,253,0.2); border:1px solid rgba(50,112,253,0.5); color:#93b4ff; font-size:13px; font-weight:700; display:inline-flex; align-items:center; justify-content:center;">1</span>
+          <h3 style="margin:0;" data-i18n="suiteinstall.s1.title">Repository klonen oder Compose-Datei herunterladen</h3>
+          <span style="color:#64748b; font-size:12px;" data-i18n="suiteinstall.time">1 Min.</span>
+        </div>
+        <p style="color:#94a3b8; font-size:14px; margin:12px 0 10px;" data-i18n="suiteinstall.s1.desc">Statt die docker-compose.yml selbst zu schreiben, lädst du die fertige Konfiguration direkt aus dem Git-Repository herunter:</p>
+        <div class="codeblock" style="background:#0b1220; border:1px solid rgba(255,255,255,0.1); border-radius:12px; padding:16px 20px; text-align:left; font-family:'Courier New',monospace; font-size:13px; color:#e2e8f0; overflow-x:auto; white-space:pre;"><div>mkdir -p /docker/aura-suite &amp;&amp; cd /docker/aura-suite</div><div>curl -o docker-compose.yml https://raw.githubusercontent.com/migerber77/aura-suite/main/docker-compose.yml</div></div>
+        <p style="color:#94a3b8; font-size:14px; margin:12px 0 10px;" data-i18n="suiteinstall.s1.extra">AuraProxy braucht zusätzlich eine kleine Startdatei für seinen Caddy:</p>
+        <div class="codeblock" style="background:#0b1220; border:1px solid rgba(255,255,255,0.1); border-radius:12px; padding:16px 20px; text-align:left; font-family:'Courier New',monospace; font-size:13px; color:#e2e8f0; overflow-x:auto; white-space:pre;"><div>mkdir -p proxy &amp;&amp; cat &gt; proxy/caddy-init.json &lt;&lt;'EOF'</div><div>{</div><div>  "admin": { "listen": "0.0.0.0:2019", "origins": ["http://auraproxy-admin"] },</div><div>  "apps": { "http": { "servers": { "port_80": { "listen": [":80"], "routes": [] } } } }</div><div>}</div><div>EOF</div></div>
+        <p style="color:#94a3b8; font-size:14px; margin:12px 0 10px;" data-i18n="suiteinstall.s1.alt">Oder das ganze Repository klonen:</p>
+        <div class="codeblock" style="background:#0b1220; border:1px solid rgba(255,255,255,0.1); border-radius:12px; padding:16px 20px; text-align:left; font-family:'Courier New',monospace; font-size:13px; color:#e2e8f0; overflow-x:auto; white-space:pre;"><div>git clone https://github.com/migerber77/aura-suite.git /docker/aura-suite</div><div>cd /docker/aura-suite</div></div>
       </div>
       <div class="card" style="text-align:left; margin-top:16px;">
-        <h3 data-i18n="suiteinstall.s2.title">Schritt 2: Umgebungsvariablen (.env) einrichten</h3>
-        <p style="color:#94a3b8; font-size:14px; margin:10px 0;" data-i18n="suiteinstall.s2.desc">Zugangsdaten und Passwörter liegen aus Sicherheitsgründen nicht im Repository. Lege die benötigten .env-Dateien deshalb lokal an:</p>
-        <ol style="color:#cbd5e1; font-size:14px; margin:6px 0 10px 18px; line-height:1.7; list-style:decimal;"><li data-i18n="suiteinstall.s2.l1">Suche in den Unterordnern nach den bereitgestellten Vorlagen (z. B. .env.example).</li><li data-i18n="suiteinstall.s2.l2">Kopiere sie als .env und trage deine eigenen Werte und Passwörter ein (Beispiel für einen Dienst):</li></ol>
-        <div class="codeblock" style="background:#0b1220; border:1px solid rgba(255,255,255,0.1); border-radius:12px; padding:16px 20px; text-align:left; font-family:'Courier New',monospace; font-size:13px; color:#e2e8f0; overflow-x:auto; white-space:pre;"><div>cp .env.example .env</div><div>nano .env</div></div>
+        <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+          <span style="flex:none; width:28px; height:28px; border-radius:50%; background:rgba(50,112,253,0.2); border:1px solid rgba(50,112,253,0.5); color:#93b4ff; font-size:13px; font-weight:700; display:inline-flex; align-items:center; justify-content:center;">2</span>
+          <h3 style="margin:0;" data-i18n="suiteinstall.s2.title">Umgebungsvariablen generieren / .env anlegen</h3>
+          <span style="color:#64748b; font-size:12px;" data-i18n="suiteinstall.time">1 Min.</span>
+        </div>
+        <p style="color:#94a3b8; font-size:14px; margin:12px 0 10px;" data-i18n="suiteinstall.s2.desc">Die benötigten Geheimnisse (Secrets) erzeugt ein Befehl für dich, du musst nichts von Hand tippen. Er legt die Datei .env an:</p>
+        <div class="codeblock" style="background:#0b1220; border:1px solid rgba(255,255,255,0.1); border-radius:12px; padding:16px 20px; text-align:left; font-family:'Courier New',monospace; font-size:13px; color:#e2e8f0; overflow-x:auto; white-space:pre;"><div>printf "TZ=Europe/Zurich\n" &gt; .env</div><div>for v in LICENSE_SECRET CHAT_SESSION_SECRET CHAT_DISPOSITION_KEY PLAN_SESSION_SECRET \</div><div>  TICKET_SESSION_SECRET MAIL_SESSION_SECRET MAIL_ENCRYPTION_KEY DIRECT_SESSION_SECRET \</div><div>  DIRECT_ADMIN_PASSWORD DIRECT_SERVICE_KEY PROXY_SESSION_SECRET CALL_AMI_SECRET \</div><div>  LIC_ADMIN_PASSWORD LIC_SESSION_SECRET; do</div><div>  printf "%s=%s\n" "$v" "$(openssl rand -hex 32)"; done &gt;&gt; .env</div><div>chmod 600 .env</div></div>
+        <p style="color:#94a3b8; font-size:14px; margin:12px 0 10px; font-size:13px;" data-i18n="suiteinstall.s2.note">Die Passwörter für AuraDirect und AuraLic (Benutzer admin) stehen danach in der Datei .env. Bewahre sie sicher auf und lege sie nie in ein Repository.</p>
       </div>
       <div class="card" style="text-align:left; margin-top:16px;">
-        <h3 data-i18n="suiteinstall.s3.title">Schritt 3: Docker-Container starten</h3>
-        <p style="color:#94a3b8; font-size:14px; margin:10px 0;" data-i18n="suiteinstall.s3.desc">Sind alle .env-Dateien angelegt, startest du die Suite im Hintergrund:</p>
-        <div class="codeblock" style="background:#0b1220; border:1px solid rgba(255,255,255,0.1); border-radius:12px; padding:16px 20px; text-align:left; font-family:'Courier New',monospace; font-size:13px; color:#e2e8f0; overflow-x:auto; white-space:pre;"><div>docker compose up -d --build</div></div>
-        <p style="color:#94a3b8; font-size:14px; margin:10px 0; margin-top:16px;" data-i18n="suiteinstall.s3.verify">Prüfe danach, ob alle Container gestartet sind und fehlerfrei laufen:</p>
+        <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+          <span style="flex:none; width:28px; height:28px; border-radius:50%; background:rgba(50,112,253,0.2); border:1px solid rgba(50,112,253,0.5); color:#93b4ff; font-size:13px; font-weight:700; display:inline-flex; align-items:center; justify-content:center;">3</span>
+          <h3 style="margin:0;" data-i18n="suiteinstall.s3.title">Images von Docker Hub ziehen und starten</h3>
+          <span style="color:#64748b; font-size:12px;" data-i18n="suiteinstall.time">1 Min.</span>
+        </div>
+        <p style="color:#94a3b8; font-size:14px; margin:12px 0 10px;" data-i18n="suiteinstall.s3.prep">Nur für AuraCall: lege vorher die Datenordner an, damit sie dem Benutzer 1000 gehören:</p>
+        <div class="codeblock" style="background:#0b1220; border:1px solid rgba(255,255,255,0.1); border-radius:12px; padding:16px 20px; text-align:left; font-family:'Courier New',monospace; font-size:13px; color:#e2e8f0; overflow-x:auto; white-space:pre;"><div>mkdir -p data/call data/call-asterisk-conf &amp;&amp; sudo chown 1000:1000 data/call data/call-asterisk-conf</div></div>
+        <p style="color:#94a3b8; font-size:14px; margin:12px 0 10px; margin-top:16px;" data-i18n="suiteinstall.s3.desc">Jetzt startest du Docker Compose. Docker liest die docker-compose.yml, erkennt die migerber77/aura-suite:…-Images und zieht sie automatisch von Docker Hub:</p>
+        <div class="codeblock" style="background:#0b1220; border:1px solid rgba(255,255,255,0.1); border-radius:12px; padding:16px 20px; text-align:left; font-family:'Courier New',monospace; font-size:13px; color:#e2e8f0; overflow-x:auto; white-space:pre;"><div>docker compose up -d</div></div>
+        <p style="color:#94a3b8; font-size:14px; margin:12px 0 10px; margin-top:16px;" data-i18n="suiteinstall.s3.verify">Prüfe danach, ob alle Container gestartet sind und fehlerfrei laufen:</p>
         <div class="codeblock" style="background:#0b1220; border:1px solid rgba(255,255,255,0.1); border-radius:12px; padding:16px 20px; text-align:left; font-family:'Courier New',monospace; font-size:13px; color:#e2e8f0; overflow-x:auto; white-space:pre;"><div>docker compose ps</div></div>
-      </div>
-      <div class="card" style="text-align:left; margin-top:16px;">
-        <h3 data-i18n="suiteinstall.s4.title">Schritt 4 (optional): Automatischer Git-Sync</h3>
-        <p style="color:#94a3b8; font-size:14px; margin:10px 0;" data-i18n="suiteinstall.s4.desc">Soll der Server Änderungen selbst erfassen und synchronisieren, kannst du das mitgelieferte Skript per Cronjob einrichten. Für normale Installationen ist das nicht nötig.</p>
-        <p style="color:#94a3b8; font-size:14px; margin:10px 0;" data-i18n="suiteinstall.s4.a">1. Adresse des Repositorys mit Token setzen (nur wenn Schreibrechte nötig sind):</p>
-        <div class="codeblock" style="background:#0b1220; border:1px solid rgba(255,255,255,0.1); border-radius:12px; padding:16px 20px; text-align:left; font-family:'Courier New',monospace; font-size:13px; color:#e2e8f0; overflow-x:auto; white-space:pre;"><div>git remote set-url origin https://DEIN_TOKEN@github.com/migerber77/aura-suite.git</div></div>
-        <p style="color:#94a3b8; font-size:14px; margin:10px 0; color:#fbbf24; font-size:13px;" data-i18n="suiteinstall.s4.caution">Achtung: Der Token steht danach im Klartext in .git/config. Erzeuge ihn nur für dieses Repository und mit den geringsten Rechten. Prüfe außerdem vorher, dass .env-Dateien und Datenordner in der .gitignore stehen, damit der Sync keine Passwörter oder Daten überträgt.</p>
-        <p style="color:#94a3b8; font-size:14px; margin:10px 0; margin-top:16px;" data-i18n="suiteinstall.s4.b">2. Cronjob für den stündlichen Sync einrichten (crontab -e) und diese Zeile am Ende einfügen:</p>
-        <div class="codeblock" style="background:#0b1220; border:1px solid rgba(255,255,255,0.1); border-radius:12px; padding:16px 20px; text-align:left; font-family:'Courier New',monospace; font-size:13px; color:#e2e8f0; overflow-x:auto; white-space:pre;"><div>0 * * * * /docker/aura-suite/git-sync.sh &gt;&gt; /docker/aura-suite/sync.log 2&gt;&amp;1</div></div>
       </div>
     </div>
   </section>

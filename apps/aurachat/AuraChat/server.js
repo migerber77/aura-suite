@@ -2598,6 +2598,45 @@ app.post('/api/admin/update/apply', requireAdmin, upload.single('update'), async
 // nichts an der Funktion von AuraChat selbst, Fehler dabei werden nur geloggt.
 let lastCheckinResult = null;
 
+// --- Aura-Suite-Version (für "Über Aura-Suite"): kommt vom Lizenzserver mit dem Abgleich (alle 12 Stunden) ---
+// Die installierte Version bleibt die aus package.json (sie meldet der Abgleich auch zurück, so erkennt der Lizenzserver veraltete Installationen).
+// Was der Lizenzserver als aktuelle Version meldet, wird streng geprüft (Version, Datum, kurzer Hinweis als reiner Text), bevor es gespeichert wird:
+// der Abgleich läuft über eine ungesicherte HTTP-Verbindung, die Angaben sind aber nur Anzeige.
+const INSTALLED_VERSION = String(require('./package.json').version);
+const SUITE_VERSION_RE = /^\d{1,4}\.\d{1,4}(\.\d{1,4})?$/;
+function parseSuiteInfo(raw) {
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
+    const version = typeof raw.version === 'string' ? raw.version.trim() : '';
+    if (!SUITE_VERSION_RE.test(version)) return null;
+    let date = null;
+    if (typeof raw.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(raw.date)) { const d = new Date(raw.date + 'T00:00:00Z'); if (!isNaN(d) && d.toISOString().slice(0, 10) === raw.date) date = raw.date; }
+    const note = typeof raw.note === 'string' ? raw.note.replace(/[\u0000-\u001f\u007f<>]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 120) : '';
+    return { version, date, note };
+}
+function versionOlder(installed, latest) {
+    const a = String(installed).split('.').map((n) => parseInt(n, 10) || 0), b = String(latest).split('.').map((n) => parseInt(n, 10) || 0);
+    for (let i = 0; i < Math.max(a.length, b.length); i++) { const x = a[i] || 0, y = b[i] || 0; if (x < y) return true; if (x > y) return false; }
+    return false;
+}
+function saveSuiteInfo(info) {   // info = null: der Lizenzserver zeigt keine Version mehr an, die gespeicherte wird entfernt
+    return new Promise((resolve) => {
+        const done = () => resolve();
+        if (info) db.run(`INSERT OR REPLACE INTO configs (userId, key, value) VALUES (?, 'suite_info', ?)`, [GLOBAL_USER_ID, JSON.stringify(info)], done);
+        else db.run(`DELETE FROM configs WHERE userId = ? AND key = 'suite_info'`, [GLOBAL_USER_ID], done);
+    });
+}
+function loadSuiteInfo() {
+    return new Promise((resolve) => db.get(`SELECT value FROM configs WHERE userId = ? AND key = 'suite_info'`, [GLOBAL_USER_ID], (err, row) => {
+        if (err || !row || !row.value) return resolve(null);
+        try { resolve(parseSuiteInfo(JSON.parse(row.value))); } catch (e) { resolve(null); }
+    }));
+}
+// Öffentlich (nur Anzeige): installierte Version, aktuelle Aura-Suite-Version vom Lizenzserver (falls bekannt) und ob ein Update verfügbar ist
+app.get('/api/version', async (req, res) => {
+    const suite = await loadSuiteInfo();
+    res.set('Cache-Control', 'no-store').json({ installed: INSTALLED_VERSION, suite, updateAvailable: !!(suite && versionOlder(INSTALLED_VERSION, suite.version)) });
+});
+
 const LICENSE_CHECKIN_PORT = 8451; // fester Port, mit dem der Lizenz-Server-Container standardmässig läuft
 // Eigener Lizenz-Server als Standard - der Abgleich läuft ab Werk automatisch im Hintergrund,
 // ohne Einstellung im Admin Panel. Nur wer es ausdrücklich will, ändert/deaktiviert das über
@@ -2649,10 +2688,13 @@ async function sendLicenseCheckin() {
         const resp = await fetch(`${checkinUrl}/api/checkin`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ licenseKey: licenseKey || null, installationId, totalUsers: counts.totalUsers, totalAdmins: counts.totalAdmins, version: require('./package.json').version }),
+            body: JSON.stringify({ licenseKey: licenseKey || null, installationId, totalUsers: counts.totalUsers, totalAdmins: counts.totalAdmins, version: INSTALLED_VERSION }),
             signal: AbortSignal.timeout(10000)
         });
         const data = await resp.json().catch(() => ({}));
+        // Nur eine echte Antwort des Lizenzservers ({ ok: true, ... }) ändert etwas: geprüft angenommen; fehlt die Version darin (oder ist sie ungültig), wird die gespeicherte entfernt.
+        // Eine Antwort mit 200 und anderem Inhalt (z. B. eine Anmeldeseite im Hotel-WLAN) lässt die gespeicherte Anzeige unberührt.
+        if (resp.ok && data && data.ok === true) await saveSuiteInfo(parseSuiteInfo(data.suite));
         lastCheckinResult = {
             success: resp.ok,
             message: resp.ok ? 'OK' : (data.error || `Status ${resp.status}`),

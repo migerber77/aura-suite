@@ -31,7 +31,7 @@ const translations = {
       "downloadWin": "Für Windows herunterladen",
       "downloadMac": "Für macOS herunterladen",
       "note": "Voraussetzung: Docker Engine 25 oder neuer. Auf älteren Systemen (z.B. manche NAS) stattdessen die Compose-Datei herunterladen und mit „docker compose up -d“ starten.",
-      "suiteLink": "Alternativ: die ganze Aura-Suite aus dem GitHub-Repository installieren →"
+      "suiteLink": "Alternativ: die ganze Aura-Suite mit einer Compose-Datei installieren →"
     },
     "features": {
       "heading": "Alles, was ein Team-Assistent können sollte — und einiges, was sonst keiner kann.",
@@ -612,34 +612,30 @@ const translations = {
     },
     "suiteinstall": {
       "title": "Aura-Suite: Installation &amp; Deployment",
-      "lead": "So richtest du die Aura-Suite auf einem neuen Server aus dem GitHub-Repository ein und startest sie.",
+      "lead": "So installierst du die Aura-Suite auf einem neuen Server: fertige Compose-Datei laden, Geheimnisse erzeugen, starten.",
+      "time": "1 Min.",
       "req": {
         "title": "Voraussetzungen",
         "r1": "Ein Linux-Server (z. B. Ubuntu oder Debian)",
-        "r2": "Docker und Docker Compose sind auf dem Zielsystem installiert",
-        "r3": "Git ist installiert"
+        "r2": "Docker und Docker Compose sind installiert",
+        "r3": "curl und openssl sind installiert (Git nur, wenn du das Repository klonen willst)"
       },
       "s1": {
-        "title": "Schritt 1: Repository klonen",
-        "desc": "Klone das zentrale Repository auf deinen Server in das gewünschte Verzeichnis (z. B. /docker/aura-suite):"
+        "title": "Repository klonen oder Compose-Datei herunterladen",
+        "desc": "Statt die docker-compose.yml selbst zu schreiben, lädst du die fertige Konfiguration direkt aus dem Git-Repository herunter:",
+        "extra": "AuraProxy braucht zusätzlich eine kleine Startdatei für seinen Caddy:",
+        "alt": "Oder das ganze Repository klonen:"
       },
       "s2": {
-        "title": "Schritt 2: Umgebungsvariablen (.env) einrichten",
-        "desc": "Zugangsdaten und Passwörter liegen aus Sicherheitsgründen nicht im Repository. Lege die benötigten .env-Dateien deshalb lokal an:",
-        "l1": "Suche in den Unterordnern nach den bereitgestellten Vorlagen (z. B. .env.example).",
-        "l2": "Kopiere sie als .env und trage deine eigenen Werte und Passwörter ein (Beispiel für einen Dienst):"
+        "title": "Umgebungsvariablen generieren / .env anlegen",
+        "desc": "Die benötigten Geheimnisse (Secrets) erzeugt ein Befehl für dich, du musst nichts von Hand tippen. Er legt die Datei .env an:",
+        "note": "Die Passwörter für AuraDirect und AuraLic (Benutzer admin) stehen danach in der Datei .env. Bewahre sie sicher auf und lege sie nie in ein Repository."
       },
       "s3": {
-        "title": "Schritt 3: Docker-Container starten",
-        "desc": "Sind alle .env-Dateien angelegt, startest du die Suite im Hintergrund:",
+        "title": "Images von Docker Hub ziehen und starten",
+        "prep": "Nur für AuraCall: lege vorher die Datenordner an, damit sie dem Benutzer 1000 gehören:",
+        "desc": "Jetzt startest du Docker Compose. Docker liest die docker-compose.yml, erkennt die migerber77/aura-suite:…-Images und zieht sie automatisch von Docker Hub:",
         "verify": "Prüfe danach, ob alle Container gestartet sind und fehlerfrei laufen:"
-      },
-      "s4": {
-        "title": "Schritt 4 (optional): Automatischer Git-Sync",
-        "desc": "Soll der Server Änderungen selbst erfassen und synchronisieren, kannst du das mitgelieferte Skript per Cronjob einrichten. Für normale Installationen ist das nicht nötig.",
-        "a": "1. Adresse des Repositorys mit Token setzen (nur wenn Schreibrechte nötig sind):",
-        "caution": "Achtung: Der Token steht danach im Klartext in .git/config. Erzeuge ihn nur für dieses Repository und mit den geringsten Rechten. Prüfe außerdem vorher, dass .env-Dateien und Datenordner in der .gitignore stehen, damit der Sync keine Passwörter oder Daten überträgt.",
-        "b": "2. Cronjob für den stündlichen Sync einrichten (crontab -e) und diese Zeile am Ende einfügen:"
       }
     }
   },
@@ -675,7 +671,7 @@ const translations = {
       "downloadWin": "Download for Windows",
       "downloadMac": "Download for macOS",
       "note": "Requires Docker Engine 25 or newer. On older systems (e.g. some NAS devices), download the compose file instead and start it with “docker compose up -d”.",
-      "suiteLink": "Alternatively: install the whole Aura Suite from the GitHub repository →"
+      "suiteLink": "Alternatively: install the whole Aura Suite with a single Compose file →"
     },
     "features": {
       "heading": "Everything a team assistant should do — and quite a bit that no one else can.",
@@ -1256,34 +1252,30 @@ const translations = {
     },
     "suiteinstall": {
       "title": "Aura Suite: Installation &amp; Deployment",
-      "lead": "How to set up and start the Aura Suite on a new server from the GitHub repository.",
+      "lead": "How to install the Aura Suite on a new server: download the ready-made Compose file, generate the secrets, start.",
+      "time": "1 min",
       "req": {
         "title": "Requirements",
         "r1": "A Linux server (e.g. Ubuntu or Debian)",
-        "r2": "Docker and Docker Compose are installed on the target system",
-        "r3": "Git is installed"
+        "r2": "Docker and Docker Compose are installed",
+        "r3": "curl and openssl are installed (Git only if you want to clone the repository)"
       },
       "s1": {
-        "title": "Step 1: Clone the repository",
-        "desc": "Clone the central repository onto your server into the directory of your choice (e.g. /docker/aura-suite):"
+        "title": "Clone the repository or download the Compose file",
+        "desc": "Instead of writing the docker-compose.yml yourself, download the ready-made configuration straight from the Git repository:",
+        "extra": "AuraProxy also needs a small start file for its Caddy:",
+        "alt": "Or clone the whole repository:"
       },
       "s2": {
-        "title": "Step 2: Set up the environment variables (.env)",
-        "desc": "For security reasons, credentials and passwords are not stored in the repository. Create the required .env files locally:",
-        "l1": "Look in the subfolders for the provided templates (e.g. .env.example).",
-        "l2": "Copy them as .env and enter your own values and passwords (example for one service):"
+        "title": "Generate environment variables / create .env",
+        "desc": "One command generates the required secrets, so you do not have to type anything by hand. It creates the .env file:",
+        "note": "The passwords for AuraDirect and AuraLic (user admin) are then stored in the .env file. Keep it safe and never put it in a repository."
       },
       "s3": {
-        "title": "Step 3: Start the Docker containers",
-        "desc": "Once all .env files are in place, start the whole suite in the background:",
+        "title": "Pull the images from Docker Hub and start",
+        "prep": "For AuraCall only: create the data folders first, so they belong to user 1000:",
+        "desc": "Now start Docker Compose. Docker reads the docker-compose.yml, recognises the migerber77/aura-suite:… images and pulls them automatically from Docker Hub:",
         "verify": "Then check that all containers have started and are running without errors:"
-      },
-      "s4": {
-        "title": "Step 4 (optional): Automatic Git sync",
-        "desc": "If the server should also record and synchronise changes automatically, you can set up the provided script as a cron job. This is not needed for normal installations.",
-        "a": "1. Set the repository address with a token (only if write access is needed):",
-        "caution": "Caution: the token is then stored in plain text in .git/config. Create it for this repository only and with the lowest possible permissions. Also check beforehand that .env files and data folders are listed in .gitignore, so the sync does not transfer passwords or data.",
-        "b": "2. Set up a cron job for the hourly sync (run crontab -e) and add this line at the end:"
       }
     }
   },
@@ -1319,7 +1311,7 @@ const translations = {
       "downloadWin": "Télécharger pour Windows",
       "downloadMac": "Télécharger pour macOS",
       "note": "Nécessite Docker Engine 25 ou plus récent. Sur des systèmes plus anciens (p. ex. certains NAS), téléchargez plutôt le fichier compose et lancez-le avec « docker compose up -d ».",
-      "suiteLink": "Ou : installer toute la suite Aura depuis le dépôt GitHub →"
+      "suiteLink": "Ou : installer toute la suite Aura avec un seul fichier Compose →"
     },
     "features": {
       "heading": "Tout ce qu'un assistant d'équipe devrait savoir faire — et bien plus que les autres.",
@@ -1900,34 +1892,30 @@ const translations = {
     },
     "suiteinstall": {
       "title": "Suite Aura : installation &amp; déploiement",
-      "lead": "Voici comment installer et démarrer la suite Aura sur un nouveau serveur à partir du dépôt GitHub.",
+      "lead": "Voici comment installer la suite Aura sur un nouveau serveur : télécharger le fichier Compose prêt à l'emploi, générer les secrets, démarrer.",
+      "time": "1 min",
       "req": {
         "title": "Prérequis",
         "r1": "Un serveur Linux (par ex. Ubuntu ou Debian)",
-        "r2": "Docker et Docker Compose sont installés sur le système cible",
-        "r3": "Git est installé"
+        "r2": "Docker et Docker Compose sont installés",
+        "r3": "curl et openssl sont installés (Git seulement pour cloner le dépôt)"
       },
       "s1": {
-        "title": "Étape 1 : cloner le dépôt",
-        "desc": "Clonez le dépôt central sur votre serveur, dans le répertoire de votre choix (par ex. /docker/aura-suite) :"
+        "title": "Cloner le dépôt ou télécharger le fichier Compose",
+        "desc": "Au lieu d'écrire vous-même le fichier docker-compose.yml, téléchargez la configuration prête à l'emploi directement depuis le dépôt Git :",
+        "extra": "AuraProxy a en plus besoin d'un petit fichier de démarrage pour son Caddy :",
+        "alt": "Ou cloner tout le dépôt :"
       },
       "s2": {
-        "title": "Étape 2 : configurer les variables d'environnement (.env)",
-        "desc": "Pour des raisons de sécurité, les accès et mots de passe ne sont pas stockés dans le dépôt. Créez donc les fichiers .env nécessaires en local :",
-        "l1": "Cherchez dans les sous-dossiers les modèles fournis (par ex. .env.example).",
-        "l2": "Copiez-les sous le nom .env et saisissez vos propres valeurs et mots de passe (exemple pour un service) :"
+        "title": "Générer les variables d'environnement / créer le .env",
+        "desc": "Une seule commande génère les secrets nécessaires, vous n'avez rien à saisir à la main. Elle crée le fichier .env :",
+        "note": "Les mots de passe d'AuraDirect et d'AuraLic (utilisateur admin) se trouvent ensuite dans le fichier .env. Conservez-le en lieu sûr et ne le versez jamais dans un dépôt."
       },
       "s3": {
-        "title": "Étape 3 : démarrer les conteneurs Docker",
-        "desc": "Une fois tous les fichiers .env en place, démarrez toute la suite en arrière-plan :",
+        "title": "Récupérer les images depuis Docker Hub et démarrer",
+        "prep": "Uniquement pour AuraCall : créez d'abord les dossiers de données, afin qu'ils appartiennent à l'utilisateur 1000 :",
+        "desc": "Démarrez maintenant Docker Compose. Docker lit le fichier docker-compose.yml, reconnaît les images migerber77/aura-suite:… et les télécharge automatiquement depuis Docker Hub :",
         "verify": "Vérifiez ensuite que tous les conteneurs ont démarré et fonctionnent sans erreur :"
-      },
-      "s4": {
-        "title": "Étape 4 (facultatif) : synchronisation Git automatique",
-        "desc": "Si le serveur doit lui aussi enregistrer et synchroniser automatiquement les modifications, vous pouvez configurer le script fourni avec une tâche cron. Inutile pour une installation normale.",
-        "a": "1. Définir l'adresse du dépôt avec un jeton (uniquement si des droits d'écriture sont nécessaires) :",
-        "caution": "Attention : le jeton est ensuite stocké en clair dans .git/config. Créez-le uniquement pour ce dépôt et avec les droits les plus faibles possible. Vérifiez aussi au préalable que les fichiers .env et les dossiers de données figurent dans .gitignore, afin que la synchronisation ne transmette ni mots de passe ni données.",
-        "b": "2. Configurer une tâche cron pour la synchronisation toutes les heures (crontab -e) et ajouter cette ligne à la fin :"
       }
     }
   },
@@ -1963,7 +1951,7 @@ const translations = {
       "downloadWin": "Scarica per Windows",
       "downloadMac": "Scarica per macOS",
       "note": "Richiede Docker Engine 25 o successivo. Su sistemi più vecchi (ad es. alcuni NAS) scaricate invece il file compose e avviatelo con «docker compose up -d».",
-      "suiteLink": "In alternativa: installare l'intera Aura Suite dal repository GitHub →"
+      "suiteLink": "In alternativa: installare l'intera Aura Suite con un unico file Compose →"
     },
     "features": {
       "heading": "Tutto ciò che un assistente per team dovrebbe saper fare — e non poco che nessun altro sa fare.",
@@ -2544,34 +2532,30 @@ const translations = {
     },
     "suiteinstall": {
       "title": "Aura Suite: installazione &amp; deployment",
-      "lead": "Ecco come installare e avviare la Aura Suite su un nuovo server dal repository GitHub.",
+      "lead": "Ecco come installare la Aura Suite su un nuovo server: scaricare il file Compose già pronto, generare i segreti, avviare.",
+      "time": "1 min",
       "req": {
         "title": "Requisiti",
         "r1": "Un server Linux (ad es. Ubuntu o Debian)",
-        "r2": "Docker e Docker Compose sono installati sul sistema di destinazione",
-        "r3": "Git è installato"
+        "r2": "Docker e Docker Compose sono installati",
+        "r3": "curl e openssl sono installati (Git solo per clonare il repository)"
       },
       "s1": {
-        "title": "Passo 1: clonare il repository",
-        "desc": "Clonate il repository centrale sul vostro server nella directory desiderata (ad es. /docker/aura-suite):"
+        "title": "Clonare il repository o scaricare il file Compose",
+        "desc": "Invece di scrivere voi stessi il file docker-compose.yml, scaricate la configurazione già pronta direttamente dal repository Git:",
+        "extra": "AuraProxy richiede inoltre un piccolo file di avvio per il suo Caddy:",
+        "alt": "Oppure clonare l'intero repository:"
       },
       "s2": {
-        "title": "Passo 2: configurare le variabili d'ambiente (.env)",
-        "desc": "Per motivi di sicurezza, credenziali e password non sono memorizzate nel repository. Create quindi in locale i file .env necessari:",
-        "l1": "Cercate nelle sottocartelle i modelli forniti (ad es. .env.example).",
-        "l2": "Copiateli come .env e inserite i vostri valori e le vostre password (esempio per un servizio):"
+        "title": "Generare le variabili d'ambiente / creare il .env",
+        "desc": "Un solo comando genera i segreti necessari, non dovete digitare nulla a mano. Crea il file .env:",
+        "note": "Le password di AuraDirect e AuraLic (utente admin) si trovano poi nel file .env. Conservatelo al sicuro e non inseritelo mai in un repository."
       },
       "s3": {
-        "title": "Passo 3: avviare i container Docker",
-        "desc": "Quando tutti i file .env sono al loro posto, avviate l'intera suite in background:",
+        "title": "Scaricare le immagini da Docker Hub e avviare",
+        "prep": "Solo per AuraCall: create prima le cartelle dei dati, in modo che appartengano all'utente 1000:",
+        "desc": "Ora avviate Docker Compose. Docker legge il file docker-compose.yml, riconosce le immagini migerber77/aura-suite:… e le scarica automaticamente da Docker Hub:",
         "verify": "Verificate poi che tutti i container siano partiti e funzionino senza errori:"
-      },
-      "s4": {
-        "title": "Passo 4 (facoltativo): sincronizzazione Git automatica",
-        "desc": "Se anche il server deve registrare e sincronizzare automaticamente le modifiche, potete impostare lo script fornito come cronjob. Per le installazioni normali non serve.",
-        "a": "1. Impostare l'indirizzo del repository con un token (solo se servono i diritti di scrittura):",
-        "caution": "Attenzione: il token viene poi memorizzato in chiaro in .git/config. Createlo solo per questo repository e con i permessi minimi. Verificate inoltre prima che i file .env e le cartelle dei dati siano in .gitignore, in modo che la sincronizzazione non trasferisca password o dati.",
-        "b": "2. Impostare un cronjob per la sincronizzazione oraria (crontab -e) e aggiungere questa riga alla fine:"
       }
     }
   },
@@ -2607,7 +2591,7 @@ const translations = {
       "downloadWin": "Descargar para Windows",
       "downloadMac": "Descargar para macOS",
       "note": "Requiere Docker Engine 25 o superior. En sistemas más antiguos (p. ej. algunos NAS), descarga el archivo compose y arráncalo con «docker compose up -d».",
-      "suiteLink": "Alternativa: instalar toda la Aura Suite desde el repositorio de GitHub →"
+      "suiteLink": "Alternativa: instalar toda la Aura Suite con un único archivo Compose →"
     },
     "features": {
       "heading": "Todo lo que un asistente de equipo debería saber hacer — y bastante que nadie más sabe hacer.",
@@ -3188,34 +3172,30 @@ const translations = {
     },
     "suiteinstall": {
       "title": "Aura Suite: instalación &amp; despliegue",
-      "lead": "Así instalas y arrancas la Aura Suite en un servidor nuevo a partir del repositorio de GitHub.",
+      "lead": "Así instalas la Aura Suite en un servidor nuevo: descargar el archivo Compose ya preparado, generar los secretos y arrancar.",
+      "time": "1 min",
       "req": {
         "title": "Requisitos",
         "r1": "Un servidor Linux (p. ej. Ubuntu o Debian)",
-        "r2": "Docker y Docker Compose están instalados en el sistema de destino",
-        "r3": "Git está instalado"
+        "r2": "Docker y Docker Compose están instalados",
+        "r3": "curl y openssl están instalados (Git solo para clonar el repositorio)"
       },
       "s1": {
-        "title": "Paso 1: clonar el repositorio",
-        "desc": "Clona el repositorio central en tu servidor, en el directorio que prefieras (p. ej. /docker/aura-suite):"
+        "title": "Clonar el repositorio o descargar el archivo Compose",
+        "desc": "En lugar de escribir tú mismo el docker-compose.yml, descarga la configuración ya preparada directamente desde el repositorio Git:",
+        "extra": "AuraProxy necesita además un pequeño archivo de arranque para su Caddy:",
+        "alt": "O clona todo el repositorio:"
       },
       "s2": {
-        "title": "Paso 2: configurar las variables de entorno (.env)",
-        "desc": "Por motivos de seguridad, las credenciales y contraseñas no se guardan en el repositorio. Crea por tanto los archivos .env necesarios en local:",
-        "l1": "Busca en las subcarpetas las plantillas incluidas (p. ej. .env.example).",
-        "l2": "Cópialas como .env e introduce tus propios valores y contraseñas (ejemplo para un servicio):"
+        "title": "Generar las variables de entorno / crear el .env",
+        "desc": "Un solo comando genera los secretos necesarios, no tienes que escribir nada a mano. Crea el archivo .env:",
+        "note": "Las contraseñas de AuraDirect y AuraLic (usuario admin) quedan después en el archivo .env. Guárdalo en un lugar seguro y no lo subas nunca a un repositorio."
       },
       "s3": {
-        "title": "Paso 3: iniciar los contenedores Docker",
-        "desc": "Cuando todos los archivos .env estén en su sitio, inicia toda la suite en segundo plano:",
+        "title": "Descargar las imágenes de Docker Hub y arrancar",
+        "prep": "Solo para AuraCall: crea antes las carpetas de datos para que pertenezcan al usuario 1000:",
+        "desc": "Ahora arranca Docker Compose. Docker lee el docker-compose.yml, reconoce las imágenes migerber77/aura-suite:… y las descarga automáticamente de Docker Hub:",
         "verify": "Después comprueba que todos los contenedores han arrancado y funcionan sin errores:"
-      },
-      "s4": {
-        "title": "Paso 4 (opcional): sincronización Git automática",
-        "desc": "Si el servidor también debe registrar y sincronizar los cambios automáticamente, puedes configurar el script incluido como tarea cron. En instalaciones normales no es necesario.",
-        "a": "1. Establecer la dirección del repositorio con un token (solo si se necesitan permisos de escritura):",
-        "caution": "Atención: el token queda después guardado en texto plano en .git/config. Créalo solo para este repositorio y con los permisos mínimos. Comprueba además antes que los archivos .env y las carpetas de datos figuran en .gitignore, para que la sincronización no transfiera contraseñas ni datos.",
-        "b": "2. Configurar una tarea cron para la sincronización cada hora (crontab -e) y añadir esta línea al final:"
       }
     }
   }

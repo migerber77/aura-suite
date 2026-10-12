@@ -14,9 +14,13 @@ Was neu ist
   - Kopfzeile: Sprachtasten und Kontakt-Knopf bleiben auf Handy, Tablet und Laptop erreichbar (vorher abgeschnitten)
 
 
+
+
 Neu in dieser Fassung
-  - Abschnitt "Aura-Suite: Installation & Deployment" (#installation, direkt nach dem Schnellstart, in 5 Sprachen): Repository aus GitHub klonen,
-    .env-Dateien anlegen, mit "docker compose up -d --build" starten, mit "docker compose ps" prüfen, optional Git-Sync per Cronjob.
+  - Abschnitt "Aura-Suite: Installation & Deployment" (#installation, direkt nach dem Schnellstart, in 5 Sprachen) in drei Schritten:
+    1. fertige docker-compose.yml aus dem GitHub-Repository laden (oder das Repository klonen) und die Startdatei für den Caddy von AuraProxy anlegen,
+    2. die .env mit allen 14 Pflicht-Geheimnissen per Befehl erzeugen,
+    3. mit "docker compose up -d" starten (die Images kommen von Docker Hub: migerber77/aura-suite:...).
     Die Befehle stehen genau so im Seitentext. Im Schnellstart gibt es dazu einen Verweis.
 
 Einspielen (auf dem Server, im Ordner der Webseite, z. B. /docker/AuraChat-Website)

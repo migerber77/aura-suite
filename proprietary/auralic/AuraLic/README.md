@@ -96,3 +96,12 @@ selben "Vertrauensraum" erzeugen, und bereits ausgestellte alte Lizenzen
 bleiben zwar gültig, aber du hast dann keinen Überblick/keine Kontrolle mehr
 über neue). Backup/Wiederherstellung ist nur als Superadmin zugänglich.
 
+## Aura-Suite-Version ("Über Aura-Suite")
+
+Auf der Seite **Kunden** gibt es die Karte **Aura-Suite-Version** (nur für den Administrator): Version (z. B. `2.1.0`), Stand (Datum, ohne Eingabe gilt heute) und ein kurzer Hinweis (höchstens 120 Zeichen).
+
+- Die Angaben gehen mit der Antwort des Abgleichs (`/api/checkin`) an jede Installation, die sich meldet (auch unlizenzierte), und erscheinen dort unter **Über Aura-Suite**, spätestens nach 12 Stunden. Zeigt eine Installation eine ältere Version an, steht dort „Update verfügbar“.
+- Dieselbe Zahl steuert wie bisher die Markierung „veraltet“ bei den Kunden (verglichen wird mit der **installierten** Version, die die Installation selbst meldet).
+- Die Version leer lassen und speichern schaltet die Anzeige ab.
+- Erlaubt sind nur Zahlen mit Punkten (`1.00`, `2.1`, `2.1.0`). Alles wird geprüft, bevor es verschickt wird; die Installationen prüfen es noch einmal und zeigen es nur als Text.
+- Nur **AuraChat** und **AuraCall** melden sich beim Lizenzserver. Die übrigen Produkte (AuraPlan, AuraDirect, AuraMail, AuraTicket, AuraProxy) haben keine Verbindung hierher und erfahren die Version deshalb nicht.

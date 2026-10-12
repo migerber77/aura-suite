@@ -642,7 +642,7 @@ document.addEventListener('DOMContentLoaded', () => {
             login: "Einloggen",
             btnPassword: "🔑 Passwort",
             btnDeleteAcc: "🗑️ Account löschen",
-            menuAbout: "ℹ️ Über AuraChat",
+            menuAbout: "ℹ️ Über Aura-Suite",
             menuScreenFormat: "🖥️ Bildschirmformat",
             menuModel: "🔍 Modell-Suche & Server",
             menuSettings: "⚙️ Einstellungen",
@@ -670,7 +670,7 @@ document.addEventListener('DOMContentLoaded', () => {
             login: "Log in",
             btnPassword: "🔑 Password",
             btnDeleteAcc: "🗑️ Delete Account",
-            menuAbout: "ℹ️ About AuraChat",
+            menuAbout: "ℹ️ About Aura Suite",
             menuScreenFormat: "🖥️ Screen format",
             menuModel: "🔍 Model Search & Server",
             menuSettings: "⚙️ Settings",
@@ -1328,7 +1328,25 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    if (menuItemAbout) menuItemAbout.addEventListener('click', () => openModal(modalAbout));
+    // "Über Aura-Suite": installierte Version vom Server; die aktuelle Aura-Suite-Version (Datum, Hinweis) kommt vom Lizenzserver. Alles als reiner Text.
+    // Ohne Antwort bleibt der feste Text im Seitenaufbau stehen.
+    async function fillAboutVersion() {
+        try {
+            const res = await fetch(`${backendUrl}/version`, { cache: 'no-store' }); if (!res.ok) return; const d = await res.json();
+            const $ = (id) => document.getElementById(id), show = (id, on) => { const e = $(id); if (e) e.classList.toggle('hidden', !on); };
+            if (typeof d.installed === 'string' && d.installed && $('about-version')) $('about-version').textContent = 'v' + d.installed.replace(/^v/i, '');
+            // JJJJ-MM-TT als TT.MM.JJJJ, ohne Datumsobjekt (kein Weiterrollen unmöglicher Tage wie 30.2., keine Zeitzonen-Verschiebung); ein unmögliches Datum blendet die Zeile aus
+            const fmtDate = (v) => { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(v || '')); if (!m) return ''; const t = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3])); return t.getUTCFullYear() === +m[1] && t.getUTCMonth() === +m[2] - 1 && t.getUTCDate() === +m[3] ? `${m[3]}.${m[2]}.${m[1]}` : ''; };
+            const s = d.suite, dateText = s ? fmtDate(s.date) : '';
+            show('about-latest-row', !!s); show('about-date-row', !!dateText); show('about-note-row', !!(s && s.note)); show('about-update-badge', !!(s && d.updateAvailable));
+            if (s) {
+                if ($('about-latest')) $('about-latest').textContent = 'v' + s.version;
+                if (dateText && $('about-date')) $('about-date').textContent = dateText;
+                if (s.note && $('about-note')) $('about-note').textContent = s.note;
+            }
+        } catch (err) { /* feste Werte bleiben */ }
+    }
+    if (menuItemAbout) menuItemAbout.addEventListener('click', () => { openModal(modalAbout); fillAboutVersion(); });
 
     // --- BILDSCHIRMFORMAT: Menüpunkt und Auswahlfenster (alle Texte als Text, nie als HTML) ---
     // Die gewählte Drehung gilt zusätzlich zu jeder Wahl: ein anderes Format/eine andere Auflösung/Automatisch ändert sie NICHT
