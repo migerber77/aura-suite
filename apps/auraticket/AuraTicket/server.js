@@ -171,6 +171,13 @@ function setConfig(key, value) {
     ));
 }
 
+// --- Aura-Suite: "Über Aura-Suite" (Dialog in der Oberfläche, Datei about.js) ---
+// Programmversion aus package.json; die Version der Aura-Suite setzt, wer sie betreibt (Umgebungswert AURA_SUITE_VERSION, z. B. in der .env). Nur für angemeldete Personen.
+const AURA_APP_NAME = 'AuraTicket';
+const AURA_APP_VERSION = String(require('./package.json').version);
+const AURA_SUITE_INSTALLED = /^\d{1,4}\.\d{1,4}(\.\d{1,4})?$/.test(String(process.env.AURA_SUITE_VERSION || '').trim()) ? String(process.env.AURA_SUITE_VERSION).trim() : null;
+app.get('/api/version', requireAuth, (req, res) => res.set('Cache-Control', 'no-store').json({ product: AURA_APP_NAME, installed: AURA_APP_VERSION, suiteInstalled: AURA_SUITE_INSTALLED, suite: null, updateAvailable: false }));
+
 function requireAuth(req, res, next) {
     if (req.session && req.session.user && req.session.user.id) return next();
     res.status(401).json({ error: 'Nicht angemeldet.' });

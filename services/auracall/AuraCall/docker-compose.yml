@@ -35,6 +35,7 @@ services:
       - AURACALL_RESET_2FA=${AURACALL_RESET_2FA:-}
       - LICENSE_SECRET=${LICENSE_SECRET:-}
       - LICENSE_CHECKIN_HOST=${LICENSE_CHECKIN_HOST-auralic.gerber-backoffice-solutions.com}
+      - AURA_SUITE_VERSION=${AURA_SUITE_VERSION:-}   # optional: Version der Aura-Suite, erscheint unter "Über Aura-Suite"
     volumes:
       - ./data:/data
       - ./asterisk-conf:/asterisk-conf

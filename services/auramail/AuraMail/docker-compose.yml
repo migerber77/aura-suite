@@ -15,6 +15,7 @@ services:
       - CREDENTIAL_ENCRYPTION_KEY=${CREDENTIAL_ENCRYPTION_KEY}
       # Muss GENAU derselbe Wert wie auf dem Lizenz-Server (LICENSE_SECRET) sein.
       - LICENSE_SECRET=${LICENSE_SECRET}
+      - AURA_SUITE_VERSION=${AURA_SUITE_VERSION:-}   # optional: Version der Aura-Suite, erscheint unter "Über Aura-Suite"
       - INTERNAL_SMTP_PORT=2525
     volumes:
       - ./data:/app/data

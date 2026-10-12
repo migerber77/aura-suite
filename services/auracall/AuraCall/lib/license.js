@@ -24,6 +24,20 @@ function verifyKey(key, secret, now = Date.now()) {
 }
 // Domain oder IP, mit oder ohne http(s)://, mit oder ohne Port: es zählt nur der Rechnername, der Port ist fest (wie bei AuraChat)
 function buildCheckinBaseUrl(raw) { let host = String(raw || '').trim(); if (!host) return ''; host = host.replace(/^https?:\/\//, '').split('/')[0].split(':')[0]; return /^[A-Za-z0-9.-]{1,253}$/.test(host) ? `http://${host}:${CHECKIN_PORT}` : ''; }
+// Aura-Suite-Version vom Lizenzserver (nur Anzeige in "Über Aura-Suite"): streng geprüft, bevor sie gespeichert wird. Der Abgleich läuft über ungesichertes HTTP.
+const SUITE_VERSION_RE = /^\d{1,4}\.\d{1,4}(\.\d{1,4})?$/;
+function parseSuiteInfo(raw) {
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
+    const version = typeof raw.version === 'string' ? raw.version.trim() : ''; if (!SUITE_VERSION_RE.test(version)) return null;
+    let date = null; if (typeof raw.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(raw.date)) { const d = new Date(raw.date + 'T00:00:00Z'); if (!isNaN(d) && d.toISOString().slice(0, 10) === raw.date) date = raw.date; }
+    const note = typeof raw.note === 'string' ? raw.note.replace(/[\u0000-\u001f\u007f<>]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 120) : '';
+    return { version, date, note };
+}
+function versionOlder(installed, latest) {
+    const a = String(installed).split('.').map((n) => parseInt(n, 10) || 0), b = String(latest).split('.').map((n) => parseInt(n, 10) || 0);
+    for (let i = 0; i < Math.max(a.length, b.length); i++) { const x = a[i] || 0, y = b[i] || 0; if (x < y) return true; if (x > y) return false; }
+    return false;
+}
 const str = (x, n) => String(x === undefined || x === null ? '' : x).replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, n);
 
 class License {
@@ -51,6 +65,9 @@ class License {
         this.db.setSetting('licenseKey', k); return { ok: true, customer: str(r.payload.customer, 120), expiresAt: r.payload.expiresAt || null };
     }
     removeKey() { this.db.setSetting('licenseKey', ''); }
+    // ---- Aura-Suite-Version vom Lizenzserver (Anzeige) ----
+    suiteInfo() { const raw = this.db.getSetting('suiteInfo', ''); if (typeof raw !== 'string' || !raw) return null; try { return parseSuiteInfo(JSON.parse(raw)); } catch { return null; } }
+    setSuite(info) { this.db.setSetting('suiteInfo', info ? JSON.stringify(info) : ''); }
     // ---- Rückmeldung beim Lizenzserver ----
     checkinEnabled() { return !!this.checkinUrl; }
     checkinStatus() { return { enabled: this.checkinEnabled(), lastResult: this.lastCheckin }; }
@@ -59,6 +76,8 @@ class License {
         try {
             const resp = await this.fetch(`${this.checkinUrl}/api/checkin`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ licenseKey: key || null, installationId: this.installationId(), totalUsers: c.totalUsers, totalAdmins: c.totalAdmins, version: this.version }), signal: AbortSignal.timeout(this.timeoutMs) });
             let data = {}; try { data = await resp.json(); } catch { /* keine Antwort */ }
+            // Nur eine echte Antwort des Lizenzservers ({ ok: true, ... }) ändert die gespeicherte Anzeige; fehlt die Version darin (oder ist sie ungültig), wird sie entfernt.
+            if (resp.ok && data && data.ok === true) { try { this.setSuite(parseSuiteInfo(data.suite)); } catch { /* Anzeige ist nicht wichtig */ } }
             this.lastCheckin = { success: resp.ok, message: resp.ok ? 'OK' : str(data && data.error, 200) || `Status ${resp.status}`, retryable: !resp.ok && resp.status >= 500, at: new Date(this.now()).toISOString() };   // ein abgelehnter Schlüssel (4xx) ändert sich durch Wiederholen nicht
         } catch (err) {
             const timedOut = err && (err.name === 'TimeoutError' || /timeout|aborted/i.test(err.message || ''));
@@ -80,4 +99,4 @@ class License {
     }
     stop() { for (const t of this.timers) clearTimeout(t); this.timers.clear(); if (this.interval) clearInterval(this.interval); this.interval = null; this.retry = null; }
 }
-module.exports = { License, verifyKey, buildCheckinBaseUrl, PRODUCT, TRIAL_DAYS, WARN_DAYS, CHECKIN_PORT, DEFAULT_CHECKIN_HOST };
+module.exports = { License, parseSuiteInfo, versionOlder, verifyKey, buildCheckinBaseUrl, PRODUCT, TRIAL_DAYS, WARN_DAYS, CHECKIN_PORT, DEFAULT_CHECKIN_HOST };
