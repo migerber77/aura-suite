@@ -16,6 +16,8 @@ for (const lang of LANGS) {
   T.nav.produkte = S.navProdukte;
   T.ecosystem = S.ecosystem;
   Object.assign(T.quickstart, S.quickstart);               // lead, step1-3, note, button
+  T.quickstart.suiteLink = S.suiteLink;                     // Verweis auf die Installation aus dem GitHub-Repository
+  T.suiteinstall = S.suiteinstall;                          // Abschnitt "Aura-Suite: Installation & Deployment"
   T.features.commands = S.commands;
   Object.assign(T.features, S.newCards);                    // hotel, phone, screen
   T.features.memory.desc = S.memoryDesc;
@@ -205,6 +207,35 @@ function productSection(key) {
   must(m, 'Bewertungen-Abschnitt');
   html = html.replace(m[0], () => productSection('auramail') + productSection('auraticket') + productSection('auraproxy') + productSection('auracall') + m[0]);
 }
+// c3) Abschnitt "Aura-Suite: Installation & Deployment" (aus dem GitHub-Repository) nach dem Schnellstart, mit Verweis aus dem Schnellstart
+{
+  const I = de.suiteinstall;
+  const code = (lines) => `<div class="codeblock" style="background:#0b1220; border:1px solid rgba(255,255,255,0.1); border-radius:12px; padding:16px 20px; text-align:left; font-family:'Courier New',monospace; font-size:13px; color:#e2e8f0; overflow-x:auto; white-space:pre;">${lines.map((l) => `<div>${l}</div>`).join('')}</div>`;
+  const step = (n, title, kids) => `\n      <div class="card" style="text-align:left; margin-top:16px;">\n        <h3 data-i18n="suiteinstall.${n}.title">${title}</h3>\n${kids}\n      </div>`;
+  const p = (key, text, extra = '') => `        <p style="color:#94a3b8; font-size:14px; margin:10px 0;${extra}" data-i18n="suiteinstall.${key}">${text}</p>`;
+  const section = `<section id="installation">
+    <div class="wrap" style="max-width:820px;">
+      <h2 data-i18n="suiteinstall.title">${I.title}</h2>
+      <p style="color:#94a3b8; max-width:640px; margin:0 0 8px;" data-i18n="suiteinstall.lead">${I.lead}</p>
+      <div class="card" style="text-align:left; margin-top:16px;">
+        <h3 data-i18n="suiteinstall.req.title">${I.req.title}</h3>
+        <ul style="color:#cbd5e1; font-size:14px; margin:10px 0 0 18px; line-height:1.7; list-style:disc;">
+          <li data-i18n="suiteinstall.req.r1">${I.req.r1}</li>
+          <li data-i18n="suiteinstall.req.r2">${I.req.r2}</li>
+          <li data-i18n="suiteinstall.req.r3">${I.req.r3}</li>
+        </ul>
+      </div>${step('s1', I.s1.title, p('s1.desc', I.s1.desc) + '\n        ' + code(['sudo mkdir -p /docker', 'cd /docker', 'git clone https://github.com/migerber77/aura-suite.git', 'cd aura-suite']))}${step('s2', I.s2.title, p('s2.desc', I.s2.desc) + '\n        <ol style="color:#cbd5e1; font-size:14px; margin:6px 0 10px 18px; line-height:1.7; list-style:decimal;"><li data-i18n="suiteinstall.s2.l1">' + I.s2.l1 + '</li><li data-i18n="suiteinstall.s2.l2">' + I.s2.l2 + '</li></ol>\n        ' + code(['cp .env.example .env', 'nano .env']))}${step('s3', I.s3.title, p('s3.desc', I.s3.desc) + '\n        ' + code(['docker compose up -d --build']) + '\n' + p('s3.verify', I.s3.verify, ' margin-top:16px;') + '\n        ' + code(['docker compose ps']))}${step('s4', I.s4.title, p('s4.desc', I.s4.desc) + '\n' + p('s4.a', I.s4.a) + '\n        ' + code(['git remote set-url origin https://DEIN_TOKEN@github.com/migerber77/aura-suite.git']) + '\n' + p('s4.caution', I.s4.caution, ' color:#fbbf24; font-size:13px;') + '\n' + p('s4.b', I.s4.b, ' margin-top:16px;') + '\n        ' + code(['0 * * * * /docker/aura-suite/git-sync.sh &gt;&gt; /docker/aura-suite/sync.log 2&gt;&amp;1']))}
+    </div>
+  </section>
+
+  `;
+  must(html.includes('<section id="funktionen"'), 'Abschnitt funktionen (Einfügestelle)');
+  html = html.replace('<section id="funktionen"', () => section + '<section id="funktionen"');
+  const link = `\n      <p style="margin-top:12px;"><a href="#installation" style="color:var(--cyan); font-size:13px; text-decoration:none;" data-i18n="quickstart.suiteLink">${de.suiteLink}</a></p>`;
+  must(html.includes('data-i18n="quickstart.button"'), 'Schnellstart-Knopf');
+  html = html.replace(/(<a href="downloads\/aurachat-quickstart\.zip"[^>]*data-i18n="quickstart\.button">[^<]*<\/a><\/p>)/, (m) => m + link);
+}
+
 // g) Suchmaschinen-Angaben: Beschreibung und Merkmalsliste (nur, was sichtbar auf der Seite steht)
 {
   const OLD = 'Selbst gehosteter KI-Assistent mit Avatar, Stimme und Gedächtnis. Anbindung an Ollama, Websuche, Microsoft 365. Kostenlos starten, eure Daten bleiben bei euch.';

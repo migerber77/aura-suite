@@ -1,59 +1,44 @@
-version: '3.8'
-
-networks:
-  aura-net:
-    driver: bridge
-
 services:
-  # --- APPS ---
-  aurachat:
-    build: ./apps/aurachat
-    container_name: aurachat
+  chat:
+    image: migerber77/aura-suite:chat
     restart: unless-stopped
-    networks:
-      - aura-net
+    ports:
+      - "8091:80"
     environment:
-      - NODE_ENV=production
+      - TZ=Europe/Zurich
 
-  auraplan:
-    build: ./apps/auraplan
-    container_name: auraplan
+  plan:
+    image: migerber77/aura-suite:plan
     restart: unless-stopped
-    networks:
-      - aura-net
+    ports:
+      - "3002:3000"
 
-  auraticket:
-    build: ./apps/auraticket
-    container_name: auraticket
+  ticket:
+    image: migerber77/aura-suite:ticket
     restart: unless-stopped
-    networks:
-      - aura-net
+    ports:
+      - "3400:3000"
 
-  # --- SERVICES ---
-  auracall:
-    build: ./services/auracall
-    container_name: auracall
+  mail:
+    image: migerber77/aura-suite:mail
     restart: unless-stopped
-    networks:
-      - aura-net
+    ports:
+      - "2525:2525"
+      - "3300:3000"
 
-  auradirect:
-    build: ./services/auradirect
-    container_name: auradirect
+  direct:
+    image: migerber77/aura-suite:direct
     restart: unless-stopped
-    networks:
-      - aura-net
+    ports:
+      - "389:389"
+      - "4000:4000"
 
-  auramail:
-    build: ./services/auramail
-    container_name: auramail
+  proxy:
+    image: migerber77/aura-suite:proxy
     restart: unless-stopped
-    networks:
-      - aura-net
+    ports:
+      - "3500:3000"
 
-  auraproxy:
-    build: ./services/auraproxy
-    container_name: auraproxy
+  call:
+    image: migerber77/aura-suite:call
     restart: unless-stopped
-    networks:
-      - aura-net

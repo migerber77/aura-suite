@@ -13,6 +13,12 @@ Was neu ist
     die deutschen Texte im HTML stehen jetzt vollständig im Quelltext (bei AuraPlan/AuraDirect waren Karten leer)
   - Kopfzeile: Sprachtasten und Kontakt-Knopf bleiben auf Handy, Tablet und Laptop erreichbar (vorher abgeschnitten)
 
+
+Neu in dieser Fassung
+  - Abschnitt "Aura-Suite: Installation & Deployment" (#installation, direkt nach dem Schnellstart, in 5 Sprachen): Repository aus GitHub klonen,
+    .env-Dateien anlegen, mit "docker compose up -d --build" starten, mit "docker compose ps" prüfen, optional Git-Sync per Cronjob.
+    Die Befehle stehen genau so im Seitentext. Im Schnellstart gibt es dazu einen Verweis.
+
 Einspielen (auf dem Server, im Ordner der Webseite, z. B. /docker/AuraChat-Website)
   1. ZIP über den Ordner entpacken (ersetzt html/index.html, html/translations.js, html/style.css und ergänzt html/downloads/).
      Die Installer (AuraChat-Setup-Windows.exe, AuraChat-Setup-macOS.zip) bleiben unverändert.

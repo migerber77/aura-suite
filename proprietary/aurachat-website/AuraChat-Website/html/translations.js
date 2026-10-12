@@ -30,7 +30,8 @@ const translations = {
       "desktopLead": "⚠ Kein eigenständiges Programm — verbindet sich mit einer bereits laufenden AuraChat-Installation (siehe oben). Praktisch als App statt Browser-Tab, sobald AuraChat läuft:",
       "downloadWin": "Für Windows herunterladen",
       "downloadMac": "Für macOS herunterladen",
-      "note": "Voraussetzung: Docker Engine 25 oder neuer. Auf älteren Systemen (z.B. manche NAS) stattdessen die Compose-Datei herunterladen und mit „docker compose up -d“ starten."
+      "note": "Voraussetzung: Docker Engine 25 oder neuer. Auf älteren Systemen (z.B. manche NAS) stattdessen die Compose-Datei herunterladen und mit „docker compose up -d“ starten.",
+      "suiteLink": "Alternativ: die ganze Aura-Suite aus dem GitHub-Repository installieren →"
     },
     "features": {
       "heading": "Alles, was ein Team-Assistent können sollte — und einiges, was sonst keiner kann.",
@@ -608,6 +609,38 @@ const translations = {
           "button": "Anfrage senden"
         }
       }
+    },
+    "suiteinstall": {
+      "title": "Aura-Suite: Installation &amp; Deployment",
+      "lead": "So richtest du die Aura-Suite auf einem neuen Server aus dem GitHub-Repository ein und startest sie.",
+      "req": {
+        "title": "Voraussetzungen",
+        "r1": "Ein Linux-Server (z. B. Ubuntu oder Debian)",
+        "r2": "Docker und Docker Compose sind auf dem Zielsystem installiert",
+        "r3": "Git ist installiert"
+      },
+      "s1": {
+        "title": "Schritt 1: Repository klonen",
+        "desc": "Klone das zentrale Repository auf deinen Server in das gewünschte Verzeichnis (z. B. /docker/aura-suite):"
+      },
+      "s2": {
+        "title": "Schritt 2: Umgebungsvariablen (.env) einrichten",
+        "desc": "Zugangsdaten und Passwörter liegen aus Sicherheitsgründen nicht im Repository. Lege die benötigten .env-Dateien deshalb lokal an:",
+        "l1": "Suche in den Unterordnern nach den bereitgestellten Vorlagen (z. B. .env.example).",
+        "l2": "Kopiere sie als .env und trage deine eigenen Werte und Passwörter ein (Beispiel für einen Dienst):"
+      },
+      "s3": {
+        "title": "Schritt 3: Docker-Container starten",
+        "desc": "Sind alle .env-Dateien angelegt, startest du die Suite im Hintergrund:",
+        "verify": "Prüfe danach, ob alle Container gestartet sind und fehlerfrei laufen:"
+      },
+      "s4": {
+        "title": "Schritt 4 (optional): Automatischer Git-Sync",
+        "desc": "Soll der Server Änderungen selbst erfassen und synchronisieren, kannst du das mitgelieferte Skript per Cronjob einrichten. Für normale Installationen ist das nicht nötig.",
+        "a": "1. Adresse des Repositorys mit Token setzen (nur wenn Schreibrechte nötig sind):",
+        "caution": "Achtung: Der Token steht danach im Klartext in .git/config. Erzeuge ihn nur für dieses Repository und mit den geringsten Rechten. Prüfe außerdem vorher, dass .env-Dateien und Datenordner in der .gitignore stehen, damit der Sync keine Passwörter oder Daten überträgt.",
+        "b": "2. Cronjob für den stündlichen Sync einrichten (crontab -e) und diese Zeile am Ende einfügen:"
+      }
     }
   },
   "en": {
@@ -641,7 +674,8 @@ const translations = {
       "desktopLead": "⚠ Not a standalone program — connects to an AuraChat installation that's already running (see above). Handy as an app instead of a browser tab, once AuraChat is running:",
       "downloadWin": "Download for Windows",
       "downloadMac": "Download for macOS",
-      "note": "Requires Docker Engine 25 or newer. On older systems (e.g. some NAS devices), download the compose file instead and start it with “docker compose up -d”."
+      "note": "Requires Docker Engine 25 or newer. On older systems (e.g. some NAS devices), download the compose file instead and start it with “docker compose up -d”.",
+      "suiteLink": "Alternatively: install the whole Aura Suite from the GitHub repository →"
     },
     "features": {
       "heading": "Everything a team assistant should do — and quite a bit that no one else can.",
@@ -1219,6 +1253,38 @@ const translations = {
           "button": "Send a request"
         }
       }
+    },
+    "suiteinstall": {
+      "title": "Aura Suite: Installation &amp; Deployment",
+      "lead": "How to set up and start the Aura Suite on a new server from the GitHub repository.",
+      "req": {
+        "title": "Requirements",
+        "r1": "A Linux server (e.g. Ubuntu or Debian)",
+        "r2": "Docker and Docker Compose are installed on the target system",
+        "r3": "Git is installed"
+      },
+      "s1": {
+        "title": "Step 1: Clone the repository",
+        "desc": "Clone the central repository onto your server into the directory of your choice (e.g. /docker/aura-suite):"
+      },
+      "s2": {
+        "title": "Step 2: Set up the environment variables (.env)",
+        "desc": "For security reasons, credentials and passwords are not stored in the repository. Create the required .env files locally:",
+        "l1": "Look in the subfolders for the provided templates (e.g. .env.example).",
+        "l2": "Copy them as .env and enter your own values and passwords (example for one service):"
+      },
+      "s3": {
+        "title": "Step 3: Start the Docker containers",
+        "desc": "Once all .env files are in place, start the whole suite in the background:",
+        "verify": "Then check that all containers have started and are running without errors:"
+      },
+      "s4": {
+        "title": "Step 4 (optional): Automatic Git sync",
+        "desc": "If the server should also record and synchronise changes automatically, you can set up the provided script as a cron job. This is not needed for normal installations.",
+        "a": "1. Set the repository address with a token (only if write access is needed):",
+        "caution": "Caution: the token is then stored in plain text in .git/config. Create it for this repository only and with the lowest possible permissions. Also check beforehand that .env files and data folders are listed in .gitignore, so the sync does not transfer passwords or data.",
+        "b": "2. Set up a cron job for the hourly sync (run crontab -e) and add this line at the end:"
+      }
     }
   },
   "fr": {
@@ -1252,7 +1318,8 @@ const translations = {
       "desktopLead": "⚠ Ce n'est pas un programme autonome — se connecte à une installation AuraChat déjà en cours d'exécution (voir ci-dessus). Pratique comme application plutôt qu'un onglet de navigateur, une fois AuraChat en marche :",
       "downloadWin": "Télécharger pour Windows",
       "downloadMac": "Télécharger pour macOS",
-      "note": "Nécessite Docker Engine 25 ou plus récent. Sur des systèmes plus anciens (p. ex. certains NAS), téléchargez plutôt le fichier compose et lancez-le avec « docker compose up -d »."
+      "note": "Nécessite Docker Engine 25 ou plus récent. Sur des systèmes plus anciens (p. ex. certains NAS), téléchargez plutôt le fichier compose et lancez-le avec « docker compose up -d ».",
+      "suiteLink": "Ou : installer toute la suite Aura depuis le dépôt GitHub →"
     },
     "features": {
       "heading": "Tout ce qu'un assistant d'équipe devrait savoir faire — et bien plus que les autres.",
@@ -1830,6 +1897,38 @@ const translations = {
           "button": "Envoyer une demande"
         }
       }
+    },
+    "suiteinstall": {
+      "title": "Suite Aura : installation &amp; déploiement",
+      "lead": "Voici comment installer et démarrer la suite Aura sur un nouveau serveur à partir du dépôt GitHub.",
+      "req": {
+        "title": "Prérequis",
+        "r1": "Un serveur Linux (par ex. Ubuntu ou Debian)",
+        "r2": "Docker et Docker Compose sont installés sur le système cible",
+        "r3": "Git est installé"
+      },
+      "s1": {
+        "title": "Étape 1 : cloner le dépôt",
+        "desc": "Clonez le dépôt central sur votre serveur, dans le répertoire de votre choix (par ex. /docker/aura-suite) :"
+      },
+      "s2": {
+        "title": "Étape 2 : configurer les variables d'environnement (.env)",
+        "desc": "Pour des raisons de sécurité, les accès et mots de passe ne sont pas stockés dans le dépôt. Créez donc les fichiers .env nécessaires en local :",
+        "l1": "Cherchez dans les sous-dossiers les modèles fournis (par ex. .env.example).",
+        "l2": "Copiez-les sous le nom .env et saisissez vos propres valeurs et mots de passe (exemple pour un service) :"
+      },
+      "s3": {
+        "title": "Étape 3 : démarrer les conteneurs Docker",
+        "desc": "Une fois tous les fichiers .env en place, démarrez toute la suite en arrière-plan :",
+        "verify": "Vérifiez ensuite que tous les conteneurs ont démarré et fonctionnent sans erreur :"
+      },
+      "s4": {
+        "title": "Étape 4 (facultatif) : synchronisation Git automatique",
+        "desc": "Si le serveur doit lui aussi enregistrer et synchroniser automatiquement les modifications, vous pouvez configurer le script fourni avec une tâche cron. Inutile pour une installation normale.",
+        "a": "1. Définir l'adresse du dépôt avec un jeton (uniquement si des droits d'écriture sont nécessaires) :",
+        "caution": "Attention : le jeton est ensuite stocké en clair dans .git/config. Créez-le uniquement pour ce dépôt et avec les droits les plus faibles possible. Vérifiez aussi au préalable que les fichiers .env et les dossiers de données figurent dans .gitignore, afin que la synchronisation ne transmette ni mots de passe ni données.",
+        "b": "2. Configurer une tâche cron pour la synchronisation toutes les heures (crontab -e) et ajouter cette ligne à la fin :"
+      }
     }
   },
   "it": {
@@ -1863,7 +1962,8 @@ const translations = {
       "desktopLead": "⚠ Non è un programma autonomo — si collega a un'installazione di AuraChat già in funzione (vedi sopra). Pratica come app al posto di una scheda del browser, una volta che AuraChat è attivo:",
       "downloadWin": "Scarica per Windows",
       "downloadMac": "Scarica per macOS",
-      "note": "Richiede Docker Engine 25 o successivo. Su sistemi più vecchi (ad es. alcuni NAS) scaricate invece il file compose e avviatelo con «docker compose up -d»."
+      "note": "Richiede Docker Engine 25 o successivo. Su sistemi più vecchi (ad es. alcuni NAS) scaricate invece il file compose e avviatelo con «docker compose up -d».",
+      "suiteLink": "In alternativa: installare l'intera Aura Suite dal repository GitHub →"
     },
     "features": {
       "heading": "Tutto ciò che un assistente per team dovrebbe saper fare — e non poco che nessun altro sa fare.",
@@ -2441,6 +2541,38 @@ const translations = {
           "button": "Invia una richiesta"
         }
       }
+    },
+    "suiteinstall": {
+      "title": "Aura Suite: installazione &amp; deployment",
+      "lead": "Ecco come installare e avviare la Aura Suite su un nuovo server dal repository GitHub.",
+      "req": {
+        "title": "Requisiti",
+        "r1": "Un server Linux (ad es. Ubuntu o Debian)",
+        "r2": "Docker e Docker Compose sono installati sul sistema di destinazione",
+        "r3": "Git è installato"
+      },
+      "s1": {
+        "title": "Passo 1: clonare il repository",
+        "desc": "Clonate il repository centrale sul vostro server nella directory desiderata (ad es. /docker/aura-suite):"
+      },
+      "s2": {
+        "title": "Passo 2: configurare le variabili d'ambiente (.env)",
+        "desc": "Per motivi di sicurezza, credenziali e password non sono memorizzate nel repository. Create quindi in locale i file .env necessari:",
+        "l1": "Cercate nelle sottocartelle i modelli forniti (ad es. .env.example).",
+        "l2": "Copiateli come .env e inserite i vostri valori e le vostre password (esempio per un servizio):"
+      },
+      "s3": {
+        "title": "Passo 3: avviare i container Docker",
+        "desc": "Quando tutti i file .env sono al loro posto, avviate l'intera suite in background:",
+        "verify": "Verificate poi che tutti i container siano partiti e funzionino senza errori:"
+      },
+      "s4": {
+        "title": "Passo 4 (facoltativo): sincronizzazione Git automatica",
+        "desc": "Se anche il server deve registrare e sincronizzare automaticamente le modifiche, potete impostare lo script fornito come cronjob. Per le installazioni normali non serve.",
+        "a": "1. Impostare l'indirizzo del repository con un token (solo se servono i diritti di scrittura):",
+        "caution": "Attenzione: il token viene poi memorizzato in chiaro in .git/config. Createlo solo per questo repository e con i permessi minimi. Verificate inoltre prima che i file .env e le cartelle dei dati siano in .gitignore, in modo che la sincronizzazione non trasferisca password o dati.",
+        "b": "2. Impostare un cronjob per la sincronizzazione oraria (crontab -e) e aggiungere questa riga alla fine:"
+      }
     }
   },
   "es": {
@@ -2474,7 +2606,8 @@ const translations = {
       "desktopLead": "⚠ No es un programa independiente — se conecta a una instalación de AuraChat que ya está en funcionamiento (ver arriba). Práctica como app en lugar de una pestaña del navegador, una vez que AuraChat esté en marcha:",
       "downloadWin": "Descargar para Windows",
       "downloadMac": "Descargar para macOS",
-      "note": "Requiere Docker Engine 25 o superior. En sistemas más antiguos (p. ej. algunos NAS), descarga el archivo compose y arráncalo con «docker compose up -d»."
+      "note": "Requiere Docker Engine 25 o superior. En sistemas más antiguos (p. ej. algunos NAS), descarga el archivo compose y arráncalo con «docker compose up -d».",
+      "suiteLink": "Alternativa: instalar toda la Aura Suite desde el repositorio de GitHub →"
     },
     "features": {
       "heading": "Todo lo que un asistente de equipo debería saber hacer — y bastante que nadie más sabe hacer.",
@@ -3051,6 +3184,38 @@ const translations = {
           "desc": "AuraCall se facilita bajo petición para el periodo de prueba de 14 días.",
           "button": "Enviar una solicitud"
         }
+      }
+    },
+    "suiteinstall": {
+      "title": "Aura Suite: instalación &amp; despliegue",
+      "lead": "Así instalas y arrancas la Aura Suite en un servidor nuevo a partir del repositorio de GitHub.",
+      "req": {
+        "title": "Requisitos",
+        "r1": "Un servidor Linux (p. ej. Ubuntu o Debian)",
+        "r2": "Docker y Docker Compose están instalados en el sistema de destino",
+        "r3": "Git está instalado"
+      },
+      "s1": {
+        "title": "Paso 1: clonar el repositorio",
+        "desc": "Clona el repositorio central en tu servidor, en el directorio que prefieras (p. ej. /docker/aura-suite):"
+      },
+      "s2": {
+        "title": "Paso 2: configurar las variables de entorno (.env)",
+        "desc": "Por motivos de seguridad, las credenciales y contraseñas no se guardan en el repositorio. Crea por tanto los archivos .env necesarios en local:",
+        "l1": "Busca en las subcarpetas las plantillas incluidas (p. ej. .env.example).",
+        "l2": "Cópialas como .env e introduce tus propios valores y contraseñas (ejemplo para un servicio):"
+      },
+      "s3": {
+        "title": "Paso 3: iniciar los contenedores Docker",
+        "desc": "Cuando todos los archivos .env estén en su sitio, inicia toda la suite en segundo plano:",
+        "verify": "Después comprueba que todos los contenedores han arrancado y funcionan sin errores:"
+      },
+      "s4": {
+        "title": "Paso 4 (opcional): sincronización Git automática",
+        "desc": "Si el servidor también debe registrar y sincronizar los cambios automáticamente, puedes configurar el script incluido como tarea cron. En instalaciones normales no es necesario.",
+        "a": "1. Establecer la dirección del repositorio con un token (solo si se necesitan permisos de escritura):",
+        "caution": "Atención: el token queda después guardado en texto plano en .git/config. Créalo solo para este repositorio y con los permisos mínimos. Comprueba además antes que los archivos .env y las carpetas de datos figuran en .gitignore, para que la sincronización no transfiera contraseñas ni datos.",
+        "b": "2. Configurar una tarea cron para la sincronización cada hora (crontab -e) y añadir esta línea al final:"
       }
     }
   }
