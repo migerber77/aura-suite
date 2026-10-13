@@ -13,9 +13,11 @@ const { AuraDirect } = require('./lib/auradirect');
 const totp = require('./lib/totp');
 const qr = require('./lib/qr');
 const { renderPrivacy, pickLang } = require('./lib/privacy');
-const { License, DEFAULT_CHECKIN_HOST } = require('./lib/license');
+const { License, DEFAULT_CHECKIN_HOST, versionOlder } = require('./lib/license');
 
 const VERSION = require('./package.json').version;
+// Aura-Suite-Version, die der Betreiber setzt (Umgebungswert AURA_SUITE_VERSION); Anzeige in "Über Aura-Suite"
+const AURA_SUITE_INSTALLED = /^\d{1,4}\.\d{1,4}(\.\d{1,4})?$/.test(String(process.env.AURA_SUITE_VERSION || '').trim()) ? String(process.env.AURA_SUITE_VERSION).trim() : null;
 const toHttp = (e) => {
     if (!(e instanceof ManagerError)) return e;
     const bad = ['NUMBER', 'BLOCKED', 'COUNTRY', 'PURPOSE', 'TIME', 'INVALID', 'SECTION'], conflict = ['DISABLED', 'HOURS', 'LIMIT', 'BUSY', 'NOT_READY', 'CONFIG'];
@@ -105,6 +107,8 @@ function createServer(cfg = {}) {
     app.page('/datenschutz', ({ query, req }) => renderPrivacy(mgr.settings(), { lang: pickLang(query, req), checkin: license.checkinEnabled() }));
     // ---- Lizenz ----
     route('GET', '/api/license', () => ({ ...license.info(), checkin: license.checkinStatus() }), { license: false });
+    // "Über Aura-Suite": installierte Version, die Aura-Suite-Version des Betreibers und die aktuelle Version vom Lizenzserver (auch bei abgelaufener Lizenz erreichbar)
+    route('GET', '/api/version', () => { const suite = license.suiteInfo(); return { product: 'AuraCall', installed: VERSION, suiteInstalled: AURA_SUITE_INSTALLED, suite, updateAvailable: !!(suite && versionOlder(VERSION, suite.version)) }; }, { license: false });
     route('POST', '/api/license', (ctx) => {
         const r = license.setKey(text(ctx.body.key, 4000)); if (!r.ok) throw new HttpError(400, r.error);
         db.audit(ctx.user.username, 'lizenz-gesetzt', `${r.customer}${r.expiresAt ? ', bis ' + String(r.expiresAt).slice(0, 10) : ''}`, ctx.ip); license.run().catch(() => {});   // gleich beim Lizenzserver melden

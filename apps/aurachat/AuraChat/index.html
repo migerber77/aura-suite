@@ -332,7 +332,7 @@
                     <div class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 mt-2">
                         <label for="ollama-keep-alive" class="text-[11px] text-slate-300 block">Modell im Speicher halten (Ollama)</label>
                         <input type="text" id="ollama-keep-alive" maxlength="8" autocomplete="off" placeholder="leer = Standard von Ollama, z. B. 5m, 30m, 2h" class="w-full mt-1.5 bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-white">
-                        <span class="block text-[10px] text-slate-500 mt-1">Wie lange Ollama die Modelle nach der letzten Anfrage im Speicher lässt, bevor es sie entlädt (Chat, Gedächtnis, Stimmungs-Erkennung). Leer: AuraChat gibt nichts vor, es gilt der Standard des Ollama-Servers. Steht dort „Forever“ (<code>OLLAMA_KEEP_ALIVE=-1</code>), trage hier z. B. <b>5m</b> ein: AuraChat gibt es bei jeder Anfrage mit. Erlaubt: 30s, 5m, 2h, eine Zahl (Sekunden), -1 (nie entladen), 0 (sofort nach jeder Antwort). Achtung: Nach dem Entladen dauert die nächste Anfrage länger, auch der erste Anruf bei AuraCall.</span>
+                        <span class="block text-[10px] text-slate-500 mt-1">Wie lange Ollama die Modelle nach der letzten Anfrage im Speicher lässt, bevor es sie entlädt (Chat, Gedächtnis, Stimmungs-Erkennung). Leer: AuraChat gibt nichts vor, es gilt der Standard des Ollama-Servers. Steht dort „Forever“ (<code>OLLAMA_KEEP_ALIVE=-1</code>), trage hier z. B. <b>5m</b> ein: AuraChat gibt es bei jeder Anfrage mit. Erlaubt: 30s, 5m, 2h, eine Zahl (Sekunden), -1 (nie entladen), 0 (sofort nach jeder Antwort). Läuft bei AuraCall „Modell aufwärmen“ (Standard: alle 4 Minuten), wird das Modell trotzdem nie entladen, denn jede Aufwärm-Anfrage beginnt die Haltezeit neu: dort auf 0 stellen. Achtung: Nach dem Entladen dauert die nächste Anfrage länger, auch der erste Anruf bei AuraCall.</span>
                     </div>
                 </div>
                 </div>
@@ -1649,6 +1649,8 @@
                 <div id="webcam-rec-indicator" class="hidden absolute top-2 left-2 bg-red-600 text-white text-[10px] font-semibold px-2 py-1 rounded-full items-center gap-1.5">
                     <span class="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></span> <span id="webcam-rec-timer">0s</span>
                 </div>
+                <button type="button" id="webcam-switch-btn" class="hidden absolute top-2 right-2 z-10 w-9 h-9 rounded-full bg-slate-900/70 hover:bg-slate-800 text-white text-base cursor-pointer flex items-center justify-center border border-white/20" title="Kamera wechseln (Rück-/Frontkamera)" aria-label="Kamera wechseln">🔁</button>
+                <span id="webcam-cam-label" class="hidden absolute bottom-2 left-2 z-10 bg-slate-900/70 text-white text-[10px] px-2 py-1 rounded-full"></span>
                 <canvas id="webcam-canvas" class="hidden"></canvas>
             </div>
 

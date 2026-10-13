@@ -248,6 +248,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const webcamCaptureBtn = document.getElementById('webcam-capture-btn');
     const webcamRetakeBtn = document.getElementById('webcam-retake-btn');
     const webcamUseBtn = document.getElementById('webcam-use-btn');
+    const webcamSwitchBtn = document.getElementById('webcam-switch-btn');
+    const webcamCamLabel = document.getElementById('webcam-cam-label');
 
     const newChatBtn = document.getElementById('new-chat-btn');
     const chatHistoryList = document.getElementById('chat-history-list');
@@ -472,6 +474,11 @@ document.addEventListener('DOMContentLoaded', () => {
     let webcamRecordSeconds = 0;
     let webcamRecordInterval = null;
     let webcamCapturedBlob = null;
+    let webcamFacing = 'environment';    // Standard: Rückkamera; der Knopf auf der Vorschau schaltet auf die Frontkamera
+    let webcamDeviceId = null;           // nur gesetzt, wenn zwischen mehreren Kameras ohne Richtungsangabe gewechselt wurde
+    let webcamCurrentDeviceId = null;    // die Kamera des laufenden Streams
+    let webcamSession = 0;               // zählt Starts/Stopps: ein verspätet fertiger Start nach dem Schließen gibt die Kamera sofort wieder frei
+    let webcamSwitching = false;
     let webSearchEnabled = false;
     let workspaceEnabled = false;
     let codeModeEnabled = false;
@@ -6313,35 +6320,94 @@ if (adminTabBtnCockpit) adminTabBtnCockpit.addEventListener('click', () => switc
 
     const WEBCAM_MAX_SECONDS = 15;
 
+    // Welche Kamera? Die Rückkamera ist die Standardeinstellung, die Frontkamera lässt sich mit dem Knopf auf der Vorschau umschalten.
+    // "ideal" statt "exact": hat das Gerät nur EINE Kamera (Laptop, Tablet ohne Rückkamera), wird einfach diese benutzt, ohne Fehler.
+    // Der Knopf erscheint nur, wenn das Gerät mindestens zwei Kameras meldet.
+    function webcamErrorText(text) { if (!webcamError) return; if (text) { webcamError.textContent = text; webcamError.classList.remove('hidden'); } else webcamError.classList.add('hidden'); }
+    function webcamVideoConstraints() {
+        return webcamDeviceId ? { deviceId: { exact: webcamDeviceId } } : { facingMode: { ideal: webcamFacing } };
+    }
+    // Zeigt dem Stream seine Eigenschaften an: Frontkamera wird in der Vorschau gespiegelt (wie auf dem Handy üblich; das Foto selbst bleibt unverspiegelt),
+    // Beschriftung "Rückkamera"/"Frontkamera" (nur wenn das Gerät die Richtung meldet) und der Wechsel-Knopf (nur bei zwei oder mehr Kameras).
+    function applyWebcamCameraInfo(stream) {
+        const track = stream && stream.getVideoTracks ? stream.getVideoTracks()[0] : null, st = track && track.getSettings ? track.getSettings() : {};
+        webcamCurrentDeviceId = st.deviceId || null;
+        if (webcamLive) webcamLive.style.transform = st.facingMode === 'user' ? 'scaleX(-1)' : '';
+        if (webcamCamLabel) { const t = st.facingMode === 'user' ? 'Frontkamera' : st.facingMode === 'environment' ? 'Rückkamera' : ''; webcamCamLabel.textContent = t; webcamCamLabel.classList.toggle('hidden', !t); }
+        updateWebcamSwitchButton(stream);
+    }
+    async function updateWebcamSwitchButton(stream) {
+        if (!webcamSwitchBtn) return;
+        let show = false;
+        try {
+            if (stream && stream === webcamStream && !webcamIsRecording && navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) {
+                show = (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === 'videoinput').length >= 2;
+            }
+        } catch (err) { show = false; }
+        if (stream !== webcamStream || webcamIsRecording) show = false;   // inzwischen beendet oder Aufnahme läuft
+        webcamSwitchBtn.classList.toggle('hidden', !show);
+    }
+    // Öffnet die Kamera; gibt den Stream zurück. Wird das Fenster inzwischen geschlossen oder die Kamera neu gestartet, wird er sofort wieder freigegeben (die Kamera bleibt nie an).
+    async function openWebcamStream(videoConstraints, myId) {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: videoConstraints, audio: webcamMode === 'video' });
+        if (myId !== webcamSession || (modalWebcam && modalWebcam.classList.contains('hidden'))) { stream.getTracks().forEach(t => t.stop()); return null; }
+        return stream;
+    }
     async function startWebcamStream() {
         stopWebcamStream(); // vorherigen Stream sauber beenden, falls Modus gewechselt wurde
-        if (webcamError) webcamError.classList.add('hidden');
+        const myId = webcamSession;
+        webcamErrorText('');
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-            if (webcamError) {
-                webcamError.textContent = 'Kamera-Zugriff ist in diesem Browser/Kontext nicht verfügbar (benötigt HTTPS oder localhost).';
-                webcamError.classList.remove('hidden');
-            }
+            webcamErrorText('Kamera-Zugriff ist in diesem Browser/Kontext nicht verfügbar (benötigt HTTPS oder localhost).');
             return;
         }
         try {
-            webcamStream = await navigator.mediaDevices.getUserMedia({
-                video: true,
-                audio: webcamMode === 'video'
-            });
-            if (webcamLive) webcamLive.srcObject = webcamStream;
+            const stream = await openWebcamStream(webcamVideoConstraints(), myId);
+            if (!stream) return;
+            webcamStream = stream;
+            if (webcamLive) webcamLive.srcObject = stream;
+            applyWebcamCameraInfo(stream);
         } catch (err) {
-            if (webcamError) {
-                webcamError.textContent = 'Kamera-Zugriff wurde verweigert oder ist nicht verfügbar.';
-                webcamError.classList.remove('hidden');
-            }
+            if (myId === webcamSession) webcamErrorText('Kamera-Zugriff wurde verweigert oder ist nicht verfügbar.');
         }
+    }
+    // Zur anderen Kamera wechseln: erst die Richtung (Rück-/Frontkamera), meldet das Gerät keine Richtung oder bleibt es dieselbe Kamera
+    // (z. B. zwei Webcams am Computer), zur nächsten Kamera der Liste. Klappt es nicht, bleibt die bisherige Kamera.
+    async function switchWebcam() {
+        if (webcamSwitching || webcamIsRecording || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return;
+        webcamSwitching = true; if (webcamSwitchBtn) webcamSwitchBtn.disabled = true;
+        const prevFacing = webcamFacing, prevDevice = webcamDeviceId, prevCurrent = webcamCurrentDeviceId;
+        try {
+            stopWebcamStream(); const myId = webcamSession; webcamErrorText('');
+            const target = prevFacing === 'environment' ? 'user' : 'environment'; let stream = null;
+            try {
+                stream = await openWebcamStream({ facingMode: { exact: target } }, myId);
+                if (stream) { const sid = (stream.getVideoTracks()[0].getSettings() || {}).deviceId; if (sid && sid === prevCurrent) { stream.getTracks().forEach(t => t.stop()); stream = null; throw new Error('dieselbe Kamera'); } webcamFacing = target; webcamDeviceId = null; }
+                else return;   // Fenster inzwischen geschlossen
+            } catch (e1) {
+                const cams = (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === 'videoinput' && d.deviceId);
+                if (cams.length < 2) throw e1;
+                const i = cams.findIndex(d => d.deviceId === prevCurrent), next = cams[(i + 1) % cams.length];
+                stream = await openWebcamStream({ deviceId: { exact: next.deviceId } }, myId);
+                if (!stream) return;
+                webcamDeviceId = next.deviceId; webcamFacing = target;
+            }
+            webcamStream = stream; if (webcamLive) webcamLive.srcObject = stream; applyWebcamCameraInfo(stream);
+        } catch (err) {
+            webcamFacing = prevFacing; webcamDeviceId = prevDevice;
+            await startWebcamStream();   // die bisherige Kamera wieder öffnen
+            if (webcamStream) webcamErrorText('Die andere Kamera konnte nicht geöffnet werden. Es bleibt bei der bisherigen.');
+        } finally { webcamSwitching = false; if (webcamSwitchBtn) webcamSwitchBtn.disabled = false; }
     }
 
     function stopWebcamStream() {
+        webcamSession++;   // laufende Starts (die noch auf die Kamera warten) werden dadurch ungültig
         if (webcamStream) {
             webcamStream.getTracks().forEach(track => track.stop());
             webcamStream = null;
         }
+        if (webcamSwitchBtn) webcamSwitchBtn.classList.add('hidden');
+        if (webcamCamLabel) webcamCamLabel.classList.add('hidden');
     }
 
     function resetWebcamToLive() {
@@ -6365,6 +6431,7 @@ if (adminTabBtnCockpit) adminTabBtnCockpit.addEventListener('click', () => switc
     if (webcamButton && modalWebcam) {
         webcamButton.addEventListener('click', () => {
             modalWebcam.classList.remove('hidden');
+            webcamFacing = 'environment'; webcamDeviceId = null;   // jedes Öffnen beginnt mit der Rückkamera
             setWebcamMode('photo');
         });
     }
@@ -6377,6 +6444,8 @@ if (adminTabBtnCockpit) adminTabBtnCockpit.addEventListener('click', () => switc
         });
     }
 
+    if (webcamSwitchBtn) webcamSwitchBtn.addEventListener('click', () => switchWebcam());
+    if (navigator.mediaDevices && navigator.mediaDevices.addEventListener) navigator.mediaDevices.addEventListener('devicechange', () => { if (webcamStream) updateWebcamSwitchButton(webcamStream); });   // Kamera ein-/ausgesteckt
     if (webcamModePhoto) webcamModePhoto.addEventListener('click', () => setWebcamMode('photo'));
     if (webcamModeVideo) webcamModeVideo.addEventListener('click', () => setWebcamMode('video'));
 
@@ -6419,6 +6488,7 @@ if (adminTabBtnCockpit) adminTabBtnCockpit.addEventListener('click', () => switc
         };
         webcamRecorder.start();
         webcamIsRecording = true;
+        if (webcamSwitchBtn) webcamSwitchBtn.classList.add('hidden');   // während der Aufnahme nicht wechseln
         webcamRecordSeconds = 0;
         if (webcamRecIndicator) { webcamRecIndicator.classList.remove('hidden'); webcamRecIndicator.classList.add('flex'); }
         if (webcamRecTimer) webcamRecTimer.textContent = '0s';
