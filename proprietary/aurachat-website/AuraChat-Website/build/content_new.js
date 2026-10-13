@@ -187,5 +187,30 @@ const SUITE = {
 };
 const SUITELINK = { de: 'Alternativ: die ganze Aura-Suite mit einer Compose-Datei installieren →', en: 'Alternatively: install the whole Aura Suite with a single Compose file →', fr: 'Ou : installer toute la suite Aura avec un seul fichier Compose →', it: "In alternativa: installare l'intera Aura Suite con un unico file Compose →", es: 'Alternativa: instalar toda la Aura Suite con un único archivo Compose →' };
 for (const l of LANGS) { shared[l].suiteinstall = SUITE[l]; shared[l].suiteLink = SUITELINK[l]; }
+
+// ---------------------------------------------------------------- 4) Schnellstart: alle Produkte der Aura-Suite (Docker Hub: migerber77/aura-suite:<produkt>)
+const QS = {
+  de: { title: 'Holt euch heute noch die Aura-Suite.', lead: 'Jedes Produkt startet mit einem Befehl: Produkt wählen, Schlüssel erzeugen, starten. Die fertigen Pakete liegen auf Docker Hub.', pick: 'Produkt wählen:',
+    step1: '// 1. Einmalig: Ordner anlegen und eigene Schlüssel erzeugen (gut aufbewahren)',
+    note: 'Voraussetzung: Docker Compose 2.34 oder neuer (prüfen mit „docker compose version“). Jedes Produkt bekommt einen eigenen Ordner mit eigener .env und eigenen Daten. Auf älteren Systemen (z.B. manche NAS) stattdessen die Compose-Datei laden und mit „docker compose up -d“ starten.',
+    directHint: '// Anmeldung: Benutzer admin, das Passwort steht in der .env (AURADIRECT_ADMIN_PASSWORD)', callHint: '// Verwaltung auf Port 8110: Benutzer admin, Passwort aus der .env (ADMIN_PASSWORD), beim ersten Anmelden ändern' },
+  en: { title: 'Get the Aura Suite today.', lead: 'Every product starts with one command: choose the product, generate your keys, start. The ready-made packages are on Docker Hub.', pick: 'Choose a product:',
+    step1: '// 1. Once: create a folder and generate your own keys (keep them safe)',
+    note: 'Requires Docker Compose 2.34 or newer (check with “docker compose version”). Each product gets its own folder with its own .env and data. On older systems (e.g. some NAS devices), load the compose file instead and start it with “docker compose up -d”.',
+    directHint: '// Sign in with user admin; the password is in the .env file (AURADIRECT_ADMIN_PASSWORD)', callHint: '// Administration on port 8110: user admin, password from the .env file (ADMIN_PASSWORD), change it at first sign-in' },
+  fr: { title: "Adoptez la suite Aura dès aujourd'hui.", lead: "Chaque produit démarre avec une seule commande : choisir le produit, générer ses clés, démarrer. Les paquets prêts à l'emploi sont sur Docker Hub.", pick: 'Choisir un produit :',
+    step1: '// 1. Une seule fois : créer un dossier et générer ses propres clés (à conserver précieusement)',
+    note: 'Nécessite Docker Compose 2.34 ou plus récent (à vérifier avec « docker compose version »). Chaque produit a son propre dossier avec son propre .env et ses propres données. Sur des systèmes plus anciens (p. ex. certains NAS), chargez plutôt le fichier compose et démarrez-le avec « docker compose up -d ».',
+    directHint: '// Connexion : utilisateur admin, le mot de passe se trouve dans le .env (AURADIRECT_ADMIN_PASSWORD)', callHint: '// Administration sur le port 8110 : utilisateur admin, mot de passe du .env (ADMIN_PASSWORD), à changer à la première connexion' },
+  it: { title: 'Scaricate oggi stesso la Aura Suite.', lead: 'Ogni prodotto si avvia con un solo comando: scegliere il prodotto, generare le chiavi, avviare. I pacchetti pronti sono su Docker Hub.', pick: 'Scegliere un prodotto:',
+    step1: '// 1. Una volta sola: creare una cartella e generare le proprie chiavi (da conservare con cura)',
+    note: 'Richiede Docker Compose 2.34 o successivo (verificare con «docker compose version»). Ogni prodotto ha la propria cartella con il proprio .env e i propri dati. Su sistemi più vecchi (ad es. alcuni NAS), caricate invece il file compose e avviatelo con «docker compose up -d».',
+    directHint: '// Accesso: utente admin, la password si trova nel .env (AURADIRECT_ADMIN_PASSWORD)', callHint: '// Amministrazione sulla porta 8110: utente admin, password dal .env (ADMIN_PASSWORD), da cambiare al primo accesso' },
+  es: { title: 'Consigue la Aura Suite hoy mismo.', lead: 'Cada producto arranca con un solo comando: elige el producto, genera tus claves y arranca. Los paquetes listos están en Docker Hub.', pick: 'Elige un producto:',
+    step1: '// 1. Una sola vez: crear una carpeta y generar tus propias claves (guárdalas bien)',
+    note: 'Requiere Docker Compose 2.34 o superior (comprueba con «docker compose version»). Cada producto tiene su propia carpeta con su propio .env y sus propios datos. En sistemas antiguos (p. ej. algunos NAS), carga en su lugar el archivo compose y arráncalo con «docker compose up -d».',
+    directHint: '// Acceso: usuario admin, la contraseña está en el .env (AURADIRECT_ADMIN_PASSWORD)', callHint: '// Administración en el puerto 8110: usuario admin, contraseña del .env (ADMIN_PASSWORD), cámbiala en el primer acceso' },
+};
+for (const l of LANGS) shared[l].quickstart = Object.assign({}, shared[l].quickstart, QS[l]);
 shared.seo = SEO;
 module.exports = { products, shared, DOWNLOADS, LANGS };

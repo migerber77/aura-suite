@@ -34,6 +34,7 @@ services:
       - OLLAMA_MAX_TOKENS=${OLLAMA_MAX_TOKENS:-2048}
       # Cockpit (Admin Panel -> Cockpit): Adresse des Cockpit-Dienstes. Das Passwort legt der Dienst selbst an (siehe unten).
       - COCKPIT_URL=http://cockpit:3600
+      - AURA_SUITE_VERSION=${AURA_SUITE_VERSION:-}   # optional: Version der Aura-Suite, erscheint unter "Über Aura-Suite"
     volumes:
       - ./data:/app/data
       - ./models:/app/models        # hier landet Aura-AI-05b.gguf (Aura-Academy)

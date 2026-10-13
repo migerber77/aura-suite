@@ -273,6 +273,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const codingModelInput = document.getElementById('coding-model-input');
     const codingModelAuto = document.getElementById('coding-model-auto');
     const ollamaThinkBox = document.getElementById('ollama-think');
+    const ollamaKeepAliveInput = document.getElementById('ollama-keep-alive');
     const codeModeToggle = document.getElementById('code-mode-toggle');
     const guestChatEnabledBox = document.getElementById('guest-chat-enabled');
     const guestChatStatus = document.getElementById('guest-chat-status');
@@ -584,6 +585,7 @@ document.addEventListener('DOMContentLoaded', () => {
         coding_model: '',
         coding_model_auto: 'true',
         ollama_think: 'false',
+        ollama_keep_alive: '',
         guest_chat_enabled: 'false',
         apaleo_guest_enabled: 'false',
         apaleo_write_enabled: 'false',
@@ -642,7 +644,7 @@ document.addEventListener('DOMContentLoaded', () => {
             login: "Einloggen",
             btnPassword: "🔑 Passwort",
             btnDeleteAcc: "🗑️ Account löschen",
-            menuAbout: "ℹ️ Über AuraChat",
+            menuAbout: "ℹ️ Über Aura-Suite",
             menuScreenFormat: "🖥️ Bildschirmformat",
             menuModel: "🔍 Modell-Suche & Server",
             menuSettings: "⚙️ Einstellungen",
@@ -670,7 +672,7 @@ document.addEventListener('DOMContentLoaded', () => {
             login: "Log in",
             btnPassword: "🔑 Password",
             btnDeleteAcc: "🗑️ Delete Account",
-            menuAbout: "ℹ️ About AuraChat",
+            menuAbout: "ℹ️ About Aura Suite",
             menuScreenFormat: "🖥️ Screen format",
             menuModel: "🔍 Model Search & Server",
             menuSettings: "⚙️ Settings",
@@ -1231,6 +1233,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (codingModelInput) codingModelInput.value = appConfig.coding_model || '';
             if (codingModelAuto) codingModelAuto.checked = appConfig.coding_model_auto !== 'false';
             if (ollamaThinkBox) ollamaThinkBox.checked = appConfig.ollama_think === 'true';
+            if (ollamaKeepAliveInput) ollamaKeepAliveInput.value = appConfig.ollama_keep_alive || '';
             if (guestChatEnabledBox) guestChatEnabledBox.checked = appConfig.guest_chat_enabled === 'true';
             updateCodingModelFieldVisibility();
             if (secondaryModelEnabled) secondaryModelEnabled.checked = appConfig.secondary_model_enabled === 'true';
@@ -1328,7 +1331,27 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    if (menuItemAbout) menuItemAbout.addEventListener('click', () => openModal(modalAbout));
+    // "Über Aura-Suite": installierte Version vom Server; die aktuelle Aura-Suite-Version (Datum, Hinweis) kommt vom Lizenzserver. Alles als reiner Text.
+    // Ohne Antwort bleibt der feste Text im Seitenaufbau stehen.
+    async function fillAboutVersion() {
+        try {
+            const res = await fetch(`${backendUrl}/version`, { cache: 'no-store' }); if (!res.ok) return; const d = await res.json();
+            const $ = (id) => document.getElementById(id), show = (id, on) => { const e = $(id); if (e) e.classList.toggle('hidden', !on); };
+            if (typeof d.installed === 'string' && d.installed && $('about-version')) $('about-version').textContent = 'v' + d.installed.replace(/^v/i, '');
+            // JJJJ-MM-TT als TT.MM.JJJJ, ohne Datumsobjekt (kein Weiterrollen unmöglicher Tage wie 30.2., keine Zeitzonen-Verschiebung); ein unmögliches Datum blendet die Zeile aus
+            const fmtDate = (v) => { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(v || '')); if (!m) return ''; const t = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3])); return t.getUTCFullYear() === +m[1] && t.getUTCMonth() === +m[2] - 1 && t.getUTCDate() === +m[3] ? `${m[3]}.${m[2]}.${m[1]}` : ''; };
+            const s = d.suite, dateText = s ? fmtDate(s.date) : '';
+            const suiteInst = typeof d.suiteInstalled === 'string' && /^\d{1,4}\.\d{1,4}(\.\d{1,4})?$/.test(d.suiteInstalled) ? d.suiteInstalled : '';
+            show('about-suite-row', !!suiteInst); if (suiteInst && $('about-suite')) $('about-suite').textContent = 'v' + suiteInst;
+            show('about-latest-row', !!s); show('about-date-row', !!dateText); show('about-note-row', !!(s && s.note)); show('about-update-badge', !!(s && d.updateAvailable));
+            if (s) {
+                if ($('about-latest')) $('about-latest').textContent = 'v' + s.version;
+                if (dateText && $('about-date')) $('about-date').textContent = dateText;
+                if (s.note && $('about-note')) $('about-note').textContent = s.note;
+            }
+        } catch (err) { /* feste Werte bleiben */ }
+    }
+    if (menuItemAbout) menuItemAbout.addEventListener('click', () => { openModal(modalAbout); fillAboutVersion(); });
 
     // --- BILDSCHIRMFORMAT: Menüpunkt und Auswahlfenster (alle Texte als Text, nie als HTML) ---
     // Die gewählte Drehung gilt zusätzlich zu jeder Wahl: ein anderes Format/eine andere Auflösung/Automatisch ändert sie NICHT
@@ -5284,6 +5307,11 @@ if (adminTabBtnCockpit) adminTabBtnCockpit.addEventListener('click', () => switc
             if (codingModelInput) await saveGlobalConfigToDB('coding_model', codingModelInput.value.trim());
             if (codingModelAuto) await saveGlobalConfigToDB('coding_model_auto', codingModelAuto.checked ? 'true' : 'false');
             if (ollamaThinkBox) await saveGlobalConfigToDB('ollama_think', ollamaThinkBox.checked ? 'true' : 'false');
+            if (ollamaKeepAliveInput) {   // Haltezeit der Modelle in Ollama: leer oder 30s, 5m, 2h, Zahl (Sekunden), -1, 0
+                const ka = ollamaKeepAliveInput.value.trim();
+                if (ka && !/^(-1|0|[1-9]\d{0,4}[smh]?)$/.test(ka)) alert('Die Haltezeit ist ungültig und wurde nicht gespeichert. Erlaubt: leer, 30s, 5m, 2h, eine Zahl (Sekunden), -1 (nie entladen) oder 0 (sofort).');
+                else await saveGlobalConfigToDB('ollama_keep_alive', ka);
+            }
             if (secondaryModelEnabled) {
                 try {
                     await saveGlobalConfigToDBOrThrow('secondary_model_enabled', secondaryModelEnabled.checked ? 'true' : 'false');
@@ -5851,7 +5879,7 @@ if (adminTabBtnCockpit) adminTabBtnCockpit.addEventListener('click', () => switc
     // Globale Einstellungen (Server/Modell/Avatar) - für alle sichtbar, kein Login nötig zum Lesen
     async function loadGlobalConfig() {
         try {
-            for (const key of ['aurachat_host', 'aurachat_port', 'aurachat_model', 'aurachat_platform', 'coding_model_enabled', 'coding_model_host', 'coding_model_port', 'coding_model', 'coding_model_auto', 'ollama_think', 'guest_chat_enabled', 'apaleo_guest_enabled', 'auracall_url', 'auracall_chat_enabled', 'apaleo_write_enabled', 'apaleo_write_checkin', 'apaleo_write_checkout', 'apaleo_write_assign', 'apaleo_write_dirty', 'hk_staff_report_enabled', 'hk_guest_report_enabled', 'secondary_model_enabled', 'secondary_model_platform', 'secondary_model_host', 'secondary_model_port', 'secondary_model_name', 'secondary_model_mode', 'avatar_face', 'avatar_speech', 'tts_stt_platform', 'tts_stt_host', 'tts_stt_port', 'tts_model', 'tts_voice', 'tts_wyoming_enabled', 'tts_wyoming_host', 'tts_wyoming_port', 'tts_wyoming_voice', 'tts_wyoming_speaker', 'stt_source', 'stt_model', 'stt_language', 'image_gen_platform', 'image_gen_host', 'image_gen_port', 'image_gen_model', 'auraplan_url', 'auraplan_service_key', 'auraticket_url', 'auraticket_service_key', 'auramail_url', 'auramail_service_key', 'auramail_default_mailbox']) {
+            for (const key of ['aurachat_host', 'aurachat_port', 'aurachat_model', 'aurachat_platform', 'coding_model_enabled', 'coding_model_host', 'coding_model_port', 'coding_model', 'coding_model_auto', 'ollama_think', 'ollama_keep_alive', 'guest_chat_enabled', 'apaleo_guest_enabled', 'auracall_url', 'auracall_chat_enabled', 'apaleo_write_enabled', 'apaleo_write_checkin', 'apaleo_write_checkout', 'apaleo_write_assign', 'apaleo_write_dirty', 'hk_staff_report_enabled', 'hk_guest_report_enabled', 'secondary_model_enabled', 'secondary_model_platform', 'secondary_model_host', 'secondary_model_port', 'secondary_model_name', 'secondary_model_mode', 'avatar_face', 'avatar_speech', 'tts_stt_platform', 'tts_stt_host', 'tts_stt_port', 'tts_model', 'tts_voice', 'tts_wyoming_enabled', 'tts_wyoming_host', 'tts_wyoming_port', 'tts_wyoming_voice', 'tts_wyoming_speaker', 'stt_source', 'stt_model', 'stt_language', 'image_gen_platform', 'image_gen_host', 'image_gen_port', 'image_gen_model', 'auraplan_url', 'auraplan_service_key', 'auraticket_url', 'auraticket_service_key', 'auramail_url', 'auramail_service_key', 'auramail_default_mailbox']) {
                 const res = await fetch(`${backendUrl}/config-global/${key}`);
                 const data = await res.json();
                 if (data.value !== null) appConfig[key] = data.value;

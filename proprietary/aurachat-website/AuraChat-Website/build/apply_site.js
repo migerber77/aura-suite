@@ -47,24 +47,63 @@ html = replaceOnce(html,
   `        <a href="#auraplan-section" class="nav-link" data-i18n="auraplan.nav">AuraPlan</a>\n        <a href="#auradirect-section" class="nav-link" data-i18n="auradirect.nav">AuraDirect</a>\n`,
   `        <a href="#produkte" class="nav-link" data-i18n="nav.produkte">${de.navProdukte}</a>\n`, 'Navigation');
 
-// b) Quickstart: Befehle, Hinweis, Button
+// b) Quickstart: Auswahl aller Produkte der Aura-Suite (Docker Hub: migerber77/aura-suite:<produkt>), Befehle, Hinweis, Verweis auf die Compose-Datei
 {
   const m = html.match(/<div style="background:#0b1220;[\s\S]*?<\/p>\s*(?=\n\s*<div style="margin-top:36px;)/);
   must(m, 'Quickstart-Block');
-  const box = 'background:#0b1220; border:1px solid rgba(255,255,255,0.1); border-radius:12px; padding:20px 24px; max-width:640px; margin:0 auto; text-align:left; font-family:\'Courier New\',monospace; font-size:13px; color:#e2e8f0; overflow-x:auto;';
-  const U = 'docker compose -p aurachat --env-file .env -f oci://docker.io/migerber77/aurachat:latest';
-  const block = `<div style="${box}">
-        <div style="color:#64748b;" data-i18n="quickstart.step1">${de.quickstart.step1}</div>
-        <div>printf "SESSION_SECRET=%s\\nDISPOSITION_ENCRYPTION_KEY=%s\\n" "$(openssl rand -hex 32)" "$(openssl rand -hex 32)" &gt; .env</div>
-        <div style="color:#64748b; margin-top:10px;" data-i18n="quickstart.step2">${de.quickstart.step2}</div>
+  const box = 'background:#0b1220; border:1px solid rgba(255,255,255,0.1); border-radius:12px; padding:20px 24px; max-width:720px; margin:0 auto; text-align:left; font-family:\'Courier New\',monospace; font-size:13px; color:#e2e8f0; overflow-x:auto;';
+  const REPO = 'oci://docker.io/migerber77/aura-suite';
+  const rnd = (n) => `"$(openssl rand -hex ${n})"`;
+  // id = Tag auf Docker Hub; proj = Name des Compose-Projekts; env = Befehl für die .env (nur Schlüssel, die das Produkt wirklich verlangt); pre = zusätzliche Vorbereitung; hint = Textschlüssel eines Hinweises
+  const PRODUCTS = [
+    { id: 'chat', name: 'AuraChat', proj: 'aurachat', env: `printf "SESSION_SECRET=%s\\nDISPOSITION_ENCRYPTION_KEY=%s\\n" ${rnd(32)} ${rnd(32)} > .env` },
+    { id: 'plan', name: 'AuraPlan', proj: 'auraplan', env: `printf "SESSION_SECRET=%s\\n" ${rnd(32)} > .env` },
+    { id: 'ticket', name: 'AuraTicket', proj: 'auraticket', env: `printf "SESSION_SECRET=%s\\n" ${rnd(32)} > .env` },
+    { id: 'mail', name: 'AuraMail', proj: 'auramail', env: `printf "SESSION_SECRET=%s\\nCREDENTIAL_ENCRYPTION_KEY=%s\\n" ${rnd(32)} ${rnd(32)} > .env` },
+    { id: 'direct', name: 'AuraDirect', proj: 'auradirect', env: `printf "SESSION_SECRET=%s\\nAURADIRECT_ADMIN_PASSWORD=%s\\nAURADIRECT_SERVICE_KEY=%s\\n" ${rnd(32)} ${rnd(12)} ${rnd(32)} > .env`, hint: 'directHint' },
+    { id: 'proxy', name: 'AuraProxy', proj: 'auraproxy', env: `printf "SESSION_SECRET=%s\\n" ${rnd(32)} > .env` },
+    { id: 'call', name: 'AuraCall', proj: 'auracall', pre: 'mkdir -p data asterisk-conf &amp;&amp; sudo chown 1000:1000 data asterisk-conf', env: `printf "AMI_SECRET=%s\\nADMIN_PASSWORD=%s\\n" ${rnd(24)} ${rnd(12)} > .env`, hint: 'callHint' },
+  ];
+  const esc = (x) => x.replace(/&(?!amp;)/g, '&amp;').replace(/>/g, '&gt;');
+  const c1 = (txt, extra = '') => `<div style="color:#64748b;${extra}" data-i18n="QSKEY">TXT</div>`;
+  const panel = (p) => {
+    const U = `docker compose -p ${p.proj} --env-file .env -f ${REPO}:${p.id}`, comment = (key, extra = '') => `<div style="color:#64748b;${extra}" data-i18n="quickstart.${key}">${de.quickstart[key]}</div>`;
+    return `<div class="qs-panel" id="qs-panel-${p.id}" data-qs="${p.id}" role="tabpanel" aria-label="${p.name}" style="${box}">
+        ${comment('step1')}
+        <div>mkdir -p aura-suite/${p.id} &amp;&amp; cd aura-suite/${p.id}</div>${p.pre ? `\n        <div>${p.pre}</div>` : ''}
+        <div>${esc(p.env)}</div>${p.hint ? `\n        ${comment(p.hint, ' margin-top:6px;')}` : ''}
+        ${comment('step2', ' margin-top:10px;')}
         <div style="color:var(--cyan);">${U} up -d</div>
-        <div style="color:#64748b; margin-top:10px;" data-i18n="quickstart.step3">${de.quickstart.step3}</div>
+        ${comment('step3', ' margin-top:10px;')}
         <div>${U} pull &amp;&amp; ${U} up -d</div>
-      </div>
-      <p style="color:#94a3b8; font-size:13px; max-width:640px; margin:16px auto 0;" data-i18n="quickstart.note">${de.quickstart.note}</p>
-      <p style="margin-top:16px;"><a href="downloads/aurachat-quickstart.zip" download class="btn btn-ghost" data-i18n="quickstart.button">${de.quickstart.button}</a></p>`;
+      </div>`;
+  };
+  const picker = `<div class="qs-picker" role="tablist" aria-label="Aura-Suite" style="display:flex; flex-wrap:wrap; gap:8px; justify-content:center; align-items:center; max-width:720px; margin:0 auto 16px;">
+        <span style="color:#94a3b8; font-size:13px; margin-right:4px;" data-i18n="quickstart.pick">${de.quickstart.pick}</span>
+        ${PRODUCTS.map((p, i) => `<button type="button" role="tab" class="btn btn-ghost qs-tab" data-qs="${p.id}" aria-controls="qs-panel-${p.id}" aria-selected="${i === 0}" style="padding:7px 14px; font-size:13px;">${p.name}</button>`).join('\n        ')}
+      </div>`;
+  const script = `<script>
+(function () {
+  var tabs = [].slice.call(document.querySelectorAll('.qs-tab')), panels = [].slice.call(document.querySelectorAll('.qs-panel')); if (!tabs.length) return;
+  function select(id, focus) {
+    tabs.forEach(function (t) { var on = t.getAttribute('data-qs') === id; t.setAttribute('aria-selected', on ? 'true' : 'false'); t.tabIndex = on ? 0 : -1; if (on && focus) t.focus(); });
+    panels.forEach(function (p) { p.hidden = p.getAttribute('data-qs') !== id; });
+  }
+  tabs.forEach(function (t) {
+    t.addEventListener('click', function () { select(t.getAttribute('data-qs')); });
+    t.addEventListener('keydown', function (e) { if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return; e.preventDefault(); var i = tabs.indexOf(t), n = tabs[(i + (e.key === 'ArrowRight' ? 1 : -1) + tabs.length) % tabs.length]; select(n.getAttribute('data-qs'), true); });
+  });
+  select(tabs[0].getAttribute('data-qs'));   // ohne Skript bleiben alle Befehle sichtbar
+})();
+</script>`;
+  const block = `${picker}
+      ${PRODUCTS.map(panel).join('\n      ')}
+      ${script}
+      <p style="color:#94a3b8; font-size:13px; max-width:720px; margin:16px auto 0;" data-i18n="quickstart.note">${de.quickstart.note}</p>
+      <p style="margin-top:12px;"><a href="#installation" style="color:var(--cyan); font-size:13px; text-decoration:none;" data-i18n="quickstart.suiteLink">${de.suiteLink}</a></p>`;
   html = html.replace(m[0], () => block);
   html = html.replace(/(data-i18n="quickstart\.lead">)[^<]*(<)/, (_, a, b) => a + de.quickstart.lead + b);
+  html = html.replace(/(data-i18n="quickstart\.title">)[^<]*(<)/, (_, a, b) => a + de.quickstart.title + b);
 }
 
 // c) Funktionskarte "Chat- & Sprachbefehle" + neuer Text für Integrationen
@@ -232,9 +271,6 @@ function productSection(key) {
   `;
   must(html.includes('<section id="funktionen"'), 'Abschnitt funktionen (Einfügestelle)');
   html = html.replace('<section id="funktionen"', () => section + '<section id="funktionen"');
-  const link = `\n      <p style="margin-top:12px;"><a href="#installation" style="color:var(--cyan); font-size:13px; text-decoration:none;" data-i18n="quickstart.suiteLink">${de.suiteLink}</a></p>`;
-  must(html.includes('data-i18n="quickstart.button"'), 'Schnellstart-Knopf');
-  html = html.replace(/(<a href="downloads\/aurachat-quickstart\.zip"[^>]*data-i18n="quickstart\.button">[^<]*<\/a><\/p>)/, (m) => m + link);
 }
 
 // g) Suchmaschinen-Angaben: Beschreibung und Merkmalsliste (nur, was sichtbar auf der Seite steht)

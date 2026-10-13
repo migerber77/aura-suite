@@ -1577,6 +1577,12 @@ app.get('/api/config-global/:key', (req, res) => {
 app.post('/api/admin/config', requireAdmin, (req, res) => {
     const { key, value } = req.body;
 
+    // Haltezeit der Modelle in Ollama (keep_alive): nur gültige Werte (leer, 30s, 5m, 2h, 300, -1, 0); der Zwischenspeicher wird sofort geleert
+    if (key === 'ollama_keep_alive') {
+        if (!isValidKeepAlive(value)) return res.status(400).json({ error: 'Ungültige Haltezeit. Erlaubt: leer, 30s, 5m, 2h, eine Zahl (Sekunden), -1 (nie entladen) oder 0 (sofort).' });
+        ollamaKeepAliveCache = { value: undefined, at: 0 };
+    }
+
     // Eigene TTS/STT-Plattform ist ein Premium-Feature - "browser" (Standard/kostenlos) bleibt immer erlaubt
     if (key === 'tts_stt_platform' && value && value !== 'browser') {
         return getStoredLicenseInfo((info) => {
@@ -2598,6 +2604,47 @@ app.post('/api/admin/update/apply', requireAdmin, upload.single('update'), async
 // nichts an der Funktion von AuraChat selbst, Fehler dabei werden nur geloggt.
 let lastCheckinResult = null;
 
+// --- Aura-Suite-Version (für "Über Aura-Suite"): kommt vom Lizenzserver mit dem Abgleich (alle 12 Stunden) ---
+// Die installierte Version bleibt die aus package.json (sie meldet der Abgleich auch zurück, so erkennt der Lizenzserver veraltete Installationen).
+// Was der Lizenzserver als aktuelle Version meldet, wird streng geprüft (Version, Datum, kurzer Hinweis als reiner Text), bevor es gespeichert wird:
+// der Abgleich läuft über eine ungesicherte HTTP-Verbindung, die Angaben sind aber nur Anzeige.
+const INSTALLED_VERSION = String(require('./package.json').version);
+// Aura-Suite-Version, die der Betreiber setzt (Umgebungswert AURA_SUITE_VERSION): Anzeige in "Über Aura-Suite"
+const AURA_SUITE_INSTALLED = /^\d{1,4}\.\d{1,4}(\.\d{1,4})?$/.test(String(process.env.AURA_SUITE_VERSION || '').trim()) ? String(process.env.AURA_SUITE_VERSION).trim() : null;
+const SUITE_VERSION_RE = /^\d{1,4}\.\d{1,4}(\.\d{1,4})?$/;
+function parseSuiteInfo(raw) {
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
+    const version = typeof raw.version === 'string' ? raw.version.trim() : '';
+    if (!SUITE_VERSION_RE.test(version)) return null;
+    let date = null;
+    if (typeof raw.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(raw.date)) { const d = new Date(raw.date + 'T00:00:00Z'); if (!isNaN(d) && d.toISOString().slice(0, 10) === raw.date) date = raw.date; }
+    const note = typeof raw.note === 'string' ? raw.note.replace(/[\u0000-\u001f\u007f<>]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 120) : '';
+    return { version, date, note };
+}
+function versionOlder(installed, latest) {
+    const a = String(installed).split('.').map((n) => parseInt(n, 10) || 0), b = String(latest).split('.').map((n) => parseInt(n, 10) || 0);
+    for (let i = 0; i < Math.max(a.length, b.length); i++) { const x = a[i] || 0, y = b[i] || 0; if (x < y) return true; if (x > y) return false; }
+    return false;
+}
+function saveSuiteInfo(info) {   // info = null: der Lizenzserver zeigt keine Version mehr an, die gespeicherte wird entfernt
+    return new Promise((resolve) => {
+        const done = () => resolve();
+        if (info) db.run(`INSERT OR REPLACE INTO configs (userId, key, value) VALUES (?, 'suite_info', ?)`, [GLOBAL_USER_ID, JSON.stringify(info)], done);
+        else db.run(`DELETE FROM configs WHERE userId = ? AND key = 'suite_info'`, [GLOBAL_USER_ID], done);
+    });
+}
+function loadSuiteInfo() {
+    return new Promise((resolve) => db.get(`SELECT value FROM configs WHERE userId = ? AND key = 'suite_info'`, [GLOBAL_USER_ID], (err, row) => {
+        if (err || !row || !row.value) return resolve(null);
+        try { resolve(parseSuiteInfo(JSON.parse(row.value))); } catch (e) { resolve(null); }
+    }));
+}
+// Öffentlich (nur Anzeige): installierte Version, aktuelle Aura-Suite-Version vom Lizenzserver (falls bekannt) und ob ein Update verfügbar ist
+app.get('/api/version', async (req, res) => {
+    const suite = await loadSuiteInfo();
+    res.set('Cache-Control', 'no-store').json({ product: 'AuraChat', installed: INSTALLED_VERSION, suiteInstalled: AURA_SUITE_INSTALLED, suite, updateAvailable: !!(suite && versionOlder(INSTALLED_VERSION, suite.version)) });
+});
+
 const LICENSE_CHECKIN_PORT = 8451; // fester Port, mit dem der Lizenz-Server-Container standardmässig läuft
 // Eigener Lizenz-Server als Standard - der Abgleich läuft ab Werk automatisch im Hintergrund,
 // ohne Einstellung im Admin Panel. Nur wer es ausdrücklich will, ändert/deaktiviert das über
@@ -2649,10 +2696,13 @@ async function sendLicenseCheckin() {
         const resp = await fetch(`${checkinUrl}/api/checkin`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ licenseKey: licenseKey || null, installationId, totalUsers: counts.totalUsers, totalAdmins: counts.totalAdmins, version: require('./package.json').version }),
+            body: JSON.stringify({ licenseKey: licenseKey || null, installationId, totalUsers: counts.totalUsers, totalAdmins: counts.totalAdmins, version: INSTALLED_VERSION }),
             signal: AbortSignal.timeout(10000)
         });
         const data = await resp.json().catch(() => ({}));
+        // Nur eine echte Antwort des Lizenzservers ({ ok: true, ... }) ändert etwas: geprüft angenommen; fehlt die Version darin (oder ist sie ungültig), wird die gespeicherte entfernt.
+        // Eine Antwort mit 200 und anderem Inhalt (z. B. eine Anmeldeseite im Hotel-WLAN) lässt die gespeicherte Anzeige unberührt.
+        if (resp.ok && data && data.ok === true) await saveSuiteInfo(parseSuiteInfo(data.suite));
         lastCheckinResult = {
             success: resp.ok,
             message: resp.ok ? 'OK' : (data.error || `Status ${resp.status}`),
@@ -4000,9 +4050,31 @@ const OLLAMA_CHAT_TIMEOUT_MS = (parseInt(process.env.OLLAMA_TIMEOUT_MINUTES, 10)
 // Obergrenze für die Länge einer Antwort: ohne sie schreibt ein Modell, das kein Ende-Zeichen ausgibt, endlos weiter.
 const OLLAMA_REPLY_OPTIONS = { num_predict: parseInt(process.env.OLLAMA_MAX_TOKENS, 10) || 2048 };
 
+// --- Haltezeit der Modelle im Speicher von Ollama ("keep_alive") ---------------------------------------------------------
+// Leer (Standard): AuraChat gibt nichts vor, es gilt die Einstellung des Ollama-Servers (Standard 5 Minuten, außer dort ist OLLAMA_KEEP_ALIVE anders gesetzt).
+// Mit einem Wert (Admin Panel, Modell): AuraChat gibt ihn bei JEDER Anfrage an Ollama mit (Chat, Gedächtnis/Embeddings, Stimmungs-Erkennung).
+// So entlädt Ollama die Modelle nach dieser Zeit ohne Nutzung, auch wenn der Server selbst auf "Forever" steht (OLLAMA_KEEP_ALIVE=-1).
+// Erlaubt: Zahl mit Einheit (30s, 5m, 2h), eine Zahl allein (= Sekunden), -1 (nie entladen), 0 (sofort nach jeder Antwort).
+const KEEP_ALIVE_RE = /^(-1|0|[1-9]\d{0,4}[smh]?)$/;
+const isValidKeepAlive = (v) => v === undefined || v === null || String(v).trim() === '' || KEEP_ALIVE_RE.test(String(v).trim());
+// Ollama versteht Zahlen als Sekunden und negative Zahlen als "nie"; ein Text wie "5m" als Dauer. "-1" muss als ZAHL gesendet werden (als Text ist es für Ollama ungültig).
+const keepAliveForOllama = (v) => { const s = String(v === undefined || v === null ? '' : v).trim(); if (!s || !KEEP_ALIVE_RE.test(s)) return undefined; return /^-?\d+$/.test(s) ? Number(s) : s; };
+let ollamaKeepAliveCache = { value: undefined, at: 0 };
+async function getOllamaKeepAlive() {
+    if (Date.now() - ollamaKeepAliveCache.at < 15000) return ollamaKeepAliveCache.value;
+    let raw = null; try { raw = await getGlobalConfigValue('ollama_keep_alive'); } catch (e) { raw = null; }
+    ollamaKeepAliveCache = { value: keepAliveForOllama(raw), at: Date.now() }; return ollamaKeepAliveCache.value;
+}
+// Nur die eigenen Ollama-Pfade bekommen die Angabe; hat die Anfrage schon eine (keep_alive), bleibt sie unverändert.
+async function withKeepAlive(pathName, body) {
+    if (!/^\/api\/(chat|generate|embeddings|embed)$/.test(String(pathName)) || !body || typeof body !== 'object' || Array.isArray(body) || body.keep_alive !== undefined) return body;
+    const ka = await getOllamaKeepAlive(); return ka === undefined ? body : { ...body, keep_alive: ka };
+}
+
 // Gibt ein fetch-ähnliches Ergebnis zurück ({ ok, status, json(), text() }). "signal" bricht die Anfrage ab - Ollama
 // merkt das und hört auf zu rechnen, die Grafikkarte ist sofort wieder frei.
-function ollamaRequest(host, port, pathName, body, { signal, timeoutMs = OLLAMA_CHAT_TIMEOUT_MS } = {}) {
+async function ollamaRequest(host, port, pathName, body, { signal, timeoutMs = OLLAMA_CHAT_TIMEOUT_MS } = {}) {
+    body = await withKeepAlive(pathName, body);
     return new Promise((resolve, reject) => {
         const abortError = () => Object.assign(new Error('Anfrage abgebrochen'), { name: 'AbortError' });
         if (signal && signal.aborted) return reject(abortError());
@@ -4174,7 +4246,8 @@ function splitSpeechSentences(buffer, final) {
 
 // Streaming-Anfrage an Ollama: jede Zeile der Antwort ist ein JSON-Objekt ({"response": "...", "done": false} ...). onChunk bekommt jedes Objekt.
 // Zeitlimit gilt für die PAUSE zwischen zwei Stücken (Laden eines Modells kann dauern), nicht für die ganze Antwort.
-function ollamaStream(host, port, pathName, body, { signal, onChunk, idleMs = 120000 } = {}) {
+async function ollamaStream(host, port, pathName, body, { signal, onChunk, idleMs = 120000 } = {}) {
+    body = await withKeepAlive(pathName, body);
     return new Promise((resolve, reject) => {
         const abortError = () => Object.assign(new Error('Anfrage abgebrochen'), { name: 'AbortError' });
         if (signal && signal.aborted) return reject(abortError());
@@ -4599,7 +4672,7 @@ async function getEmbedding(host, port, text) {
     const resp = await fetch(`http://${host}:${port}/api/embeddings`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ model: EMBEDDING_MODEL, prompt: text })
+        body: JSON.stringify({ model: EMBEDDING_MODEL, prompt: text, ...(await withKeepAlive('/api/embeddings', {})) })
     });
     if (!resp.ok) throw new Error(`Embedding-Modell antwortete mit Status ${resp.status} - ist "${EMBEDDING_MODEL}" in Ollama installiert? ("ollama pull ${EMBEDDING_MODEL}")`);
     const data = await resp.json();
@@ -4818,7 +4891,7 @@ Antworte AUSSCHLIESSLICH mit genau einem Wort: INSULT, PRAISE oder NEUTRAL.`;
         const resp = await fetch(`http://${host}:${port}/api/generate`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ model: DISPOSITION_CLASSIFIER_MODEL, prompt, stream: false }),
+            body: JSON.stringify(await withKeepAlive('/api/generate', { model: DISPOSITION_CLASSIFIER_MODEL, prompt, stream: false })),
             signal: AbortSignal.timeout(8000)
         });
         if (!resp.ok) return null;

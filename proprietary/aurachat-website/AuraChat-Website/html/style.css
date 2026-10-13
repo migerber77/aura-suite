@@ -216,3 +216,10 @@ footer { padding: 40px 24px; border-top: 1px solid rgba(255,255,255,0.05); }
   html { overflow-x: hidden; }   /* die dekorativen Leuchtflächen (Schnellstart, Kontakt) ragen sonst über den Rand; html reicht es an das Fenster weiter, die feste Kopfzeile bleibt unberührt */
 }
 @media (max-width: 480px) { .nav-cta { display: none; } }   /* der Titelbereich hat einen eigenen Knopf zum Kontakt */
+
+/* Schnellstart: Auswahl des Produkts */
+.qs-tab { cursor: pointer; background: transparent; font-family: inherit; }
+.qs-tab[aria-selected="true"] { background: rgba(50,112,253,0.22); border-color: rgba(50,112,253,0.75); color: #fff; }
+.qs-tab:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
+.qs-panel[hidden] { display: none; }
+.qs-panel + .qs-panel { margin-top: 12px; }

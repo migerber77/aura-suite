@@ -153,18 +153,99 @@
 
   <section id="quickstart" style="background:rgba(50,112,253,0.06); border-top:1px solid rgba(255,255,255,0.06); border-bottom:1px solid rgba(255,255,255,0.06);">
     <div class="wrap" style="text-align:center;">
-      <h2 data-i18n="quickstart.title">Holt euch heute noch AuraChat.</h2>
-      <p style="color:#94a3b8; max-width:560px; margin:0 auto 28px;" data-i18n="quickstart.lead">Ein Befehl installiert alles: Oberfläche, Server, HTTPS, Web-Suche und Sprache. Kostenlos starten mit bis zu 3 Benutzern — jederzeit auf Premium erweiterbar.</p>
-      <div style="background:#0b1220; border:1px solid rgba(255,255,255,0.1); border-radius:12px; padding:20px 24px; max-width:640px; margin:0 auto; text-align:left; font-family:'Courier New',monospace; font-size:13px; color:#e2e8f0; overflow-x:auto;">
-        <div style="color:#64748b;" data-i18n="quickstart.step1">// 1. Einmalig: eigene Schlüssel erzeugen (gut aufbewahren)</div>
+      <h2 data-i18n="quickstart.title">Holt euch heute noch die Aura-Suite.</h2>
+      <p style="color:#94a3b8; max-width:560px; margin:0 auto 28px;" data-i18n="quickstart.lead">Jedes Produkt startet mit einem Befehl: Produkt wählen, Schlüssel erzeugen, starten. Die fertigen Pakete liegen auf Docker Hub.</p>
+      <div class="qs-picker" role="tablist" aria-label="Aura-Suite" style="display:flex; flex-wrap:wrap; gap:8px; justify-content:center; align-items:center; max-width:720px; margin:0 auto 16px;">
+        <span style="color:#94a3b8; font-size:13px; margin-right:4px;" data-i18n="quickstart.pick">Produkt wählen:</span>
+        <button type="button" role="tab" class="btn btn-ghost qs-tab" data-qs="chat" aria-controls="qs-panel-chat" aria-selected="true" style="padding:7px 14px; font-size:13px;">AuraChat</button>
+        <button type="button" role="tab" class="btn btn-ghost qs-tab" data-qs="plan" aria-controls="qs-panel-plan" aria-selected="false" style="padding:7px 14px; font-size:13px;">AuraPlan</button>
+        <button type="button" role="tab" class="btn btn-ghost qs-tab" data-qs="ticket" aria-controls="qs-panel-ticket" aria-selected="false" style="padding:7px 14px; font-size:13px;">AuraTicket</button>
+        <button type="button" role="tab" class="btn btn-ghost qs-tab" data-qs="mail" aria-controls="qs-panel-mail" aria-selected="false" style="padding:7px 14px; font-size:13px;">AuraMail</button>
+        <button type="button" role="tab" class="btn btn-ghost qs-tab" data-qs="direct" aria-controls="qs-panel-direct" aria-selected="false" style="padding:7px 14px; font-size:13px;">AuraDirect</button>
+        <button type="button" role="tab" class="btn btn-ghost qs-tab" data-qs="proxy" aria-controls="qs-panel-proxy" aria-selected="false" style="padding:7px 14px; font-size:13px;">AuraProxy</button>
+        <button type="button" role="tab" class="btn btn-ghost qs-tab" data-qs="call" aria-controls="qs-panel-call" aria-selected="false" style="padding:7px 14px; font-size:13px;">AuraCall</button>
+      </div>
+      <div class="qs-panel" id="qs-panel-chat" data-qs="chat" role="tabpanel" aria-label="AuraChat" style="background:#0b1220; border:1px solid rgba(255,255,255,0.1); border-radius:12px; padding:20px 24px; max-width:720px; margin:0 auto; text-align:left; font-family:'Courier New',monospace; font-size:13px; color:#e2e8f0; overflow-x:auto;">
+        <div style="color:#64748b;" data-i18n="quickstart.step1">// 1. Einmalig: Ordner anlegen und eigene Schlüssel erzeugen (gut aufbewahren)</div>
+        <div>mkdir -p aura-suite/chat &amp;&amp; cd aura-suite/chat</div>
         <div>printf "SESSION_SECRET=%s\nDISPOSITION_ENCRYPTION_KEY=%s\n" "$(openssl rand -hex 32)" "$(openssl rand -hex 32)" &gt; .env</div>
         <div style="color:#64748b; margin-top:10px;" data-i18n="quickstart.step2">// 2. Alles installieren und starten</div>
-        <div style="color:var(--cyan);">docker compose -p aurachat --env-file .env -f oci://docker.io/migerber77/aurachat:latest up -d</div>
+        <div style="color:var(--cyan);">docker compose -p aurachat --env-file .env -f oci://docker.io/migerber77/aura-suite:chat up -d</div>
         <div style="color:#64748b; margin-top:10px;" data-i18n="quickstart.step3">// Später aktualisieren</div>
-        <div>docker compose -p aurachat --env-file .env -f oci://docker.io/migerber77/aurachat:latest pull &amp;&amp; docker compose -p aurachat --env-file .env -f oci://docker.io/migerber77/aurachat:latest up -d</div>
+        <div>docker compose -p aurachat --env-file .env -f oci://docker.io/migerber77/aura-suite:chat pull &amp;&amp; docker compose -p aurachat --env-file .env -f oci://docker.io/migerber77/aura-suite:chat up -d</div>
       </div>
-      <p style="color:#94a3b8; font-size:13px; max-width:640px; margin:16px auto 0;" data-i18n="quickstart.note">Voraussetzung: Docker Engine 25 oder neuer. Auf älteren Systemen (z.B. manche NAS) stattdessen die Compose-Datei herunterladen und mit „docker compose up -d“ starten.</p>
-      <p style="margin-top:16px;"><a href="downloads/aurachat-quickstart.zip" download class="btn btn-ghost" data-i18n="quickstart.button">⬇ Compose-Datei für ältere Systeme herunterladen</a></p>
+      <div class="qs-panel" id="qs-panel-plan" data-qs="plan" role="tabpanel" aria-label="AuraPlan" style="background:#0b1220; border:1px solid rgba(255,255,255,0.1); border-radius:12px; padding:20px 24px; max-width:720px; margin:0 auto; text-align:left; font-family:'Courier New',monospace; font-size:13px; color:#e2e8f0; overflow-x:auto;">
+        <div style="color:#64748b;" data-i18n="quickstart.step1">// 1. Einmalig: Ordner anlegen und eigene Schlüssel erzeugen (gut aufbewahren)</div>
+        <div>mkdir -p aura-suite/plan &amp;&amp; cd aura-suite/plan</div>
+        <div>printf "SESSION_SECRET=%s\n" "$(openssl rand -hex 32)" &gt; .env</div>
+        <div style="color:#64748b; margin-top:10px;" data-i18n="quickstart.step2">// 2. Alles installieren und starten</div>
+        <div style="color:var(--cyan);">docker compose -p auraplan --env-file .env -f oci://docker.io/migerber77/aura-suite:plan up -d</div>
+        <div style="color:#64748b; margin-top:10px;" data-i18n="quickstart.step3">// Später aktualisieren</div>
+        <div>docker compose -p auraplan --env-file .env -f oci://docker.io/migerber77/aura-suite:plan pull &amp;&amp; docker compose -p auraplan --env-file .env -f oci://docker.io/migerber77/aura-suite:plan up -d</div>
+      </div>
+      <div class="qs-panel" id="qs-panel-ticket" data-qs="ticket" role="tabpanel" aria-label="AuraTicket" style="background:#0b1220; border:1px solid rgba(255,255,255,0.1); border-radius:12px; padding:20px 24px; max-width:720px; margin:0 auto; text-align:left; font-family:'Courier New',monospace; font-size:13px; color:#e2e8f0; overflow-x:auto;">
+        <div style="color:#64748b;" data-i18n="quickstart.step1">// 1. Einmalig: Ordner anlegen und eigene Schlüssel erzeugen (gut aufbewahren)</div>
+        <div>mkdir -p aura-suite/ticket &amp;&amp; cd aura-suite/ticket</div>
+        <div>printf "SESSION_SECRET=%s\n" "$(openssl rand -hex 32)" &gt; .env</div>
+        <div style="color:#64748b; margin-top:10px;" data-i18n="quickstart.step2">// 2. Alles installieren und starten</div>
+        <div style="color:var(--cyan);">docker compose -p auraticket --env-file .env -f oci://docker.io/migerber77/aura-suite:ticket up -d</div>
+        <div style="color:#64748b; margin-top:10px;" data-i18n="quickstart.step3">// Später aktualisieren</div>
+        <div>docker compose -p auraticket --env-file .env -f oci://docker.io/migerber77/aura-suite:ticket pull &amp;&amp; docker compose -p auraticket --env-file .env -f oci://docker.io/migerber77/aura-suite:ticket up -d</div>
+      </div>
+      <div class="qs-panel" id="qs-panel-mail" data-qs="mail" role="tabpanel" aria-label="AuraMail" style="background:#0b1220; border:1px solid rgba(255,255,255,0.1); border-radius:12px; padding:20px 24px; max-width:720px; margin:0 auto; text-align:left; font-family:'Courier New',monospace; font-size:13px; color:#e2e8f0; overflow-x:auto;">
+        <div style="color:#64748b;" data-i18n="quickstart.step1">// 1. Einmalig: Ordner anlegen und eigene Schlüssel erzeugen (gut aufbewahren)</div>
+        <div>mkdir -p aura-suite/mail &amp;&amp; cd aura-suite/mail</div>
+        <div>printf "SESSION_SECRET=%s\nCREDENTIAL_ENCRYPTION_KEY=%s\n" "$(openssl rand -hex 32)" "$(openssl rand -hex 32)" &gt; .env</div>
+        <div style="color:#64748b; margin-top:10px;" data-i18n="quickstart.step2">// 2. Alles installieren und starten</div>
+        <div style="color:var(--cyan);">docker compose -p auramail --env-file .env -f oci://docker.io/migerber77/aura-suite:mail up -d</div>
+        <div style="color:#64748b; margin-top:10px;" data-i18n="quickstart.step3">// Später aktualisieren</div>
+        <div>docker compose -p auramail --env-file .env -f oci://docker.io/migerber77/aura-suite:mail pull &amp;&amp; docker compose -p auramail --env-file .env -f oci://docker.io/migerber77/aura-suite:mail up -d</div>
+      </div>
+      <div class="qs-panel" id="qs-panel-direct" data-qs="direct" role="tabpanel" aria-label="AuraDirect" style="background:#0b1220; border:1px solid rgba(255,255,255,0.1); border-radius:12px; padding:20px 24px; max-width:720px; margin:0 auto; text-align:left; font-family:'Courier New',monospace; font-size:13px; color:#e2e8f0; overflow-x:auto;">
+        <div style="color:#64748b;" data-i18n="quickstart.step1">// 1. Einmalig: Ordner anlegen und eigene Schlüssel erzeugen (gut aufbewahren)</div>
+        <div>mkdir -p aura-suite/direct &amp;&amp; cd aura-suite/direct</div>
+        <div>printf "SESSION_SECRET=%s\nAURADIRECT_ADMIN_PASSWORD=%s\nAURADIRECT_SERVICE_KEY=%s\n" "$(openssl rand -hex 32)" "$(openssl rand -hex 12)" "$(openssl rand -hex 32)" &gt; .env</div>
+        <div style="color:#64748b; margin-top:6px;" data-i18n="quickstart.directHint">// Anmeldung: Benutzer admin, das Passwort steht in der .env (AURADIRECT_ADMIN_PASSWORD)</div>
+        <div style="color:#64748b; margin-top:10px;" data-i18n="quickstart.step2">// 2. Alles installieren und starten</div>
+        <div style="color:var(--cyan);">docker compose -p auradirect --env-file .env -f oci://docker.io/migerber77/aura-suite:direct up -d</div>
+        <div style="color:#64748b; margin-top:10px;" data-i18n="quickstart.step3">// Später aktualisieren</div>
+        <div>docker compose -p auradirect --env-file .env -f oci://docker.io/migerber77/aura-suite:direct pull &amp;&amp; docker compose -p auradirect --env-file .env -f oci://docker.io/migerber77/aura-suite:direct up -d</div>
+      </div>
+      <div class="qs-panel" id="qs-panel-proxy" data-qs="proxy" role="tabpanel" aria-label="AuraProxy" style="background:#0b1220; border:1px solid rgba(255,255,255,0.1); border-radius:12px; padding:20px 24px; max-width:720px; margin:0 auto; text-align:left; font-family:'Courier New',monospace; font-size:13px; color:#e2e8f0; overflow-x:auto;">
+        <div style="color:#64748b;" data-i18n="quickstart.step1">// 1. Einmalig: Ordner anlegen und eigene Schlüssel erzeugen (gut aufbewahren)</div>
+        <div>mkdir -p aura-suite/proxy &amp;&amp; cd aura-suite/proxy</div>
+        <div>printf "SESSION_SECRET=%s\n" "$(openssl rand -hex 32)" &gt; .env</div>
+        <div style="color:#64748b; margin-top:10px;" data-i18n="quickstart.step2">// 2. Alles installieren und starten</div>
+        <div style="color:var(--cyan);">docker compose -p auraproxy --env-file .env -f oci://docker.io/migerber77/aura-suite:proxy up -d</div>
+        <div style="color:#64748b; margin-top:10px;" data-i18n="quickstart.step3">// Später aktualisieren</div>
+        <div>docker compose -p auraproxy --env-file .env -f oci://docker.io/migerber77/aura-suite:proxy pull &amp;&amp; docker compose -p auraproxy --env-file .env -f oci://docker.io/migerber77/aura-suite:proxy up -d</div>
+      </div>
+      <div class="qs-panel" id="qs-panel-call" data-qs="call" role="tabpanel" aria-label="AuraCall" style="background:#0b1220; border:1px solid rgba(255,255,255,0.1); border-radius:12px; padding:20px 24px; max-width:720px; margin:0 auto; text-align:left; font-family:'Courier New',monospace; font-size:13px; color:#e2e8f0; overflow-x:auto;">
+        <div style="color:#64748b;" data-i18n="quickstart.step1">// 1. Einmalig: Ordner anlegen und eigene Schlüssel erzeugen (gut aufbewahren)</div>
+        <div>mkdir -p aura-suite/call &amp;&amp; cd aura-suite/call</div>
+        <div>mkdir -p data asterisk-conf &amp;&amp; sudo chown 1000:1000 data asterisk-conf</div>
+        <div>printf "AMI_SECRET=%s\nADMIN_PASSWORD=%s\n" "$(openssl rand -hex 24)" "$(openssl rand -hex 12)" &gt; .env</div>
+        <div style="color:#64748b; margin-top:6px;" data-i18n="quickstart.callHint">// Verwaltung auf Port 8110: Benutzer admin, Passwort aus der .env (ADMIN_PASSWORD), beim ersten Anmelden ändern</div>
+        <div style="color:#64748b; margin-top:10px;" data-i18n="quickstart.step2">// 2. Alles installieren und starten</div>
+        <div style="color:var(--cyan);">docker compose -p auracall --env-file .env -f oci://docker.io/migerber77/aura-suite:call up -d</div>
+        <div style="color:#64748b; margin-top:10px;" data-i18n="quickstart.step3">// Später aktualisieren</div>
+        <div>docker compose -p auracall --env-file .env -f oci://docker.io/migerber77/aura-suite:call pull &amp;&amp; docker compose -p auracall --env-file .env -f oci://docker.io/migerber77/aura-suite:call up -d</div>
+      </div>
+      <script>
+(function () {
+  var tabs = [].slice.call(document.querySelectorAll('.qs-tab')), panels = [].slice.call(document.querySelectorAll('.qs-panel')); if (!tabs.length) return;
+  function select(id, focus) {
+    tabs.forEach(function (t) { var on = t.getAttribute('data-qs') === id; t.setAttribute('aria-selected', on ? 'true' : 'false'); t.tabIndex = on ? 0 : -1; if (on && focus) t.focus(); });
+    panels.forEach(function (p) { p.hidden = p.getAttribute('data-qs') !== id; });
+  }
+  tabs.forEach(function (t) {
+    t.addEventListener('click', function () { select(t.getAttribute('data-qs')); });
+    t.addEventListener('keydown', function (e) { if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return; e.preventDefault(); var i = tabs.indexOf(t), n = tabs[(i + (e.key === 'ArrowRight' ? 1 : -1) + tabs.length) % tabs.length]; select(n.getAttribute('data-qs'), true); });
+  });
+  select(tabs[0].getAttribute('data-qs'));   // ohne Skript bleiben alle Befehle sichtbar
+})();
+</script>
+      <p style="color:#94a3b8; font-size:13px; max-width:720px; margin:16px auto 0;" data-i18n="quickstart.note">Voraussetzung: Docker Compose 2.34 oder neuer (prüfen mit „docker compose version“). Jedes Produkt bekommt einen eigenen Ordner mit eigener .env und eigenen Daten. Auf älteren Systemen (z.B. manche NAS) stattdessen die Compose-Datei laden und mit „docker compose up -d“ starten.</p>
       <p style="margin-top:12px;"><a href="#installation" style="color:var(--cyan); font-size:13px; text-decoration:none;" data-i18n="quickstart.suiteLink">Alternativ: die ganze Aura-Suite mit einer Compose-Datei installieren →</a></p>
       <div style="margin-top:36px; padding-top:28px; border-top:1px solid rgba(255,255,255,0.08);">
         <p style="color:#94a3b8; font-size:13px; margin-bottom:14px;" data-i18n="quickstart.desktopLead">⚠ Kein eigenständiges Programm — verbindet sich mit einer bereits laufenden AuraChat-Installation (siehe oben). Praktisch als App statt Browser-Tab, sobald AuraChat läuft:</p>
