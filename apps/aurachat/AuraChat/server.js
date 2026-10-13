@@ -6588,6 +6588,7 @@ async function apaleoProperty() {
 // Reservierungen holen (mit Seiten). Das Filtern nach Datum macht zusätzlich der Aufrufer selbst, falls Apaleo die
 // Datums-Parameter anders versteht als hier angenommen.
 async function apaleoReservations({ propertyId, statuses, dateFilter, from, to, textSearch, pageSize = 100, maxPages = 5 }) {
+    pageSize = Math.max(1, Math.min(APALEO_MAX_PAGE_SIZE, Math.floor(Number(pageSize)) || 100));   // Apaleo: höchstens 500 pro Seite
     const out = [];
     for (let page = 1; page <= maxPages; page++) {
         const q = new URLSearchParams();
@@ -7255,8 +7256,7 @@ app.post('/api/admin/apaleo/test', requireAdmin, async (req, res) => {
         else steps.push({ name: 'Ändern: Rechte der App', ok: true, info: !specific, detail: specific ? 'Das Recht zum Ändern ist vorhanden.' : 'Die Rechte der App lassen sich vorab nicht prüfen. Fehlt „reservations.manage“, meldet Apaleo beim ersten Ausführen 403 - dann in Apaleo ergänzen. Tipp: erst an einem Test-Haus ausprobieren.' });
         if (property && wst.actions.assign) {
             await step('Ändern: Zimmerliste lesen (für „Zimmer zuweisen“)', async () => {
-                const d = await apaleoGet(`/inventory/v1/units?propertyId=${encodeURIComponent(property.id)}&pageSize=1000`, { cacheMs: 0 });
-                const units = Array.isArray(d) ? d : (Array.isArray(d.units) ? d.units : []);
+                const units = await apaleoUnits(property.id, { cacheMs: 0 });
                 return `${units.length} Zimmer gelesen.` + (units.length ? '' : ' Keine Zimmer gefunden: „Zimmer zuweisen“ mit Zimmernummer geht dann nicht (Recht „units.read“ prüfen).');
             });
         }
@@ -7558,8 +7558,7 @@ async function apaleoBuildProposal(user, intent) {
         if (Number.isFinite(bal) && bal !== 0) warnings.push(`⚠️ Der Saldo ist nicht 0 (${String(r.balance.amount).replace('.', ',')} ${r.balance.currency || ''}). Apaleo entscheidet beim Ausführen, ob der Check-out trotzdem geht.`);
     } else {
         if (intent.unit) {
-            const unitsData = await apaleoGet(`/inventory/v1/units?propertyId=${encodeURIComponent(property.id)}&pageSize=1000`, { cacheMs: 5 * 60 * 1000 });
-            const units = Array.isArray(unitsData) ? unitsData : (Array.isArray(unitsData.units) ? unitsData.units : []);
+            const units = await apaleoUnits(property.id, { cacheMs: 5 * 60 * 1000 });
             const u = units.find(x => apaleoSameText(apaleoText(x.name), intent.unit));
             if (!u) return { matched: true, response: `Ein Zimmer „${intent.unit}“ gibt es in diesem Haus nicht.` };
             unitId = String(u.id); unitName = apaleoText(u.name) || intent.unit;
@@ -7737,9 +7736,19 @@ const hkGuestPerReservation = new Map();
 
 function apaleoUnitCondition(u) { const c = (u && u.status && u.status.condition) || (u && u.condition) || ''; return String(c || ''); }
 function apaleoUnitOccupied(u) { const o = u && u.status && u.status.isOccupied; if (typeof o === 'boolean') return o; return typeof (u && u.isOccupied) === 'boolean' ? u.isOccupied : null; }
+// Alle Zimmer eines Hauses. Apaleo erlaubt höchstens 500 Einträge pro Seite (mehr: Fehler 422 "Page size cannot be greater than 500"):
+// deshalb in Seiten zu 500 blättern, bis alle da sind (große Häuser haben mehr als 500 Zimmer). Höchstens 20 Seiten als Sicherung.
+const APALEO_MAX_PAGE_SIZE = 500;
 async function apaleoUnits(propertyId, { cacheMs = 15 * 1000 } = {}) {
-    const d = await apaleoGet(`/inventory/v1/units?propertyId=${encodeURIComponent(propertyId)}&pageSize=1000`, { cacheMs });
-    return Array.isArray(d) ? d : (Array.isArray(d.units) ? d.units : []);
+    const out = [];
+    for (let page = 1; page <= 20; page++) {
+        const d = await apaleoGet(`/inventory/v1/units?propertyId=${encodeURIComponent(propertyId)}&pageNumber=${page}&pageSize=${APALEO_MAX_PAGE_SIZE}`, { cacheMs });
+        const items = Array.isArray(d) ? d : (d && Array.isArray(d.units) ? d.units : []);
+        out.push(...items);
+        const total = d && !Array.isArray(d) ? Number(d.count) : NaN;
+        if (items.length < APALEO_MAX_PAGE_SIZE || (Number.isFinite(total) && out.length >= total)) break;
+    }
+    return out;
 }
 // Nur Zimmer (nicht Parkplätze, Tagungsräume ...), sofern Apaleo den Typ angibt; bleibt sonst nichts übrig, alle
 function hkRoomsOnly(units) { const rooms = units.filter(u => !(u.unitGroup && typeof u.unitGroup.type === 'string' && u.unitGroup.type !== 'BedRoom')); return rooms.length ? rooms : units; }
