@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="de" class="dark">
+<head>
+    <script src="/static/aura-i18n.js"></script>
+    <script src="/static/aura-i18n-words.js"></script>
+    <script src="/static/aura-intro.js" data-video="/static/images/intro/aurasuite-intro"></script>
+    <script src="/static/aura-prefs.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AuraControl - Login</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = { darkMode: 'class' }
+    </script>
+</head>
+<body class="bg-gray-950 text-gray-100 min-h-screen flex items-center justify-center relative overflow-hidden">
+
+    <!-- Hintergrund Data-Center Bild mit Overlay -->
+    <div class="absolute inset-0 z-0 opacity-25 bg-cover bg-center" style="background-image: url('https://images.unsplash.com/photo-1558494949-ef010cbdcc31?q=80&w=2000&auto=format&fit=crop');"></div>
+
+    <div class="relative z-10 bg-gray-900/90 backdrop-blur-md p-8 rounded-xl border border-gray-700 shadow-2xl w-full max-w-md">
+        <div class="text-center mb-6">
+            <h1 class="text-3xl font-bold text-blue-400">AuraControl</h1>
+            <p class="text-xs text-gray-400 mt-1">{{ server_model }} — {{ os_name }} Management</p>
+        </div>
+
+        <form action="/login" method="POST" class="space-y-4">
+            {% if success %}
+            <div class="bg-green-950/80 border border-green-700/50 text-green-300 text-xs p-3 rounded text-center">
+                {{ success }}
+            </div>
+            {% endif %}
+            {% if error %}
+            <div class="bg-red-950/80 border border-red-700/50 text-red-300 text-xs p-3 rounded text-center">
+                {{ error }}
+            </div>
+            {% endif %}
+            <div>
+                <label class="block text-sm font-medium text-gray-300 mb-1">Benutzername</label>
+                <input type="text" name="username" required class="w-full bg-gray-800 border border-gray-700 rounded p-2.5 text-white text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none" placeholder="admin">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-300 mb-1">Passwort</label>
+                <input type="password" name="password" required class="w-full bg-gray-800 border border-gray-700 rounded p-2.5 text-white text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none" placeholder="••••••••">
+            </div>
+            <button type="submit" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2.5 px-4 rounded transition text-sm shadow-lg shadow-blue-600/30">
+                Anmelden
+            </button>
+        </form>
+    </div>
+</body>
+</html>

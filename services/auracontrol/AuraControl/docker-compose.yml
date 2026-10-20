@@ -1,0 +1,21 @@
+# AuraControl allein starten. In der grossen Compose-Datei der Aura-Suite ist AuraControl schon enthalten: dann diese Datei NICHT zusätzlich starten
+# (gleicher Containername und gleicher Port 8000).
+services:
+  auracontrol:
+    build: .
+    container_name: auracontrol
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - TZ=Europe/Zurich
+      - LICENSE_SECRET=${LICENSE_SECRET:?LICENSE_SECRET fehlt (derselbe Wert wie beim Lizenzserver)}
+      - ADMIN_PASSWORD=${CONTROL_ADMIN_PASSWORD:-}
+      - AURA_SUITE_VERSION=${AURA_SUITE_VERSION:-}
+      - LICENSE_CHECKIN_HOST=${LICENSE_CHECKIN_HOST:-}
+    volumes:
+      # Bindet die 1-TB-Platte ein, damit /srv/backup/rear den echten Speicherplatz vom Host sieht
+      - /srv/backup/rear:/srv/backup/rear
+      # Passwort, Sitzungsschlüssel, Testphase, Lizenz und Einstellungen
+      - ./data:/app/data
+    user: "0:0"

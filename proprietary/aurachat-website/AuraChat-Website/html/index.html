@@ -1,0 +1,1137 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AuraChat – Selbst gehosteter KI-Assistent mit Gedächtnis</title>
+<meta name="description" content="Selbst gehosteter KI-Assistent mit Avatar, Stimme, Gedächtnis. Ollama, Websuche, Microsoft 365, Telefon, Apaleo. Kostenlos starten, Daten bleiben bei euch.">
+<link rel="canonical" href="https://aurachat.gerber-backoffice-solutions.com/">
+<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1">
+<meta name="author" content="Gerber Backoffice Solutions">
+<meta name="theme-color" content="#0B1220">
+
+<!-- Vorschau beim Teilen (WhatsApp, LinkedIn, Facebook, Slack ...) -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="AuraChat">
+<meta property="og:locale" content="de_DE">
+<meta property="og:title" content="AuraChat – Selbst gehosteter KI-Assistent mit Gedächtnis">
+<meta property="og:description" content="Selbst gehosteter KI-Assistent mit Avatar, Stimme, Gedächtnis. Ollama, Websuche, Microsoft 365, Telefon, Apaleo. Kostenlos starten, Daten bleiben bei euch.">
+<meta property="og:url" content="https://aurachat.gerber-backoffice-solutions.com/">
+<meta property="og:image" content="https://aurachat.gerber-backoffice-solutions.com/images/og-image.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="AuraChat: selbst gehosteter KI-Assistent mit Avatar – Eine KI, die sich wirklich an euch erinnert.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="AuraChat – Selbst gehosteter KI-Assistent mit Gedächtnis">
+<meta name="twitter:description" content="Selbst gehosteter KI-Assistent mit Avatar, Stimme, Gedächtnis. Ollama, Websuche, Microsoft 365, Telefon, Apaleo. Kostenlos starten, Daten bleiben bei euch.">
+<meta name="twitter:image" content="https://aurachat.gerber-backoffice-solutions.com/images/og-image.jpg">
+<meta name="twitter:image:alt" content="AuraChat: selbst gehosteter KI-Assistent mit Avatar – Eine KI, die sich wirklich an euch erinnert.">
+
+<!-- Strukturierte Daten für Google (nur, was auf der Seite sichtbar steht) -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Organization",
+      "@id": "https://aurachat.gerber-backoffice-solutions.com/#organization",
+      "name": "Gerber Backoffice Solutions",
+      "logo": "https://aurachat.gerber-backoffice-solutions.com/images/logo.png",
+      "email": "info@gerber-backoffice-solutions.com",
+      "contactPoint": {
+        "@type": "ContactPoint",
+        "contactType": "sales",
+        "email": "info@gerber-backoffice-solutions.com"
+      }
+    },
+    {
+      "@type": "WebSite",
+      "@id": "https://aurachat.gerber-backoffice-solutions.com/#website",
+      "url": "https://aurachat.gerber-backoffice-solutions.com/",
+      "name": "AuraChat",
+      "inLanguage": "de",
+      "publisher": {
+        "@id": "https://aurachat.gerber-backoffice-solutions.com/#organization"
+      }
+    },
+    {
+      "@type": "SoftwareApplication",
+      "@id": "https://aurachat.gerber-backoffice-solutions.com/#software",
+      "name": "AuraChat",
+      "url": "https://aurachat.gerber-backoffice-solutions.com/",
+      "description": "Selbst gehosteter KI-Assistent mit Avatar, Stimme, Gedächtnis. Ollama, Websuche, Microsoft 365, Telefon, Apaleo. Kostenlos starten, Daten bleiben bei euch.",
+      "applicationCategory": "BusinessApplication",
+      "operatingSystem": "Docker (Linux), Windows, macOS",
+      "image": "https://aurachat.gerber-backoffice-solutions.com/images/og-image.jpg",
+      "inLanguage": "de",
+      "publisher": {
+        "@id": "https://aurachat.gerber-backoffice-solutions.com/#organization"
+      },
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "CHF",
+        "description": "Kostenlos starten mit bis zu 3 Benutzern"
+      },
+      "featureList": [
+        "Sprechender Avatar mit eigener Persönlichkeit",
+        "Gedächtnis, das mit jedem Gespräch wächst",
+        "Anbindung an Ollama, LM Studio, llama.cpp und OpenAI-kompatible Server",
+        "Websuche direkt im Chat",
+        "E-Mail per IMAP oder Microsoft 365",
+        "Hotel-Anbindung an Apaleo für Mitarbeitende und Gäste",
+        "Telefon-Anbindung (AuraCall): Aura nimmt Anrufe an und ruft an",
+        "Kiosk-Ansicht in Quer- und Hochformat mit Drehung"
+      ]
+    }
+  ]
+}
+</script>
+
+<!-- Schriften früher verbinden (die Schrift-Datei kommt von Google, siehe style.css) -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="icon" type="image/png" href="images/favicon.png">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <header>
+    <div class="nav-inner">
+      <img src="images/logo.png" alt="AuraChat" class="nav-logo" width="637" height="153">
+      <nav class="nav-links">
+        <a href="#quickstart" class="nav-link" data-i18n="nav.quickstart">Quickstart</a>
+        <a href="#funktionen" class="nav-link" data-i18n="nav.funktionen">Funktionen</a>
+        <a href="#academy" class="nav-link" data-i18n="nav.academy">Aura-Academy</a>
+        <a href="#lizenz" class="nav-link" data-i18n="nav.lizenz">Preise</a>
+        <a href="#betrieb" class="nav-link" data-i18n="nav.betrieb">Self-Hosted &amp; Cloud</a>
+        <a href="#downloads" class="nav-link" data-i18n="nav.downloads">Downloads</a>
+        <a href="#produkte" class="nav-link" data-i18n="nav.produkte">Produkte</a>
+        <a href="#integrationen" class="nav-link" data-i18n="nav.integrationen">Integrationen</a>
+        <a href="#bewertungen" class="nav-link" data-i18n="nav.bewertungen">Bewertungen</a>
+      </nav>
+      <div style="display:flex; align-items:center; gap:14px;">
+        <div id="lang-switcher" style="display:flex; gap:6px;">
+          <button type="button" class="lang-btn" data-lang="de" title="Deutsch">🇩🇪</button>
+          <button type="button" class="lang-btn" data-lang="en" title="English">🇬🇧</button>
+          <button type="button" class="lang-btn" data-lang="fr" title="Français">🇫🇷</button>
+          <button type="button" class="lang-btn" data-lang="it" title="Italiano">🇮🇹</button>
+          <button type="button" class="lang-btn" data-lang="es" title="Español">🇪🇸</button>
+        </div>
+        <a href="#kontakt" class="nav-cta" data-i18n="nav.cta">Kontakt aufnehmen</a>
+      </div>
+    </div>
+  </header>
+
+  <main id="inhalt">
+  <section class="hero">
+    <div class="hero-glow" style="width:500px;height:500px;background:var(--blue);top:-160px;left:-160px;"></div>
+    <div class="hero-glow" style="width:400px;height:400px;background:var(--purple);top:80px;right:0;"></div>
+    <div class="hero-grid">
+      <div>
+        <h1 data-i18n="hero.title">Eine KI, die sich wirklich an euch erinnert.</h1>
+        <p class="lead" data-i18n="hero.lead">AuraChat ist ein selbst gehosteter KI-Assistent mit sprechendem Avatar, eigener Persönlichkeit und einem Gedächtnis, das mit jedem Gespräch wächst. Auf eurer Infrastruktur. Unter eurer Kontrolle.</p>
+        <div class="hero-ctas">
+          <a href="#kontakt" class="btn btn-primary" data-i18n="hero.cta1">Datenblatt anfordern</a>
+          <a href="#funktionen" class="btn btn-ghost" data-i18n="hero.cta2">Funktionen ansehen</a>
+        </div>
+        <div class="hero-meta">
+          <span data-i18n="hero.meta1">Self-Hosted oder Cloud</span>
+          <span class="dot"></span>
+          <span data-i18n="hero.meta2">Eure Daten bleiben bei euch</span>
+        </div>
+      </div>
+      <div class="hero-photo-wrap">
+        <div class="hero-photo-inner">
+          <div class="ring-orbit"></div>
+          <div class="ring-orbit ring-orbit-2"></div>
+          <img src="images/aura-hero.jpeg" alt="Aura, der sprechende KI-Avatar von AuraChat" class="hero-photo" width="665" height="1182" fetchpriority="high" decoding="async">
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="quickstart" style="background:rgba(50,112,253,0.06); border-top:1px solid rgba(255,255,255,0.06); border-bottom:1px solid rgba(255,255,255,0.06);">
+    <div class="wrap" style="text-align:center;">
+      <h2 data-i18n="quickstart.title">Holt euch heute noch die Aura-Suite.</h2>
+      <p style="color:#94a3b8; max-width:560px; margin:0 auto 28px;" data-i18n="quickstart.lead">Jedes Produkt startet mit einem Befehl: Produkt wählen, Schlüssel erzeugen, starten. Die fertigen Pakete liegen auf Docker Hub.</p>
+      <div class="qs-picker" role="tablist" aria-label="Aura-Suite" style="display:flex; flex-wrap:wrap; gap:8px; justify-content:center; align-items:center; max-width:720px; margin:0 auto 16px;">
+        <span style="color:#94a3b8; font-size:13px; margin-right:4px;" data-i18n="quickstart.pick">Produkt wählen:</span>
+        <button type="button" role="tab" class="btn btn-ghost qs-tab" data-qs="chat" aria-controls="qs-panel-chat" aria-selected="true" style="padding:7px 14px; font-size:13px;">AuraChat</button>
+        <button type="button" role="tab" class="btn btn-ghost qs-tab" data-qs="plan" aria-controls="qs-panel-plan" aria-selected="false" style="padding:7px 14px; font-size:13px;">AuraPlan</button>
+        <button type="button" role="tab" class="btn btn-ghost qs-tab" data-qs="ticket" aria-controls="qs-panel-ticket" aria-selected="false" style="padding:7px 14px; font-size:13px;">AuraTicket</button>
+        <button type="button" role="tab" class="btn btn-ghost qs-tab" data-qs="mail" aria-controls="qs-panel-mail" aria-selected="false" style="padding:7px 14px; font-size:13px;">AuraMail</button>
+        <button type="button" role="tab" class="btn btn-ghost qs-tab" data-qs="direct" aria-controls="qs-panel-direct" aria-selected="false" style="padding:7px 14px; font-size:13px;">AuraDirect</button>
+        <button type="button" role="tab" class="btn btn-ghost qs-tab" data-qs="proxy" aria-controls="qs-panel-proxy" aria-selected="false" style="padding:7px 14px; font-size:13px;">AuraProxy</button>
+        <button type="button" role="tab" class="btn btn-ghost qs-tab" data-qs="call" aria-controls="qs-panel-call" aria-selected="false" style="padding:7px 14px; font-size:13px;">AuraCall</button>
+      </div>
+      <div class="qs-panel" id="qs-panel-chat" data-qs="chat" role="tabpanel" aria-label="AuraChat" style="background:#0b1220; border:1px solid rgba(255,255,255,0.1); border-radius:12px; padding:20px 24px; max-width:720px; margin:0 auto; text-align:left; font-family:'Courier New',monospace; font-size:13px; color:#e2e8f0; overflow-x:auto;">
+        <div style="color:#64748b;" data-i18n="quickstart.step1">// 1. Einmalig: Ordner anlegen und eigene Schlüssel erzeugen (gut aufbewahren)</div>
+        <div>mkdir -p aura-suite/chat &amp;&amp; cd aura-suite/chat</div>
+        <div>printf "SESSION_SECRET=%s\nDISPOSITION_ENCRYPTION_KEY=%s\n" "$(openssl rand -hex 32)" "$(openssl rand -hex 32)" &gt; .env</div>
+        <div style="color:#64748b; margin-top:10px;" data-i18n="quickstart.step2">// 2. Alles installieren und starten</div>
+        <div style="color:var(--cyan);">docker compose -p aurachat --env-file .env -f oci://docker.io/migerber77/aura-suite:chat up -d</div>
+        <div style="color:#64748b; margin-top:10px;" data-i18n="quickstart.step3">// Später aktualisieren</div>
+        <div>docker compose -p aurachat --env-file .env -f oci://docker.io/migerber77/aura-suite:chat pull &amp;&amp; docker compose -p aurachat --env-file .env -f oci://docker.io/migerber77/aura-suite:chat up -d</div>
+      </div>
+      <div class="qs-panel" id="qs-panel-plan" data-qs="plan" role="tabpanel" aria-label="AuraPlan" style="background:#0b1220; border:1px solid rgba(255,255,255,0.1); border-radius:12px; padding:20px 24px; max-width:720px; margin:0 auto; text-align:left; font-family:'Courier New',monospace; font-size:13px; color:#e2e8f0; overflow-x:auto;">
+        <div style="color:#64748b;" data-i18n="quickstart.step1">// 1. Einmalig: Ordner anlegen und eigene Schlüssel erzeugen (gut aufbewahren)</div>
+        <div>mkdir -p aura-suite/plan &amp;&amp; cd aura-suite/plan</div>
+        <div>printf "SESSION_SECRET=%s\n" "$(openssl rand -hex 32)" &gt; .env</div>
+        <div style="color:#64748b; margin-top:10px;" data-i18n="quickstart.step2">// 2. Alles installieren und starten</div>
+        <div style="color:var(--cyan);">docker compose -p auraplan --env-file .env -f oci://docker.io/migerber77/aura-suite:plan up -d</div>
+        <div style="color:#64748b; margin-top:10px;" data-i18n="quickstart.step3">// Später aktualisieren</div>
+        <div>docker compose -p auraplan --env-file .env -f oci://docker.io/migerber77/aura-suite:plan pull &amp;&amp; docker compose -p auraplan --env-file .env -f oci://docker.io/migerber77/aura-suite:plan up -d</div>
+      </div>
+      <div class="qs-panel" id="qs-panel-ticket" data-qs="ticket" role="tabpanel" aria-label="AuraTicket" style="background:#0b1220; border:1px solid rgba(255,255,255,0.1); border-radius:12px; padding:20px 24px; max-width:720px; margin:0 auto; text-align:left; font-family:'Courier New',monospace; font-size:13px; color:#e2e8f0; overflow-x:auto;">
+        <div style="color:#64748b;" data-i18n="quickstart.step1">// 1. Einmalig: Ordner anlegen und eigene Schlüssel erzeugen (gut aufbewahren)</div>
+        <div>mkdir -p aura-suite/ticket &amp;&amp; cd aura-suite/ticket</div>
+        <div>printf "SESSION_SECRET=%s\n" "$(openssl rand -hex 32)" &gt; .env</div>
+        <div style="color:#64748b; margin-top:10px;" data-i18n="quickstart.step2">// 2. Alles installieren und starten</div>
+        <div style="color:var(--cyan);">docker compose -p auraticket --env-file .env -f oci://docker.io/migerber77/aura-suite:ticket up -d</div>
+        <div style="color:#64748b; margin-top:10px;" data-i18n="quickstart.step3">// Später aktualisieren</div>
+        <div>docker compose -p auraticket --env-file .env -f oci://docker.io/migerber77/aura-suite:ticket pull &amp;&amp; docker compose -p auraticket --env-file .env -f oci://docker.io/migerber77/aura-suite:ticket up -d</div>
+      </div>
+      <div class="qs-panel" id="qs-panel-mail" data-qs="mail" role="tabpanel" aria-label="AuraMail" style="background:#0b1220; border:1px solid rgba(255,255,255,0.1); border-radius:12px; padding:20px 24px; max-width:720px; margin:0 auto; text-align:left; font-family:'Courier New',monospace; font-size:13px; color:#e2e8f0; overflow-x:auto;">
+        <div style="color:#64748b;" data-i18n="quickstart.step1">// 1. Einmalig: Ordner anlegen und eigene Schlüssel erzeugen (gut aufbewahren)</div>
+        <div>mkdir -p aura-suite/mail &amp;&amp; cd aura-suite/mail</div>
+        <div>printf "SESSION_SECRET=%s\nCREDENTIAL_ENCRYPTION_KEY=%s\n" "$(openssl rand -hex 32)" "$(openssl rand -hex 32)" &gt; .env</div>
+        <div style="color:#64748b; margin-top:10px;" data-i18n="quickstart.step2">// 2. Alles installieren und starten</div>
+        <div style="color:var(--cyan);">docker compose -p auramail --env-file .env -f oci://docker.io/migerber77/aura-suite:mail up -d</div>
+        <div style="color:#64748b; margin-top:10px;" data-i18n="quickstart.step3">// Später aktualisieren</div>
+        <div>docker compose -p auramail --env-file .env -f oci://docker.io/migerber77/aura-suite:mail pull &amp;&amp; docker compose -p auramail --env-file .env -f oci://docker.io/migerber77/aura-suite:mail up -d</div>
+      </div>
+      <div class="qs-panel" id="qs-panel-direct" data-qs="direct" role="tabpanel" aria-label="AuraDirect" style="background:#0b1220; border:1px solid rgba(255,255,255,0.1); border-radius:12px; padding:20px 24px; max-width:720px; margin:0 auto; text-align:left; font-family:'Courier New',monospace; font-size:13px; color:#e2e8f0; overflow-x:auto;">
+        <div style="color:#64748b;" data-i18n="quickstart.step1">// 1. Einmalig: Ordner anlegen und eigene Schlüssel erzeugen (gut aufbewahren)</div>
+        <div>mkdir -p aura-suite/direct &amp;&amp; cd aura-suite/direct</div>
+        <div>printf "SESSION_SECRET=%s\nAURADIRECT_ADMIN_PASSWORD=%s\nAURADIRECT_SERVICE_KEY=%s\n" "$(openssl rand -hex 32)" "$(openssl rand -hex 12)" "$(openssl rand -hex 32)" &gt; .env</div>
+        <div style="color:#64748b; margin-top:6px;" data-i18n="quickstart.directHint">// Anmeldung: Benutzer admin, das Passwort steht in der .env (AURADIRECT_ADMIN_PASSWORD)</div>
+        <div style="color:#64748b; margin-top:10px;" data-i18n="quickstart.step2">// 2. Alles installieren und starten</div>
+        <div style="color:var(--cyan);">docker compose -p auradirect --env-file .env -f oci://docker.io/migerber77/aura-suite:direct up -d</div>
+        <div style="color:#64748b; margin-top:10px;" data-i18n="quickstart.step3">// Später aktualisieren</div>
+        <div>docker compose -p auradirect --env-file .env -f oci://docker.io/migerber77/aura-suite:direct pull &amp;&amp; docker compose -p auradirect --env-file .env -f oci://docker.io/migerber77/aura-suite:direct up -d</div>
+      </div>
+      <div class="qs-panel" id="qs-panel-proxy" data-qs="proxy" role="tabpanel" aria-label="AuraProxy" style="background:#0b1220; border:1px solid rgba(255,255,255,0.1); border-radius:12px; padding:20px 24px; max-width:720px; margin:0 auto; text-align:left; font-family:'Courier New',monospace; font-size:13px; color:#e2e8f0; overflow-x:auto;">
+        <div style="color:#64748b;" data-i18n="quickstart.step1">// 1. Einmalig: Ordner anlegen und eigene Schlüssel erzeugen (gut aufbewahren)</div>
+        <div>mkdir -p aura-suite/proxy &amp;&amp; cd aura-suite/proxy</div>
+        <div>printf "SESSION_SECRET=%s\n" "$(openssl rand -hex 32)" &gt; .env</div>
+        <div style="color:#64748b; margin-top:10px;" data-i18n="quickstart.step2">// 2. Alles installieren und starten</div>
+        <div style="color:var(--cyan);">docker compose -p auraproxy --env-file .env -f oci://docker.io/migerber77/aura-suite:proxy up -d</div>
+        <div style="color:#64748b; margin-top:10px;" data-i18n="quickstart.step3">// Später aktualisieren</div>
+        <div>docker compose -p auraproxy --env-file .env -f oci://docker.io/migerber77/aura-suite:proxy pull &amp;&amp; docker compose -p auraproxy --env-file .env -f oci://docker.io/migerber77/aura-suite:proxy up -d</div>
+      </div>
+      <div class="qs-panel" id="qs-panel-call" data-qs="call" role="tabpanel" aria-label="AuraCall" style="background:#0b1220; border:1px solid rgba(255,255,255,0.1); border-radius:12px; padding:20px 24px; max-width:720px; margin:0 auto; text-align:left; font-family:'Courier New',monospace; font-size:13px; color:#e2e8f0; overflow-x:auto;">
+        <div style="color:#64748b;" data-i18n="quickstart.step1">// 1. Einmalig: Ordner anlegen und eigene Schlüssel erzeugen (gut aufbewahren)</div>
+        <div>mkdir -p aura-suite/call &amp;&amp; cd aura-suite/call</div>
+        <div>mkdir -p data asterisk-conf &amp;&amp; sudo chown 1000:1000 data asterisk-conf</div>
+        <div>printf "AMI_SECRET=%s\nADMIN_PASSWORD=%s\n" "$(openssl rand -hex 24)" "$(openssl rand -hex 12)" &gt; .env</div>
+        <div style="color:#64748b; margin-top:6px;" data-i18n="quickstart.callHint">// Verwaltung auf Port 8110: Benutzer admin, Passwort aus der .env (ADMIN_PASSWORD), beim ersten Anmelden ändern</div>
+        <div style="color:#64748b; margin-top:10px;" data-i18n="quickstart.step2">// 2. Alles installieren und starten</div>
+        <div style="color:var(--cyan);">docker compose -p auracall --env-file .env -f oci://docker.io/migerber77/aura-suite:call up -d</div>
+        <div style="color:#64748b; margin-top:10px;" data-i18n="quickstart.step3">// Später aktualisieren</div>
+        <div>docker compose -p auracall --env-file .env -f oci://docker.io/migerber77/aura-suite:call pull &amp;&amp; docker compose -p auracall --env-file .env -f oci://docker.io/migerber77/aura-suite:call up -d</div>
+      </div>
+      <script>
+(function () {
+  var tabs = [].slice.call(document.querySelectorAll('.qs-tab')), panels = [].slice.call(document.querySelectorAll('.qs-panel')); if (!tabs.length) return;
+  function select(id, focus) {
+    tabs.forEach(function (t) { var on = t.getAttribute('data-qs') === id; t.setAttribute('aria-selected', on ? 'true' : 'false'); t.tabIndex = on ? 0 : -1; if (on && focus) t.focus(); });
+    panels.forEach(function (p) { p.hidden = p.getAttribute('data-qs') !== id; });
+  }
+  tabs.forEach(function (t) {
+    t.addEventListener('click', function () { select(t.getAttribute('data-qs')); });
+    t.addEventListener('keydown', function (e) { if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return; e.preventDefault(); var i = tabs.indexOf(t), n = tabs[(i + (e.key === 'ArrowRight' ? 1 : -1) + tabs.length) % tabs.length]; select(n.getAttribute('data-qs'), true); });
+  });
+  select(tabs[0].getAttribute('data-qs'));   // ohne Skript bleiben alle Befehle sichtbar
+})();
+</script>
+      <p style="color:#94a3b8; font-size:13px; max-width:720px; margin:16px auto 0;" data-i18n="quickstart.note">Voraussetzung: Docker Compose 2.34 oder neuer (prüfen mit „docker compose version“). Jedes Produkt bekommt einen eigenen Ordner mit eigener .env und eigenen Daten. Auf älteren Systemen (z.B. manche NAS) stattdessen die Compose-Datei laden und mit „docker compose up -d“ starten.</p>
+      <p style="margin-top:12px;"><a href="#installation" style="color:var(--cyan); font-size:13px; text-decoration:none;" data-i18n="quickstart.suiteLink">Alternativ: die ganze Aura-Suite mit einer Compose-Datei installieren →</a></p>
+      <div style="margin-top:36px; padding-top:28px; border-top:1px solid rgba(255,255,255,0.08);">
+        <p style="color:#94a3b8; font-size:13px; margin-bottom:14px;" data-i18n="quickstart.desktopLead">⚠ Kein eigenständiges Programm — verbindet sich mit einer bereits laufenden AuraChat-Installation (siehe oben). Praktisch als App statt Browser-Tab, sobald AuraChat läuft:</p>
+        <div style="display:flex; gap:12px; justify-content:center; flex-wrap:wrap;">
+          <a href="downloads/AuraChat-Setup-Windows.exe" download class="btn btn-ghost" style="display:inline-flex; align-items:center; gap:8px;">🪟 <span data-i18n="quickstart.downloadWin">Für Windows herunterladen</span></a>
+          <a href="downloads/AuraChat-Setup-macOS.zip" download class="btn btn-ghost" style="display:inline-flex; align-items:center; gap:8px;">🍎 <span data-i18n="quickstart.downloadMac">Für macOS herunterladen</span></a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="installation">
+    <div class="wrap" style="max-width:820px;">
+      <h2 data-i18n="suiteinstall.title">Aura-Suite: Installation &amp; Deployment</h2>
+      <p style="color:#94a3b8; max-width:640px; margin:0 0 8px;" data-i18n="suiteinstall.lead">So installierst du die Aura-Suite auf einem neuen Server: fertige Compose-Datei laden, Geheimnisse erzeugen, starten.</p>
+      <div class="card" style="text-align:left; margin-top:16px;">
+        <h3 data-i18n="suiteinstall.req.title">Voraussetzungen</h3>
+        <ul style="color:#cbd5e1; font-size:14px; margin:10px 0 0 18px; line-height:1.7; list-style:disc;">
+          <li data-i18n="suiteinstall.req.r1">Ein Linux-Server (z. B. Ubuntu oder Debian)</li>
+          <li data-i18n="suiteinstall.req.r2">Docker und Docker Compose sind installiert</li>
+          <li data-i18n="suiteinstall.req.r3">curl und openssl sind installiert (Git nur, wenn du das Repository klonen willst)</li>
+        </ul>
+      </div>
+      <div class="card" style="text-align:left; margin-top:16px;">
+        <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+          <span style="flex:none; width:28px; height:28px; border-radius:50%; background:rgba(50,112,253,0.2); border:1px solid rgba(50,112,253,0.5); color:#93b4ff; font-size:13px; font-weight:700; display:inline-flex; align-items:center; justify-content:center;">1</span>
+          <h3 style="margin:0;" data-i18n="suiteinstall.s1.title">Repository klonen oder Compose-Datei herunterladen</h3>
+          <span style="color:#64748b; font-size:12px;" data-i18n="suiteinstall.time">1 Min.</span>
+        </div>
+        <p style="color:#94a3b8; font-size:14px; margin:12px 0 10px;" data-i18n="suiteinstall.s1.desc">Statt die docker-compose.yml selbst zu schreiben, lädst du die fertige Konfiguration direkt aus dem Git-Repository herunter:</p>
+        <div class="codeblock" style="background:#0b1220; border:1px solid rgba(255,255,255,0.1); border-radius:12px; padding:16px 20px; text-align:left; font-family:'Courier New',monospace; font-size:13px; color:#e2e8f0; overflow-x:auto; white-space:pre;"><div>mkdir -p /docker/aura-suite &amp;&amp; cd /docker/aura-suite</div><div>curl -o docker-compose.yml https://raw.githubusercontent.com/migerber77/aura-suite/main/docker-compose.yml</div></div>
+        <p style="color:#94a3b8; font-size:14px; margin:12px 0 10px;" data-i18n="suiteinstall.s1.extra">AuraProxy braucht zusätzlich eine kleine Startdatei für seinen Caddy:</p>
+        <div class="codeblock" style="background:#0b1220; border:1px solid rgba(255,255,255,0.1); border-radius:12px; padding:16px 20px; text-align:left; font-family:'Courier New',monospace; font-size:13px; color:#e2e8f0; overflow-x:auto; white-space:pre;"><div>mkdir -p proxy &amp;&amp; cat &gt; proxy/caddy-init.json &lt;&lt;'EOF'</div><div>{</div><div>  "admin": { "listen": "0.0.0.0:2019", "origins": ["http://auraproxy-admin"] },</div><div>  "apps": { "http": { "servers": { "port_80": { "listen": [":80"], "routes": [] } } } }</div><div>}</div><div>EOF</div></div>
+        <p style="color:#94a3b8; font-size:14px; margin:12px 0 10px;" data-i18n="suiteinstall.s1.alt">Oder das ganze Repository klonen:</p>
+        <div class="codeblock" style="background:#0b1220; border:1px solid rgba(255,255,255,0.1); border-radius:12px; padding:16px 20px; text-align:left; font-family:'Courier New',monospace; font-size:13px; color:#e2e8f0; overflow-x:auto; white-space:pre;"><div>git clone https://github.com/migerber77/aura-suite.git /docker/aura-suite</div><div>cd /docker/aura-suite</div></div>
+      </div>
+      <div class="card" style="text-align:left; margin-top:16px;">
+        <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+          <span style="flex:none; width:28px; height:28px; border-radius:50%; background:rgba(50,112,253,0.2); border:1px solid rgba(50,112,253,0.5); color:#93b4ff; font-size:13px; font-weight:700; display:inline-flex; align-items:center; justify-content:center;">2</span>
+          <h3 style="margin:0;" data-i18n="suiteinstall.s2.title">Umgebungsvariablen generieren / .env anlegen</h3>
+          <span style="color:#64748b; font-size:12px;" data-i18n="suiteinstall.time">1 Min.</span>
+        </div>
+        <p style="color:#94a3b8; font-size:14px; margin:12px 0 10px;" data-i18n="suiteinstall.s2.desc">Die benötigten Geheimnisse (Secrets) erzeugt ein Befehl für dich, du musst nichts von Hand tippen. Er legt die Datei .env an:</p>
+        <div class="codeblock" style="background:#0b1220; border:1px solid rgba(255,255,255,0.1); border-radius:12px; padding:16px 20px; text-align:left; font-family:'Courier New',monospace; font-size:13px; color:#e2e8f0; overflow-x:auto; white-space:pre;"><div>printf "TZ=Europe/Zurich\n" &gt; .env</div><div>for v in LICENSE_SECRET CHAT_SESSION_SECRET CHAT_DISPOSITION_KEY PLAN_SESSION_SECRET \</div><div>  TICKET_SESSION_SECRET MAIL_SESSION_SECRET MAIL_ENCRYPTION_KEY DIRECT_SESSION_SECRET \</div><div>  DIRECT_ADMIN_PASSWORD DIRECT_SERVICE_KEY PROXY_SESSION_SECRET CALL_AMI_SECRET \</div><div>  LIC_ADMIN_PASSWORD LIC_SESSION_SECRET; do</div><div>  printf "%s=%s\n" "$v" "$(openssl rand -hex 32)"; done &gt;&gt; .env</div><div>chmod 600 .env</div></div>
+        <p style="color:#94a3b8; font-size:14px; margin:12px 0 10px; font-size:13px;" data-i18n="suiteinstall.s2.note">Die Passwörter für AuraDirect und AuraLic (Benutzer admin) stehen danach in der Datei .env. Bewahre sie sicher auf und lege sie nie in ein Repository.</p>
+      </div>
+      <div class="card" style="text-align:left; margin-top:16px;">
+        <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+          <span style="flex:none; width:28px; height:28px; border-radius:50%; background:rgba(50,112,253,0.2); border:1px solid rgba(50,112,253,0.5); color:#93b4ff; font-size:13px; font-weight:700; display:inline-flex; align-items:center; justify-content:center;">3</span>
+          <h3 style="margin:0;" data-i18n="suiteinstall.s3.title">Images von Docker Hub ziehen und starten</h3>
+          <span style="color:#64748b; font-size:12px;" data-i18n="suiteinstall.time">1 Min.</span>
+        </div>
+        <p style="color:#94a3b8; font-size:14px; margin:12px 0 10px;" data-i18n="suiteinstall.s3.prep">Nur für AuraCall: lege vorher die Datenordner an, damit sie dem Benutzer 1000 gehören:</p>
+        <div class="codeblock" style="background:#0b1220; border:1px solid rgba(255,255,255,0.1); border-radius:12px; padding:16px 20px; text-align:left; font-family:'Courier New',monospace; font-size:13px; color:#e2e8f0; overflow-x:auto; white-space:pre;"><div>mkdir -p data/call data/call-asterisk-conf &amp;&amp; sudo chown 1000:1000 data/call data/call-asterisk-conf</div></div>
+        <p style="color:#94a3b8; font-size:14px; margin:12px 0 10px; margin-top:16px;" data-i18n="suiteinstall.s3.desc">Jetzt startest du Docker Compose. Docker liest die docker-compose.yml, erkennt die migerber77/aura-suite:…-Images und zieht sie automatisch von Docker Hub:</p>
+        <div class="codeblock" style="background:#0b1220; border:1px solid rgba(255,255,255,0.1); border-radius:12px; padding:16px 20px; text-align:left; font-family:'Courier New',monospace; font-size:13px; color:#e2e8f0; overflow-x:auto; white-space:pre;"><div>docker compose up -d</div></div>
+        <p style="color:#94a3b8; font-size:14px; margin:12px 0 10px; margin-top:16px;" data-i18n="suiteinstall.s3.verify">Prüfe danach, ob alle Container gestartet sind und fehlerfrei laufen:</p>
+        <div class="codeblock" style="background:#0b1220; border:1px solid rgba(255,255,255,0.1); border-radius:12px; padding:16px 20px; text-align:left; font-family:'Courier New',monospace; font-size:13px; color:#e2e8f0; overflow-x:auto; white-space:pre;"><div>docker compose ps</div></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="funktionen">
+    <div class="wrap">
+      <div class="section-head">
+        <h2 data-i18n="features.heading">Alles, was ein Team-Assistent können sollte — und einiges, was sonst keiner kann.</h2>
+      </div>
+      <div class="grid3">
+        <div class="card">
+          <div class="icon">💬</div>
+          <h3 data-i18n="features.chat.title">Chat &amp; KI</h3>
+          <p data-i18n="features.chat.desc">Anbindung an Ollama, LM Studio, llama.cpp, OpenAI-kompatible Server oder OpenAI Cloud. Websuche direkt im Chat, optionales Zweitmodell zur Genauigkeitsprüfung.</p>
+        </div>
+        <div class="card">
+          <div class="icon">🎭</div>
+          <h3 data-i18n="features.avatar.title">Avatar &amp; Stimme</h3>
+          <p data-i18n="features.avatar.desc">Ein sprechender Video-Avatar mit eigener Stimme. Fünf Charaktere inklusive, eigene Avatare möglich. "Hey Aura" aktiviert sich freihändig per Zuruf.</p>
+        </div>
+        <div class="card">
+          <div class="icon">🧠</div>
+          <h3 data-i18n="features.memory.title">Gedächtnis &amp; Persönlichkeit</h3>
+          <p data-i18n="features.memory.desc">Merkt sich relevante Fakten automatisch und erinnert sich im selben Chat an hochgeladene Bilder und Dokumente. Jede Person kann Auras Charakter für ihr eigenes Konto frei gestalten. Täglicher Rückblick auf Wunsch.</p>
+        </div>
+        <div class="card">
+          <div class="icon">📎</div>
+          <h3 data-i18n="features.productivity.title">Produktivität</h3>
+          <p data-i18n="features.productivity.desc">Eigene Dokumente als Kontext, Chat-Export als PDF, automatische Lernprotokolle, Quiz aus jedem Gespräch, Erinnerungen per Zuruf.</p>
+        </div>
+        <div class="card">
+          <div class="icon">🔌</div>
+          <h3 data-i18n="features.integrations.title">Integrationen</h3>
+          <p data-i18n="features.integrations.desc">Smart-Home-Steuerung (IKEA, Nuki, Sonos, eigene Geräte), Hotel-Software Apaleo, Anbindung an AuraPlan, AuraTicket, AuraMail und AuraCall, E-Mail per IMAP oder Microsoft 365 inklusive KI-Antwortentwürfen, offene API für externe Plattformen.</p>
+        </div>
+        <div class="card">
+          <div class="icon">🛠️</div>
+          <h3 data-i18n="features.admin.title">Administration</h3>
+          <p data-i18n="features.admin.desc">Mehrere Administratorkonten mit eigener Lizenz-Auslastungsanzeige, automatisches SSL auf Standard-Ports 80/443, Zwei-Faktor-Authentifizierung, versionierte Datenschutzerklärung.</p>
+        </div>
+        <div class="card">
+          <div class="icon">💾</div>
+          <h3 data-i18n="features.ops.title">Betrieb &amp; Wartung</h3>
+          <p data-i18n="features.ops.desc">Ein-Klick-Backup als Download, Wiederherstellung direkt im Admin Panel, Selbst-Update per Upload inklusive automatischer Syntaxprüfung und Sicherung vor jeder Änderung. Das Cockpit zeigt Prozessor, Speicher, Speicherplatz und Docker-Container als Ampel, optional mit täglichem Schwachstellen-Scan.</p>
+        </div>
+        <div class="card">
+          <div class="icon">🏷️</div>
+          <h3 data-i18n="features.whitelabel.title">White-Label</h3>
+          <p data-i18n="features.whitelabel.desc">Eigenes Logo &amp; Icon statt AuraChat-Branding — wirkt überall: Kopfzeile, Login, Favicon, PDF-Exporte. Ideal für Wiederverkäufer.</p>
+        </div>
+        <div class="card">
+          <div class="icon">🗣️</div>
+          <h3 data-i18n="features.commands.title">Chat- &amp; Sprachbefehle</h3>
+          <p data-i18n="features.commands.desc">AuraPlan, AuraTicket, AuraMail, Sonos, Nuki und IKEA per Zuruf steuern: einstempeln, Tickets bearbeiten, E-Mails diktieren, Türen und Lampen schalten — und mit AuraCall Telefonate auslösen.</p>
+        </div>
+        <div class="card">
+          <div class="icon">🏨</div>
+          <h3 data-i18n="features.hotel.title">Hotel &amp; Gäste</h3>
+          <p data-i18n="features.hotel.desc">Anbindung an Apaleo: Mitarbeitende fragen Anreisen, Abreisen, Gäste im Haus und Zimmerzustand per Chat ab. Gäste sehen im Gastmodus nur ihre eigene Reservierung. Check-in, Check-out und Zimmerzuweisung gibt es optional, immer mit Bestätigung. Housekeeping-Meldungen werden zu Tickets in AuraTicket.</p>
+        </div>
+        <div class="card">
+          <div class="icon">☎️</div>
+          <h3 data-i18n="features.phone.title">Aura am Telefon</h3>
+          <p data-i18n="features.phone.desc">Mit AuraCall nimmt Aura Anrufe entgegen und ruft auf Wunsch selbst an. Auslösen lässt sich ein Anruf auch per Chat oder Sprachbefehl: „Ruf … an und sag ihr …“, mit Rückfrage vor jedem Anruf.</p>
+        </div>
+        <div class="card">
+          <div class="icon">🖥️</div>
+          <h3 data-i18n="features.screen.title">Kiosk &amp; Bildschirmformat</h3>
+          <p data-i18n="features.screen.desc">Quer- oder Hochformat, in 90°-Schritten drehbar, mit gängigen Seitenverhältnissen und Auflösungen — für Wandbildschirm, Rezeption oder Empfang.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="academy">
+    <div class="hero-glow" style="width:450px;height:450px;background:var(--purple);top:40px;left:50%;transform:translateX(-50%);"></div>
+    <div class="academy-grid">
+      <img src="images/academy-logo.png" alt="Aura Academy" class="academy-logo" width="600" height="600" loading="lazy" decoding="async">
+      <div>
+        <h2 data-i18n="academy.title">Aura-Academy: ein Modell, das wirklich euch gehört.</h2>
+        <p data-i18n="academy.text">In der höchsten Lizenzstufe trainiert AuraChat jede Nacht automatisch ein eigenes, kleines KI-Modell mit den gesammelten Erkenntnissen eures Teams weiter. Kein Umweg über fremde Server, kein geteiltes Wissen mit anderen Kunden — nur euer eigenes, mit der Zeit wachsendes Modell, das versteht, wie bei euch gearbeitet wird.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="lizenz">
+    <div class="wrap">
+      <div class="section-head">
+        <h2 data-i18n="pricing.heading">Ein Lizenzmodell, das mit euch mitwächst.</h2>
+        <p data-i18n="pricing.sub">Kostenlos starten, pro Sitz erweitern — mit eigenen Preisen für Benutzer- und Administratorkonten.</p>
+      </div>
+      <div class="pricing-grid">
+        <div class="price-card">
+          <h3 data-i18n="pricing.basic.title">Basis</h3>
+          <p class="price" data-i18n="pricing.basic.price">kostenlos</p>
+          <p class="sub" data-i18n="pricing.basic.sub">bis 3 Benutzer / 1 Administrator</p>
+          <ul>
+            <li data-i18n="pricing.basic.li1">· Chat, Standard-Avatare, Gedächtnis</li>
+            <li data-i18n="pricing.basic.li2">· Persönlichkeit, Workspace</li>
+            <li data-i18n="pricing.basic.li3">· Quiz, Chat-Export, Erinnerungen</li>
+            <li data-i18n="pricing.basic.li4">· Basis-Integrationen</li>
+          </ul>
+        </div>
+        <div class="price-card popular">
+          <span class="price-badge" data-i18n="pricing.popular">Beliebt</span>
+          <h3 data-i18n="pricing.pro.title">Pro</h3>
+          <p class="price">CHF 4.–<span data-i18n="pricing.perUser"> / Nutzer / Mt.</span></p>
+          <p class="sub" data-i18n="pricing.pro.sub">CHF 9.– pro Administrator / Mt.</p>
+          <ul>
+            <li data-i18n="pricing.pro.li1">· Eigene Domain mit SSL</li>
+            <li data-i18n="pricing.pro.li2">· Sprachein- und -ausgabe</li>
+            <li data-i18n="pricing.pro.li3">· Eigene Avatare, Bildgenerierung</li>
+            <li data-i18n="pricing.pro.li4">· Coding-Modell, Zweitmodell</li>
+            <li data-i18n="pricing.pro.li5">· E-Mail-Integration, API-Zugriff</li>
+          </ul>
+        </div>
+        <div class="price-card academy">
+          <h3 data-i18n="pricing.academy.title">Academy</h3>
+          <p class="price">CHF 7.–<span data-i18n="pricing.perUser2"> / Nutzer / Mt.</span></p>
+          <p class="sub" data-i18n="pricing.academy.sub">CHF 15.– pro Administrator / Mt.</p>
+          <ul>
+            <li data-i18n="pricing.academy.li1">· Alles aus Pro</li>
+            <li data-i18n="pricing.academy.li2">· Aura-Academy: eigenes trainiertes Modell</li>
+            <li data-i18n="pricing.academy.li3">· Eigenes Logo &amp; Icon (White-Label)</li>
+          </ul>
+        </div>
+      </div>
+      <p class="price-note" data-i18n="pricing.note">Alle Preise sind Richtwerte exkl. MwSt. Nutzer- und Administrator-Obergrenzen werden pro Lizenzschlüssel festgelegt.</p>
+    </div>
+  </section>
+
+  <section id="betrieb">
+    <div class="wrap">
+      <div class="section-head">
+        <h2 data-i18n="hosting.heading">Bei euch betrieben oder von uns.</h2>
+      </div>
+      <div class="grid2">
+        <div class="op-card">
+          <h3 data-i18n="hosting.self.title">Self-Hosted</h3>
+          <p class="sub" data-i18n="hosting.self.sub">Keine Zusatzkosten, nur die Lizenz</p>
+          <ul>
+            <li data-i18n="hosting.self.li1">Läuft auf eurer eigenen Hardware oder NAS</li>
+            <li data-i18n="hosting.self.li2">Daten bleiben zu 100% bei euch</li>
+            <li data-i18n="hosting.self.li3">Installation &amp; Updates in Eigenregie, Dokumentation liegt bei</li>
+            <li data-i18n="hosting.self.li4">Community-Support, optional erweiterbar</li>
+          </ul>
+        </div>
+        <div class="op-card">
+          <h3><span data-i18n="hosting.cloud.title">Cloud</span> <span style="color:#f87171; font-size:12px; font-weight:700; vertical-align:middle;" data-i18n="hosting.cloud.badge">★ Noch nicht verfügbar</span></h3>
+          <p class="sub" data-i18n="hosting.cloud.sub">ab CHF 29.– / Monat Infrastruktur-Pauschale</p>
+          <ul>
+            <li data-i18n="hosting.cloud.li1">Vollständig durch uns betrieben</li>
+            <li data-i18n="hosting.cloud.li2">Gehostet in unserer Cloud-Infrastruktur (EU/CH)</li>
+            <li data-i18n="hosting.cloud.li3">Installation &amp; laufende Updates inklusive</li>
+            <li data-i18n="hosting.cloud.li4">Persönlicher Support inklusive</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="downloads">
+    <div class="wrap">
+      <div class="section-head">
+        <h2 data-i18n="downloads.heading">Anleitungen &amp; Datenblätter</h2>
+        <p data-i18n="downloads.sub">Alles zum Nachlesen, direkt zum Herunterladen — keine Anmeldung nötig. Verfügbar in mehreren Sprachen.</p>
+      </div>
+      <div class="grid3">
+        <div class="card">
+          <div class="icon">📄</div>
+          <h3 data-i18n="downloads.sheet.title">Datenblatt</h3>
+          <p data-i18n="downloads.sheet.desc">Funktionsübersicht, Lizenzmodell und Preise auf einen Blick — ideal zum Weiterleiten.</p>
+          <div style="margin-top:14px; display:flex; flex-wrap:wrap; gap:8px;">
+            <a href="downloads/AuraChat-Datenblatt.docx" download style="color:var(--cyan); font-size:13px; font-weight:600; text-decoration:none;">🇩🇪 DE</a>
+            <a href="downloads/AuraChat-Datasheet-EN.docx" download style="color:var(--cyan); font-size:13px; font-weight:600; text-decoration:none;">🇬🇧 EN</a>
+            <a href="downloads/AuraChat-Fiche-produit-FR.docx" download style="color:var(--cyan); font-size:13px; font-weight:600; text-decoration:none;">🇫🇷 FR</a>
+            <a href="downloads/AuraChat-Scheda-prodotto-IT.docx" download style="color:var(--cyan); font-size:13px; font-weight:600; text-decoration:none;">🇮🇹 IT</a>
+            <a href="downloads/AuraChat-Ficha-producto-ES.docx" download style="color:var(--cyan); font-size:13px; font-weight:600; text-decoration:none;">🇪🇸 ES</a>
+          </div>
+        </div>
+        <div class="card">
+          <div class="icon">📘</div>
+          <h3 data-i18n="downloads.user.title">Benutzerhandbuch</h3>
+          <p data-i18n="downloads.user.desc">Alle Funktionen aus Sicht der täglichen Nutzung — vom ersten Chat bis zum Kiosk-Modus.</p>
+          <div style="margin-top:14px; display:flex; flex-wrap:wrap; gap:8px;">
+            <a href="downloads/AuraChat-Benutzerhandbuch.docx" download style="color:var(--cyan); font-size:13px; font-weight:600; text-decoration:none;">🇩🇪 DE</a>
+            <a href="downloads/AuraChat-User-Manual-EN.docx" download style="color:var(--cyan); font-size:13px; font-weight:600; text-decoration:none;">🇬🇧 EN</a>
+            <a href="downloads/AuraChat-Manuel-utilisateur-FR.docx" download style="color:var(--cyan); font-size:13px; font-weight:600; text-decoration:none;">🇫🇷 FR</a>
+            <a href="downloads/AuraChat-Manuale-utente-IT.docx" download style="color:var(--cyan); font-size:13px; font-weight:600; text-decoration:none;">🇮🇹 IT</a>
+            <a href="downloads/AuraChat-Manual-usuario-ES.docx" download style="color:var(--cyan); font-size:13px; font-weight:600; text-decoration:none;">🇪🇸 ES</a>
+          </div>
+        </div>
+        <div class="card">
+          <div class="icon">🛠️</div>
+          <h3 data-i18n="downloads.admin.title">Administrationshandbuch</h3>
+          <p data-i18n="downloads.admin.desc">Installation, Einrichtung, Integrationen und bekannte Stolpersteine — für Admins.</p>
+          <div style="margin-top:14px; display:flex; flex-wrap:wrap; gap:8px;">
+            <a href="downloads/AuraChat-Administrationshandbuch.docx" download style="color:var(--cyan); font-size:13px; font-weight:600; text-decoration:none;">🇩🇪 DE</a>
+            <a href="downloads/AuraChat-Administrator-Manual-EN.docx" download style="color:var(--cyan); font-size:13px; font-weight:600; text-decoration:none;">🇬🇧 EN</a>
+            <a href="downloads/AuraChat-Manuel-administration-FR.docx" download style="color:var(--cyan); font-size:13px; font-weight:600; text-decoration:none;">🇫🇷 FR</a>
+            <a href="downloads/AuraChat-Manuale-amministrazione-IT.docx" download style="color:var(--cyan); font-size:13px; font-weight:600; text-decoration:none;">🇮🇹 IT</a>
+            <a href="downloads/AuraChat-Manual-administracion-ES.docx" download style="color:var(--cyan); font-size:13px; font-weight:600; text-decoration:none;">🇪🇸 ES</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="produkte" style="border-top:1px solid var(--border);">
+    <div class="wrap">
+      <div class="section-head">
+        <h2 data-i18n="ecosystem.heading">Das Aura-Ökosystem: Produkte, die zusammenarbeiten.</h2>
+        <p data-i18n="ecosystem.lead">AuraChat ist der Mittelpunkt — dazu kommen eigenständige Produkte für Zeiterfassung, Tickets, Mail, Telefon, Benutzerverwaltung und den sicheren Zugang von aussen. Einzeln nutzbar, gemeinsam am stärksten.</p>
+      </div>
+      <div class="grid3" style="grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); max-width:820px; margin:0 auto 36px;">
+        <div class="card"><div class="icon">🧩</div><h3 data-i18n="ecosystem.apps.title">Anwendungen</h3><p data-i18n="ecosystem.apps.sub">AuraChat, AuraPlan, AuraTicket, AuraCall — mit Testphase; die ersten drei zusätzlich mit kostenloser Basisstufe.</p></div>
+        <div class="card"><div class="icon">⚙️</div><h3 data-i18n="ecosystem.services.title">Dienste</h3><p data-i18n="ecosystem.services.sub">AuraDirect, AuraMail, AuraProxy — kostenlos bis 4 Konten oder sobald mindestens zwei Anwendungen verbunden sind, sonst CHF 15.– pro Installation / Mt.</p></div>
+      </div>
+      <div class="grid3">
+        <a class="card" href="#auraplan-section" style="text-decoration:none; color:inherit; display:block;">
+          <div class="icon">📅</div>
+          <h3 data-i18n="auraplan.nav">AuraPlan</h3>
+          <p data-i18n="ecosystem.auraplan">Zeiterfassung, Schichtplan und Ferien — per Klick oder Zuruf.</p>
+          <p style="margin-top:12px; color:var(--cyan); font-size:13px; font-weight:600;" data-i18n="ecosystem.more">Mehr erfahren →</p>
+        </a>
+        <a class="card" href="#auradirect-section" style="text-decoration:none; color:inherit; display:block;">
+          <div class="icon">🔑</div>
+          <h3 data-i18n="auradirect.nav">AuraDirect</h3>
+          <p data-i18n="ecosystem.auradirect">Eine Anmeldung für alle Produkte, mit Active Directory und zentraler 2FA.</p>
+          <p style="margin-top:12px; color:var(--cyan); font-size:13px; font-weight:600;" data-i18n="ecosystem.more">Mehr erfahren →</p>
+        </a>
+        <a class="card" href="#auramail-section" style="text-decoration:none; color:inherit; display:block;">
+          <div class="icon">📬</div>
+          <h3 data-i18n="auramail.nav">AuraMail</h3>
+          <p data-i18n="ecosystem.auramail">Eigener Mailserver oder Microsoft 365 — persönliche und geteilte Postfächer.</p>
+          <p style="margin-top:12px; color:var(--cyan); font-size:13px; font-weight:600;" data-i18n="ecosystem.more">Mehr erfahren →</p>
+        </a>
+        <a class="card" href="#auraticket-section" style="text-decoration:none; color:inherit; display:block;">
+          <div class="icon">🎫</div>
+          <h3 data-i18n="auraticket.nav">AuraTicket</h3>
+          <p data-i18n="ecosystem.auraticket">Support-Tickets aus E-Mails, steuerbar per Sprache.</p>
+          <p style="margin-top:12px; color:var(--cyan); font-size:13px; font-weight:600;" data-i18n="ecosystem.more">Mehr erfahren →</p>
+        </a>
+        <a class="card" href="#auraproxy-section" style="text-decoration:none; color:inherit; display:block;">
+          <div class="icon">🔀</div>
+          <h3 data-i18n="auraproxy.nav">AuraProxy</h3>
+          <p data-i18n="ecosystem.auraproxy">Ein Eingang für alle Dienste, mit automatischem HTTPS.</p>
+          <p style="margin-top:12px; color:var(--cyan); font-size:13px; font-weight:600;" data-i18n="ecosystem.more">Mehr erfahren →</p>
+        </a>
+        <a class="card" href="#auracall-section" style="text-decoration:none; color:inherit; display:block;">
+          <div class="icon">☎️</div>
+          <h3 data-i18n="auracall.nav">AuraCall</h3>
+          <p data-i18n="ecosystem.auracall">Aura am Telefon: Anrufe annehmen und selbst anrufen.</p>
+          <p style="margin-top:12px; color:var(--cyan); font-size:13px; font-weight:600;" data-i18n="ecosystem.more">Mehr erfahren →</p>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <section id="auraplan-section" style="border-top:1px solid var(--border);">
+    <div class="wrap">
+      <div class="section-head">
+        <h2 data-i18n="auraplan.hero.title">Zeiterfassung, Schichtplan und Ferien — direkt in AuraChat integriert.</h2>
+        <p data-i18n="auraplan.hero.lead">AuraPlan ist eine eigenständige Zeiterfassungs- und Personalplanungs-App, die sich nahtlos mit AuraChat verbindet. Ein-/Ausstempeln per Chat oder Sprachbefehl, Schichtplanung im Wochenkalender, Ferienanträge mit ganzjähriger Übersicht.</p>
+      </div>
+      <div class="section-head">
+        <h3 data-i18n="auraplan.features.heading">Alles für die Personalplanung, an einem Ort.</h3>
+      </div>
+      <div class="grid3">
+        <div class="card"><div class="icon">🕐</div><h3 data-i18n="auraplan.features.time.title">Zeiterfassung</h3><p data-i18n="auraplan.features.time.desc">Ein-/Ausstempeln per Klick, Chat oder Sprachbefehl. Manuelle Nacherfassung, Pausen, Zeitarten inkl. Militär, Krankheit, Unfall, Feiertag und unbezahlte Absenz.</p></div>
+        <div class="card"><div class="icon">📋</div><h3 data-i18n="auraplan.features.shifts.title">Schichtplan</h3><p data-i18n="auraplan.features.shifts.desc">Wochenkalender mit farbigen Kärtchen pro Person, offene Schichten zum Selbst-Eintragen, Rollen/Positionen pro Schicht.</p></div>
+        <div class="card"><div class="icon">🏖️</div><h3 data-i18n="auraplan.features.vacation.title">Ferien</h3><p data-i18n="auraplan.features.vacation.desc">Anträge stellen und genehmigen, Saldo-Übersicht, ganzjährige Farbzeitleiste — wer wann Ferien hat, auf einen Blick.</p></div>
+        <div class="card"><div class="icon">👥</div><h3 data-i18n="auraplan.features.overview.title">Übersicht</h3><p data-i18n="auraplan.features.overview.desc">Eine Zeile pro Person: Arbeitszeiten, Schichtplan und Ferien der ganzen Belegschaft im Überblick.</p></div>
+        <div class="card"><div class="icon">💬</div><h3 data-i18n="auraplan.features.aurachat.title">AuraChat-Widget</h3><p data-i18n="auraplan.features.aurachat.desc">Grüner/roter Knopf zum Ein-/Ausstempeln direkt in AuraChat, Ferienstand auf einen Blick, proaktive Benachrichtigungen bei Genehmigungen.</p></div>
+        <div class="card"><div class="icon">🛠️</div><h3 data-i18n="auraplan.features.admin.title">Administration</h3><p data-i18n="auraplan.features.admin.desc">Zwei-Faktor-Authentifizierung, Backup &amp; Wiederherstellung, automatisches SSL, AuraDirect-Anbindung für zentrale Anmeldung.</p></div>
+      </div>
+      <div class="pricing-grid" style="margin-top:40px; max-width:700px; margin-left:auto; margin-right:auto;">
+        <div class="price-card">
+          <h3 data-i18n="auraplan.pricing.basic.title">Basis</h3>
+          <p class="price" data-i18n="auraplan.pricing.basic.price">kostenlos</p>
+          <p class="sub" data-i18n="auraplan.pricing.basic.sub">einfache Zeiterfassung</p>
+          <ul>
+            <li data-i18n="auraplan.pricing.basic.li1">· Ein-/Ausstempeln</li>
+            <li data-i18n="auraplan.pricing.basic.li2">· Manuelle Erfassung</li>
+            <li data-i18n="auraplan.pricing.basic.li3">· Grundlegende Zeitarten</li>
+          </ul>
+        </div>
+        <div class="price-card popular">
+          <span class="price-badge" data-i18n="pricing.popular">Beliebt</span>
+          <h3 data-i18n="auraplan.pricing.pro.title">Pro</h3>
+          <p class="price">CHF 3.50<span data-i18n="pricing.perUser"> / Nutzer / Mt.</span></p>
+          <p class="sub" data-i18n="auraplan.pricing.pro.sub">CHF 3.50 pro Nutzer / CHF 7.50 pro Admin / Mt.</p>
+          <ul>
+            <li data-i18n="auraplan.pricing.pro.li1">· Schichtplan &amp; offene Schichten</li>
+            <li data-i18n="auraplan.pricing.pro.li2">· Ferien mit Farbzeitleiste</li>
+            <li data-i18n="auraplan.pricing.pro.li3">· Übersicht &amp; Benachrichtigungen</li>
+            <li data-i18n="auraplan.pricing.pro.li4">· AuraChat-Widget &amp; Sprachbefehle</li>
+          </ul>
+        </div>
+      </div>
+      <p class="price-note" data-i18n="auraplan.pricing.note">Alle Preise sind Richtwerte exkl. MwSt.</p>
+      <div class="card" style="margin-top:32px; max-width:420px; margin-left:auto; margin-right:auto;">
+        <div class="icon">📄</div>
+        <h3 data-i18n="auraplan.downloads.sheet.title">Datenblatt &amp; Anleitung</h3>
+        <p data-i18n="auraplan.downloads.sheet.desc">Funktionsübersicht, Einrichtung und Preise auf einen Blick.</p>
+        <div style="margin-top:14px; display:flex; flex-wrap:wrap; gap:8px; justify-content:center;">
+          <a href="downloads/AuraPlan-Datenblatt.docx" download style="color:var(--cyan); font-size:13px; font-weight:600; text-decoration:none;">🇩🇪 DE</a>
+          <a href="downloads/AuraPlan-Datasheet-EN.docx" download style="color:var(--cyan); font-size:13px; font-weight:600; text-decoration:none;">🇬🇧 EN</a>
+          <a href="downloads/AuraPlan-Fiche-produit-FR.docx" download style="color:var(--cyan); font-size:13px; font-weight:600; text-decoration:none;">🇫🇷 FR</a>
+          <a href="downloads/AuraPlan-Scheda-prodotto-IT.docx" download style="color:var(--cyan); font-size:13px; font-weight:600; text-decoration:none;">🇮🇹 IT</a>
+          <a href="downloads/AuraPlan-Ficha-producto-ES.docx" download style="color:var(--cyan); font-size:13px; font-weight:600; text-decoration:none;">🇪🇸 ES</a>
+        </div>
+      </div>
+      <div class="card" style="margin-top:16px; max-width:420px; margin-left:auto; margin-right:auto;">
+        <div class="icon">🐳</div>
+        <h3 data-i18n="auraplan.downloads.quickstart.title">Quickstart-Paket</h3>
+        <p data-i18n="auraplan.downloads.quickstart.desc">Fertige Docker-Images von Docker Hub — ein Befehl, läuft.</p>
+        <a href="downloads/auraplan-quickstart.zip" download data-i18n="auraplan.downloads.quickstart.button" style="display:inline-block; margin-top:14px; color:var(--cyan); font-size:13px; font-weight:600; text-decoration:none;">⬇ Quickstart-Paket herunterladen</a>
+      </div>
+    </div>
+  </section>
+
+  <section id="auradirect-section" style="border-top:1px solid var(--border);">
+    <div class="wrap">
+      <div class="section-head">
+        <h2 data-i18n="auradirect.hero.title">Eine Anmeldung für alle Aura-Produkte.</h2>
+        <p data-i18n="auradirect.hero.lead">AuraDirect ist die zentrale Benutzerverwaltung für AuraChat, AuraPlan, AuraTicket, AuraMail, AuraProxy und AuraCall — inklusive Active-Directory-Anbindung und zentraler Zwei-Faktor-Authentifizierung.</p>
+      </div>
+      <div class="section-head">
+        <h3 data-i18n="auradirect.features.heading">Zentrale Identität für euer ganzes Aura-Ökosystem.</h3>
+      </div>
+      <div class="grid3">
+        <div class="card"><div class="icon">🔑</div><h3 data-i18n="auradirect.features.sso.title">Zentrale Anmeldung</h3><p data-i18n="auradirect.features.sso.desc">Ein Benutzerkonto für alle Aura-Produkte — pro Person festlegen, welche Produkte sie nutzen darf und mit welcher Rolle.</p></div>
+        <div class="card"><div class="icon">🗂️</div><h3 data-i18n="auradirect.features.ad.title">Active-Directory-Anbindung</h3><p data-i18n="auradirect.features.ad.desc">Bestehende Firmen-Benutzerkonten aus eurem Active Directory automatisch übernehmen, inklusive eigenem LDAP-Server für weitere Systeme.</p></div>
+        <div class="card"><div class="icon">🛡️</div><h3 data-i18n="auradirect.features.twofa.title">Zentrale Zwei-Faktor-Authentifizierung</h3><p data-i18n="auradirect.features.twofa.desc">Ein 2FA-Code pro Person, gültig für alle angebundenen Produkte — kein separates Einrichten mehr nötig.</p></div>
+        <div class="card"><div class="icon">🛠️</div><h3 data-i18n="auradirect.features.admin.title">Administration</h3><p data-i18n="auradirect.features.admin.desc">Backup &amp; Wiederherstellung, automatisches SSL, eigene Datenschutzerklärung, Lizenzverwaltung mit Testphase.</p></div>
+      </div>
+      <div class="pricing-grid" style="margin-top:40px; max-width:700px; margin-left:auto; margin-right:auto;">
+        <div class="price-card popular">
+          <span class="price-badge" data-i18n="pricing.popular">Beliebt</span>
+          <h3 data-i18n="auradirect.pricing.included.title">Inklusive</h3>
+          <p class="price" data-i18n="auradirect.pricing.included.price">kostenlos</p>
+          <p class="sub" data-i18n="auradirect.pricing.included.sub">bis 4 Benutzer, oder sobald mindestens zwei Aura-Anwendungen verbunden sind</p>
+          <ul>
+            <li data-i18n="auradirect.pricing.included.li1">· Zentrale Anmeldung</li>
+            <li data-i18n="auradirect.pricing.included.li2">· Active-Directory-Anbindung</li>
+            <li data-i18n="auradirect.pricing.included.li3">· Zentrale 2FA</li>
+          </ul>
+        </div>
+        <div class="price-card">
+          <h3 data-i18n="auradirect.pricing.standalone.title">Eigenständig</h3>
+          <p class="price">CHF 15.–</p>
+          <p class="sub" data-i18n="auradirect.pricing.standalone.sub">CHF 15.– pro Installation / Mt.</p>
+          <ul>
+            <li data-i18n="auradirect.pricing.standalone.li1">· Alle Funktionen</li>
+            <li data-i18n="auradirect.pricing.standalone.li2">· Ohne weitere Aura-Anwendung</li>
+          </ul>
+        </div>
+      </div>
+      <p class="price-note" data-i18n="auradirect.pricing.note">Alle Preise sind Richtwerte exkl. MwSt.</p>
+      <div class="card" style="margin-top:32px; max-width:420px; margin-left:auto; margin-right:auto;">
+        <div class="icon">📄</div>
+        <h3 data-i18n="auradirect.downloads.sheet.title">Datenblatt &amp; Anleitung</h3>
+        <p data-i18n="auradirect.downloads.sheet.desc">Funktionsübersicht, Einrichtung und Preise auf einen Blick.</p>
+        <div style="margin-top:14px; display:flex; flex-wrap:wrap; gap:8px; justify-content:center;">
+          <a href="downloads/AuraDirect-Datenblatt.docx" download style="color:var(--cyan); font-size:13px; font-weight:600; text-decoration:none;">🇩🇪 DE</a>
+          <a href="downloads/AuraDirect-Datasheet-EN.docx" download style="color:var(--cyan); font-size:13px; font-weight:600; text-decoration:none;">🇬🇧 EN</a>
+          <a href="downloads/AuraDirect-Fiche-produit-FR.docx" download style="color:var(--cyan); font-size:13px; font-weight:600; text-decoration:none;">🇫🇷 FR</a>
+          <a href="downloads/AuraDirect-Scheda-prodotto-IT.docx" download style="color:var(--cyan); font-size:13px; font-weight:600; text-decoration:none;">🇮🇹 IT</a>
+          <a href="downloads/AuraDirect-Ficha-producto-ES.docx" download style="color:var(--cyan); font-size:13px; font-weight:600; text-decoration:none;">🇪🇸 ES</a>
+        </div>
+      </div>
+      <div class="card" style="margin-top:16px; max-width:420px; margin-left:auto; margin-right:auto;">
+        <div class="icon">🐳</div>
+        <h3 data-i18n="auradirect.downloads.quickstart.title">Quickstart-Paket</h3>
+        <p data-i18n="auradirect.downloads.quickstart.desc">Fertige Docker-Images von Docker Hub — ein Befehl, läuft.</p>
+        <a href="downloads/auradirect-quickstart.zip" download data-i18n="auradirect.downloads.quickstart.button" style="display:inline-block; margin-top:14px; color:var(--cyan); font-size:13px; font-weight:600; text-decoration:none;">⬇ Quickstart-Paket herunterladen</a>
+      </div>
+    </div>
+  </section>
+
+  <section id="auramail-section" style="border-top:1px solid var(--border);">
+    <div class="wrap">
+      <div class="section-head">
+        <h2 data-i18n="auramail.hero.title">Euer eigener Mailserver — verbunden mit allem, was ihr schon nutzt.</h2>
+        <p data-i18n="auramail.hero.lead">AuraMail verwaltet persönliche und geteilte Postfächer auf eurer Infrastruktur — wahlweise mit eigenem Mailserver, Microsoft 365 oder bestehenden IMAP/SMTP-Konten. Nahtlos verbunden mit AuraChat, AuraTicket und AuraDirect.</p>
+      </div>
+      <div class="section-head">
+        <h3 data-i18n="auramail.features.heading">Eine Oberfläche für alle Postfächer.</h3>
+      </div>
+      <div class="grid3">
+        <div class="card"><div class="icon">✉️</div><h3 data-i18n="auramail.features.f1.title">Drei Anbindungen</h3><p data-i18n="auramail.features.f1.desc">Eigener Mailserver, Microsoft 365 (Graph) oder externe IMAP/SMTP-Konten — pro Installation wählbar.</p></div>
+        <div class="card"><div class="icon">☁️</div><h3 data-i18n="auramail.features.f2.title">Microsoft-365-Konten übernehmen</h3><p data-i18n="auramail.features.f2.desc">Konten und geteilte Postfächer direkt aus eurem Microsoft-365-Verzeichnis anzeigen, ankreuzen und als Postfächer übernehmen — ohne Abtippen.</p></div>
+        <div class="card"><div class="icon">👥</div><h3 data-i18n="auramail.features.f3.title">Persönlich &amp; geteilt</h3><p data-i18n="auramail.features.f3.desc">Persönliche Postfächer pro Person, geteilte Postfächer (z.B. info@) mit frei wählbarem Zugriff für ganze Teams.</p></div>
+        <div class="card"><div class="icon">🔑</div><h3 data-i18n="auramail.features.f4.title">Zentrale Anmeldung</h3><p data-i18n="auramail.features.f4.desc">Anmeldung mit dem AuraDirect-Konto, inklusive zentraler Zwei-Faktor-Authentifizierung. Personen werden automatisch aus AuraDirect übernommen — ohne dass sie sich vorher anmelden müssen.</p></div>
+        <div class="card"><div class="icon">🗣️</div><h3 data-i18n="auramail.features.f5.title">Mails per Sprache</h3><p data-i18n="auramail.features.f5.desc">In AuraChat diktieren: „Aura, verfasse mir bitte ein Mail an …“ — AuraChat schreibt den Entwurf und sendet erst nach eurem „ja“.</p></div>
+        <div class="card"><div class="icon">🎫</div><h3 data-i18n="auramail.features.f6.title">Ticket-Anbindung</h3><p data-i18n="auramail.features.f6.desc">Über die offene Schnittstelle macht AuraTicket aus eingehenden Mails Tickets und sendet Antworten über das richtige Postfach.</p></div>
+      </div>
+      <div class="pricing-grid" style="margin-top:40px; max-width:700px; margin-left:auto; margin-right:auto;">
+        <div class="price-card popular">
+          <span class="price-badge" data-i18n="pricing.popular">Beliebt</span>
+          <h3 data-i18n="auramail.pricing.a.title">Inklusive</h3>
+          <p class="price" data-i18n="auramail.pricing.a.price">kostenlos</p>
+          <p class="sub" data-i18n="auramail.pricing.a.sub">bis 4 Benutzer, oder sobald mindestens zwei Aura-Anwendungen verbunden sind</p>
+          <ul>
+            <li data-i18n="auramail.pricing.a.li1">· Alle Funktionen</li>
+            <li data-i18n="auramail.pricing.a.li2">· Eigener Server, Microsoft 365 oder IMAP/SMTP</li>
+            <li data-i18n="auramail.pricing.a.li3">· Zentrale Anmeldung &amp; 2FA</li>
+          </ul>
+        </div>
+        <div class="price-card">
+          <h3 data-i18n="auramail.pricing.b.title">Eigenständig</h3>
+          <p class="price" data-i18n="auramail.pricing.b.price">CHF 15.–</p>
+          <p class="sub" data-i18n="auramail.pricing.b.sub">pro Installation / Mt.</p>
+          <ul>
+            <li data-i18n="auramail.pricing.b.li1">· Alle Funktionen</li>
+            <li data-i18n="auramail.pricing.b.li2">· Ohne weitere Aura-Anwendung</li>
+          </ul>
+        </div>
+      </div>
+      <p class="price-note" data-i18n="auramail.pricing.note">Alle Preise sind Richtwerte exkl. MwSt.</p>
+      <div class="card" style="margin-top:32px; max-width:420px; margin-left:auto; margin-right:auto;">
+        <div class="icon">📄</div>
+        <h3 data-i18n="auramail.downloads.sheet.title">Datenblatt &amp; Anleitung</h3>
+        <p data-i18n="auramail.downloads.sheet.desc">Funktionsübersicht, Einrichtung und Preise auf einen Blick.</p>
+        <div style="margin-top:14px; display:flex; flex-wrap:wrap; gap:8px; justify-content:center;">
+          <a href="downloads/AuraMail-Datenblatt.docx" download style="color:var(--cyan); font-size:13px; font-weight:600; text-decoration:none;">🇩🇪 DE</a>
+          <a href="downloads/AuraMail-Datasheet-EN.docx" download style="color:var(--cyan); font-size:13px; font-weight:600; text-decoration:none;">🇬🇧 EN</a>
+          <a href="downloads/AuraMail-Fiche-produit-FR.docx" download style="color:var(--cyan); font-size:13px; font-weight:600; text-decoration:none;">🇫🇷 FR</a>
+          <a href="downloads/AuraMail-Scheda-prodotto-IT.docx" download style="color:var(--cyan); font-size:13px; font-weight:600; text-decoration:none;">🇮🇹 IT</a>
+          <a href="downloads/AuraMail-Ficha-producto-ES.docx" download style="color:var(--cyan); font-size:13px; font-weight:600; text-decoration:none;">🇪🇸 ES</a>
+        </div>
+      </div>
+      <div class="card" style="margin-top:16px; max-width:420px; margin-left:auto; margin-right:auto;">
+        <div class="icon">🐳</div>
+        <h3 data-i18n="auramail.downloads.quickstart.title">Quickstart-Paket</h3>
+        <p data-i18n="auramail.downloads.quickstart.desc">Fertige Docker-Images von Docker Hub — ein Befehl, läuft.</p>
+        <a href="downloads/auramail-quickstart.zip" download data-i18n="auramail.downloads.quickstart.button" style="display:inline-block; margin-top:14px; color:var(--cyan); font-size:13px; font-weight:600; text-decoration:none;">⬇ Quickstart-Paket herunterladen</a>
+      </div>
+    </div>
+  </section>
+
+  <section id="auraticket-section" style="border-top:1px solid var(--border);">
+    <div class="wrap">
+      <div class="section-head">
+        <h2 data-i18n="auraticket.hero.title">Support-Tickets aus euren E-Mails — und AuraChat sagt euch Bescheid.</h2>
+        <p data-i18n="auraticket.hero.lead">AuraTicket macht aus eingehenden E-Mails Tickets, die ihr im Team bearbeitet und beantwortet. Verbunden mit AuraMail für den Versand und mit AuraChat, damit ihr Tickets per Sprache steuern könnt.</p>
+      </div>
+      <div class="section-head">
+        <h3 data-i18n="auraticket.features.heading">Vom Posteingang zum gelösten Ticket.</h3>
+      </div>
+      <div class="grid3">
+        <div class="card"><div class="icon">📥</div><h3 data-i18n="auraticket.features.f1.title">E-Mail wird Ticket</h3><p data-i18n="auraticket.features.f1.desc">Eingehende Mails an ein Support-Postfach werden automatisch zu Tickets. Antworten auf bestehende Tickets werden über die Ticketnummer im Betreff zugeordnet.</p></div>
+        <div class="card"><div class="icon">💬</div><h3 data-i18n="auraticket.features.f2.title">Antworten &amp; interne Notizen</h3><p data-i18n="auraticket.features.f2.desc">Der Kundschaft per E-Mail antworten oder intern Notizen festhalten. Status, Priorität und Zuständigkeit pro Ticket.</p></div>
+        <div class="card"><div class="icon">📣</div><h3 data-i18n="auraticket.features.f3.title">Massenmail-Kampagnen</h3><p data-i18n="auraticket.features.f3.desc">Mails an eine CSV-Liste senden, mit persönlicher Anrede und gedrosseltem Versand im Hintergrund.</p></div>
+        <div class="card"><div class="icon">🗣️</div><h3 data-i18n="auraticket.features.f4.title">Steuerung per AuraChat</h3><p data-i18n="auraticket.features.f4.desc">„Wie viele Tickets sind offen?“, „Schliess Ticket T-00001“, „Antworte auf Ticket …“ — und neue Tickets werden euch vorgelesen.</p></div>
+        <div class="card"><div class="icon">🔑</div><h3 data-i18n="auraticket.features.f5.title">Zentrale Anmeldung</h3><p data-i18n="auraticket.features.f5.desc">Anmeldung mit dem AuraDirect-Konto, inklusive zentraler Zwei-Faktor-Authentifizierung.</p></div>
+        <div class="card"><div class="icon">🛠️</div><h3 data-i18n="auraticket.features.f6.title">Administration</h3><p data-i18n="auraticket.features.f6.desc">Benutzerverwaltung, Backup &amp; Wiederherstellung, Lizenzverwaltung mit Testphase.</p></div>
+      </div>
+      <div class="pricing-grid" style="margin-top:40px; max-width:700px; margin-left:auto; margin-right:auto;">
+        <div class="price-card popular">
+          <span class="price-badge" data-i18n="pricing.popular">Beliebt</span>
+          <h3 data-i18n="auraticket.pricing.a.title">Basis</h3>
+          <p class="price" data-i18n="auraticket.pricing.a.price">kostenlos</p>
+          <p class="sub" data-i18n="auraticket.pricing.a.sub">bis 3 Agent:innen / 1 Administrator:in</p>
+          <ul>
+            <li data-i18n="auraticket.pricing.a.li1">· Tickets aus E-Mails</li>
+            <li data-i18n="auraticket.pricing.a.li2">· Antworten &amp; interne Notizen</li>
+            <li data-i18n="auraticket.pricing.a.li3">· Steuerung per AuraChat</li>
+          </ul>
+        </div>
+        <div class="price-card">
+          <h3 data-i18n="auraticket.pricing.b.title">Erweitert</h3>
+          <p class="price" data-i18n="auraticket.pricing.b.price">auf Anfrage</p>
+          <p class="sub" data-i18n="auraticket.pricing.b.sub">mehr Agent:innen und Administrator:innen</p>
+          <ul>
+            <li data-i18n="auraticket.pricing.b.li1">· Alle Funktionen</li>
+            <li data-i18n="auraticket.pricing.b.li2">· Obergrenzen pro Lizenzschlüssel</li>
+          </ul>
+        </div>
+      </div>
+      <p class="price-note" data-i18n="auraticket.pricing.note">14 Tage Testphase. Preise auf Anfrage — wir erstellen gern ein Angebot.</p>
+      <div class="card" style="margin-top:32px; max-width:420px; margin-left:auto; margin-right:auto;">
+        <div class="icon">📄</div>
+        <h3 data-i18n="auraticket.downloads.sheet.title">Datenblatt &amp; Anleitung</h3>
+        <p data-i18n="auraticket.downloads.sheet.desc">Funktionsübersicht, Einrichtung und Preise auf einen Blick.</p>
+        <div style="margin-top:14px; display:flex; flex-wrap:wrap; gap:8px; justify-content:center;">
+          <a href="downloads/AuraTicket-Datenblatt.docx" download style="color:var(--cyan); font-size:13px; font-weight:600; text-decoration:none;">🇩🇪 DE</a>
+          <a href="downloads/AuraTicket-Datasheet-EN.docx" download style="color:var(--cyan); font-size:13px; font-weight:600; text-decoration:none;">🇬🇧 EN</a>
+          <a href="downloads/AuraTicket-Fiche-produit-FR.docx" download style="color:var(--cyan); font-size:13px; font-weight:600; text-decoration:none;">🇫🇷 FR</a>
+          <a href="downloads/AuraTicket-Scheda-prodotto-IT.docx" download style="color:var(--cyan); font-size:13px; font-weight:600; text-decoration:none;">🇮🇹 IT</a>
+          <a href="downloads/AuraTicket-Ficha-producto-ES.docx" download style="color:var(--cyan); font-size:13px; font-weight:600; text-decoration:none;">🇪🇸 ES</a>
+        </div>
+      </div>
+      <div class="card" style="margin-top:16px; max-width:420px; margin-left:auto; margin-right:auto;">
+        <div class="icon">🐳</div>
+        <h3 data-i18n="auraticket.downloads.quickstart.title">Quickstart-Paket</h3>
+        <p data-i18n="auraticket.downloads.quickstart.desc">Fertige Docker-Images von Docker Hub — ein Befehl, läuft.</p>
+        <a href="downloads/auraticket-quickstart.zip" download data-i18n="auraticket.downloads.quickstart.button" style="display:inline-block; margin-top:14px; color:var(--cyan); font-size:13px; font-weight:600; text-decoration:none;">⬇ Quickstart-Paket herunterladen</a>
+      </div>
+    </div>
+  </section>
+
+  <section id="auraproxy-section" style="border-top:1px solid var(--border);">
+    <div class="wrap">
+      <div class="section-head">
+        <h2 data-i18n="auraproxy.hero.title">Ein Eingang für alle eure Dienste — mit automatischem HTTPS.</h2>
+        <p data-i18n="auraproxy.hero.lead">AuraProxy leitet Anfragen aus dem Internet an die richtigen Dienste in eurem Netz weiter und besorgt für jede Domain automatisch ein Let's-Encrypt-Zertifikat. Basierend auf Caddy, verwaltet über eine einfache Oberfläche.</p>
+      </div>
+      <div class="section-head">
+        <h3 data-i18n="auraproxy.features.heading">Domains, Ports und Zertifikate an einem Ort.</h3>
+      </div>
+      <div class="grid3">
+        <div class="card"><div class="icon">🔀</div><h3 data-i18n="auraproxy.features.f1.title">Domain → interne Adresse</h3><p data-i18n="auraproxy.features.f1.desc">Pro Domain festlegen, an welche interne Adresse und welchen Port weitergeleitet wird. Einträge lassen sich bearbeiten, pausieren und löschen.</p></div>
+        <div class="card"><div class="icon">🔒</div><h3 data-i18n="auraproxy.features.f2.title">Automatische Zertifikate</h3><p data-i18n="auraproxy.features.f2.desc">Let's-Encrypt-Zertifikate werden pro Domain automatisch geholt und erneuert.</p></div>
+        <div class="card"><div class="icon">📜</div><h3 data-i18n="auraproxy.features.f3.title">Zertifikate im Überblick</h3><p data-i18n="auraproxy.features.f3.desc">Aktive Zertifikate mit Ablaufdatum anzeigen, löschen oder ein eigenes Zertifikat pro Domain hochladen.</p></div>
+        <div class="card"><div class="icon">🔢</div><h3 data-i18n="auraproxy.features.f4.title">Mehrere Ports</h3><p data-i18n="auraproxy.features.f4.desc">Neben 80 und 443 lassen sich weitere, vorab in der Docker-Konfiguration freigegebene Ports nutzen — z.B. https://domain:8092.</p></div>
+        <div class="card"><div class="icon">🔑</div><h3 data-i18n="auraproxy.features.f5.title">Zentrale Anmeldung</h3><p data-i18n="auraproxy.features.f5.desc">Anmeldung mit dem AuraDirect-Konto, inklusive zentraler Zwei-Faktor-Authentifizierung.</p></div>
+        <div class="card"><div class="icon">🛠️</div><h3 data-i18n="auraproxy.features.f6.title">Administration</h3><p data-i18n="auraproxy.features.f6.desc">Backup &amp; Wiederherstellung, Lizenzverwaltung mit Testphase.</p></div>
+      </div>
+      <div class="pricing-grid" style="margin-top:40px; max-width:700px; margin-left:auto; margin-right:auto;">
+        <div class="price-card popular">
+          <span class="price-badge" data-i18n="pricing.popular">Beliebt</span>
+          <h3 data-i18n="auraproxy.pricing.a.title">Inklusive</h3>
+          <p class="price" data-i18n="auraproxy.pricing.a.price">kostenlos</p>
+          <p class="sub" data-i18n="auraproxy.pricing.a.sub">bis 4 Benutzer, oder sobald mindestens zwei Aura-Anwendungen verbunden sind</p>
+          <ul>
+            <li data-i18n="auraproxy.pricing.a.li1">· Alle Funktionen</li>
+            <li data-i18n="auraproxy.pricing.a.li2">· Domains, Ports und Zertifikate</li>
+            <li data-i18n="auraproxy.pricing.a.li3">· Zentrale Anmeldung &amp; 2FA</li>
+          </ul>
+        </div>
+        <div class="price-card">
+          <h3 data-i18n="auraproxy.pricing.b.title">Eigenständig</h3>
+          <p class="price" data-i18n="auraproxy.pricing.b.price">CHF 15.–</p>
+          <p class="sub" data-i18n="auraproxy.pricing.b.sub">pro Installation / Mt.</p>
+          <ul>
+            <li data-i18n="auraproxy.pricing.b.li1">· Alle Funktionen</li>
+            <li data-i18n="auraproxy.pricing.b.li2">· Ohne weitere Aura-Anwendung</li>
+          </ul>
+        </div>
+      </div>
+      <p class="price-note" data-i18n="auraproxy.pricing.note">Alle Preise sind Richtwerte exkl. MwSt.</p>
+      <div class="card" style="margin-top:32px; max-width:420px; margin-left:auto; margin-right:auto;">
+        <div class="icon">📄</div>
+        <h3 data-i18n="auraproxy.downloads.sheet.title">Datenblatt &amp; Anleitung</h3>
+        <p data-i18n="auraproxy.downloads.sheet.desc">Funktionsübersicht, Einrichtung und Preise auf einen Blick.</p>
+        <div style="margin-top:14px; display:flex; flex-wrap:wrap; gap:8px; justify-content:center;">
+          <a href="downloads/AuraProxy-Datenblatt.docx" download style="color:var(--cyan); font-size:13px; font-weight:600; text-decoration:none;">🇩🇪 DE</a>
+          <a href="downloads/AuraProxy-Datasheet-EN.docx" download style="color:var(--cyan); font-size:13px; font-weight:600; text-decoration:none;">🇬🇧 EN</a>
+          <a href="downloads/AuraProxy-Fiche-produit-FR.docx" download style="color:var(--cyan); font-size:13px; font-weight:600; text-decoration:none;">🇫🇷 FR</a>
+          <a href="downloads/AuraProxy-Scheda-prodotto-IT.docx" download style="color:var(--cyan); font-size:13px; font-weight:600; text-decoration:none;">🇮🇹 IT</a>
+          <a href="downloads/AuraProxy-Ficha-producto-ES.docx" download style="color:var(--cyan); font-size:13px; font-weight:600; text-decoration:none;">🇪🇸 ES</a>
+        </div>
+      </div>
+      <div class="card" style="margin-top:16px; max-width:420px; margin-left:auto; margin-right:auto;">
+        <div class="icon">🐳</div>
+        <h3 data-i18n="auraproxy.downloads.quickstart.title">Quickstart-Paket</h3>
+        <p data-i18n="auraproxy.downloads.quickstart.desc">Fertige Docker-Images von Docker Hub — ein Befehl, läuft.</p>
+        <a href="downloads/auraproxy-quickstart.zip" download data-i18n="auraproxy.downloads.quickstart.button" style="display:inline-block; margin-top:14px; color:var(--cyan); font-size:13px; font-weight:600; text-decoration:none;">⬇ Quickstart-Paket herunterladen</a>
+      </div>
+    </div>
+  </section>
+
+  <section id="auracall-section" style="border-top:1px solid var(--border);">
+    <div class="wrap">
+      <div class="section-head">
+        <h2 data-i18n="auracall.hero.title">Aura geht ans Telefon.</h2>
+        <p data-i18n="auracall.hero.lead">AuraCall verbindet eure Telefonnummer mit AuraChat: Aura nimmt Anrufe entgegen, versteht, was gesagt wird, und antwortet mit Stimme — auf euren eigenen Servern. Auf Wunsch ruft Aura auch selbst an, zum Beispiel um eine Nachricht auszurichten.</p>
+      </div>
+      <div class="section-head">
+        <h3 data-i18n="auracall.features.heading">Ein Telefonassistent, der sich an die Regeln hält.</h3>
+      </div>
+      <div class="grid3">
+        <div class="card"><div class="icon">📞</div><h3 data-i18n="auracall.features.f1.title">Anrufe entgegennehmen</h3><p data-i18n="auracall.features.f1.desc">Aura begrüsst die Anrufenden, macht von Anfang an klar, dass sie eine KI ist, hört zu, beantwortet Fragen und verabschiedet sich. Auch Unterbrechen mitten im Satz ist möglich.</p></div>
+        <div class="card"><div class="icon">🧠</div><h3 data-i18n="auracall.features.f2.title">Das Wissen eures Betriebs</h3><p data-i18n="auracall.features.f2.desc">Öffnungszeiten, Preise, Anreise: ihr legt fest, was Aura am Telefon weiss. Weiss sie etwas nicht, sagt sie das ehrlich und bietet einen Rückruf an.</p></div>
+        <div class="card"><div class="icon">📤</div><h3 data-i18n="auracall.features.f3.title">Ausgehende Anrufe</h3><p data-i18n="auracall.features.f3.desc">Aura ruft Nummern an und richtet Nachrichten aus — sofort oder zu einer geplanten Zeit. Grenzen für Länder, Uhrzeiten, Anzahl und Sondernummern verhindern Missbrauch und unerwartete Kosten.</p></div>
+        <div class="card"><div class="icon">💬</div><h3 data-i18n="auracall.features.f4.title">Anrufe aus AuraChat</h3><p data-i18n="auracall.features.f4.desc">„Ruf 079 … an und sag ihr, dass das Zimmer bereit ist“ — per Chat oder Mikrofon. AuraChat fragt vorher nach, erst nach „ja“ wird gewählt. Nur für Administrator:innen.</p></div>
+        <div class="card"><div class="icon">🔒</div><h3 data-i18n="auracall.features.f5.title">Datenschutz &amp; Sicherheit</h3><p data-i18n="auracall.features.f5.desc">Keine Tonaufnahmen. Gesprächstexte nur auf Wunsch und mit automatischer Löschung. Zwei-Faktor-Anmeldung, Anmeldung über AuraDirect und eine Vorlage für die Datenschutzerklärung.</p></div>
+        <div class="card"><div class="icon">🛠️</div><h3 data-i18n="auracall.features.f6.title">Betrieb &amp; Sprachen</h3><p data-i18n="auracall.features.f6.desc">Eigener Asterisk im Docker-Container, beliebiger SIP-Anbieter, Verwaltung im Browser mit Anrufliste, Einstellungen und Lizenz. Spracherkennung, Antworten und Stimme kommen aus eurem eigenen AuraChat. Sprache am Telefon: Deutsch, Englisch, Französisch, Italienisch oder Spanisch.</p></div>
+      </div>
+      <div class="pricing-grid" style="margin-top:40px; max-width:700px; margin-left:auto; margin-right:auto;">
+        <div class="price-card popular">
+          <span class="price-badge" data-i18n="pricing.popular">Beliebt</span>
+          <h3 data-i18n="auracall.pricing.a.title">Testphase</h3>
+          <p class="price" data-i18n="auracall.pricing.a.price">kostenlos</p>
+          <p class="sub" data-i18n="auracall.pricing.a.sub">14 Tage, alle Funktionen</p>
+          <ul>
+            <li data-i18n="auracall.pricing.a.li1">· Eingehende und ausgehende Anrufe</li>
+            <li data-i18n="auracall.pricing.a.li2">· Alle Sicherheitsfunktionen</li>
+            <li data-i18n="auracall.pricing.a.li3">· Danach mit Lizenz weiter</li>
+          </ul>
+        </div>
+        <div class="price-card">
+          <h3 data-i18n="auracall.pricing.b.title">Lizenz</h3>
+          <p class="price" data-i18n="auracall.pricing.b.price">auf Anfrage</p>
+          <p class="sub" data-i18n="auracall.pricing.b.sub">pro Installation</p>
+          <ul>
+            <li data-i18n="auracall.pricing.b.li1">· Alle Funktionen</li>
+            <li data-i18n="auracall.pricing.b.li2">· Voraussetzung: AuraChat mit Telefonie-Lizenz</li>
+          </ul>
+        </div>
+      </div>
+      <p class="price-note" data-i18n="auracall.pricing.note">Nach der Testphase nimmt Aura ohne gültige Lizenz keine Anrufe mehr an. Telefonkosten des SIP-Anbieters kommen hinzu. Preise auf Anfrage — wir erstellen gern ein Angebot.</p>
+      <div class="card" style="margin-top:32px; max-width:420px; margin-left:auto; margin-right:auto;">
+        <div class="icon">📄</div>
+        <h3 data-i18n="auracall.downloads.sheet.title">Datenblatt &amp; Anleitung</h3>
+        <p data-i18n="auracall.downloads.sheet.desc">Funktionsübersicht, Einrichtung und Preise auf einen Blick.</p>
+        <div style="margin-top:14px; display:flex; flex-wrap:wrap; gap:8px; justify-content:center;">
+          <a href="downloads/AuraCall-Datenblatt.docx" download style="color:var(--cyan); font-size:13px; font-weight:600; text-decoration:none;">🇩🇪 DE</a>
+          <a href="downloads/AuraCall-Datasheet-EN.docx" download style="color:var(--cyan); font-size:13px; font-weight:600; text-decoration:none;">🇬🇧 EN</a>
+          <a href="downloads/AuraCall-Fiche-produit-FR.docx" download style="color:var(--cyan); font-size:13px; font-weight:600; text-decoration:none;">🇫🇷 FR</a>
+          <a href="downloads/AuraCall-Scheda-prodotto-IT.docx" download style="color:var(--cyan); font-size:13px; font-weight:600; text-decoration:none;">🇮🇹 IT</a>
+          <a href="downloads/AuraCall-Ficha-producto-ES.docx" download style="color:var(--cyan); font-size:13px; font-weight:600; text-decoration:none;">🇪🇸 ES</a>
+        </div>
+      </div>
+      <div class="card" style="margin-top:16px; max-width:420px; margin-left:auto; margin-right:auto;">
+        <div class="icon">✉️</div>
+        <h3 data-i18n="auracall.downloads.trial.title">Testversion &amp; Beratung</h3>
+        <p data-i18n="auracall.downloads.trial.desc">AuraCall erhaltet ihr auf Anfrage für die 14-tägige Testphase.</p>
+        <a href="#kontakt" data-i18n="auracall.downloads.trial.button" style="display:inline-block; margin-top:14px; color:var(--cyan); font-size:13px; font-weight:600; text-decoration:none;">Anfrage senden</a>
+      </div>
+    </div>
+  </section>
+
+  <section id="bewertungen">
+    <div class="wrap">
+      <div class="section-head">
+        <h2 data-i18n="reviews.heading">Bewertungen</h2>
+        <p data-i18n="reviews.sub">Was Nutzende über AuraChat sagen.</p>
+      </div>
+
+      <div style="display:flex; align-items:center; gap:20px; margin-bottom:32px; flex-wrap:wrap;">
+        <div style="font-size:2.4rem; font-weight:700; color:white;" id="reviews-average">–</div>
+        <div>
+          <div id="reviews-stars" style="color:var(--cyan); font-size:1.3rem; letter-spacing:2px;">☆☆☆☆☆</div>
+          <div style="color:#94a3b8; font-size:13px; margin-top:4px;" id="reviews-count" data-i18n="reviews.none">Noch keine Bewertungen</div>
+        </div>
+      </div>
+
+      <div id="reviews-list" style="display:flex; flex-direction:column; gap:16px; margin-bottom:40px;"></div>
+
+      <div class="card" style="max-width:520px;">
+        <h3 style="margin-bottom:16px;" data-i18n="reviews.formTitle">Eigene Bewertung abgeben</h3>
+        <form id="review-form" style="display:flex; flex-direction:column; gap:12px;">
+          <input type="text" id="review-name" data-i18n-placeholder="reviews.namePlaceholder" placeholder="Name" required maxlength="60"
+                 style="background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.15); border-radius:8px; padding:10px 12px; color:white; font-size:14px;">
+          <div id="review-star-picker" style="font-size:1.6rem; color:#475569; cursor:pointer; letter-spacing:4px;">★★★★★</div>
+          <input type="hidden" id="review-rating" value="0">
+          <textarea id="review-comment" data-i18n-placeholder="reviews.commentPlaceholder" placeholder="Dein Kommentar" required maxlength="1000" rows="3"
+                    style="background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.15); border-radius:8px; padding:10px 12px; color:white; font-size:14px; resize:vertical;"></textarea>
+          <!-- Für Menschen unsichtbares Feld gegen automatisierten Spam - bitte leer lassen -->
+          <input type="text" id="review-website" name="website" autocomplete="off" tabindex="-1"
+                 style="position:absolute; left:-9999px;" aria-hidden="true">
+          <button type="submit" class="btn btn-primary" style="align-self:flex-start;" data-i18n="reviews.submit">Bewertung absenden</button>
+          <div id="review-form-status" style="font-size:13px;"></div>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <section id="integrationen">
+    <div class="wrap">
+      <div class="section-head">
+        <h2 data-i18n="integrations.heading">Integrationen &amp; Skripte</h2>
+        <p data-i18n="integrations.sub">Fertige Vorlagen zum Anbinden eigener Hardware und Telefonanlagen — zum Selbst-Einrichten, direkt zum Herunterladen.</p>
+      </div>
+      <div class="grid3">
+        <a href="downloads/aurachat-raspberry-pi-servo.zip" download class="card" style="display:block; text-decoration:none;">
+          <div class="icon">🔌</div>
+          <h3 data-i18n="integrations.pi.title">Raspberry Pi (Servo)</h3>
+          <p data-i18n="integrations.pi.desc">Fertiges Python-Skript zur Servo-/Relaissteuerung per Sprachbefehl, inkl. Einrichtungsanleitung.</p>
+          <p style="margin-top:12px; color:var(--cyan); font-size:13px; font-weight:600;" data-i18n="integrations.download">⬇ ZIP herunterladen</p>
+        </a>
+        <a href="downloads/aurachat-telefonanlagen.zip" download class="card" style="display:block; text-decoration:none;">
+          <div class="icon">☎️</div>
+          <h3 data-i18n="integrations.phone.title">Telefonanlagen (Asterisk/3CX)</h3>
+          <p data-i18n="integrations.phone.desc">Telefonanlage (FreePBX, 3CX) schon im Haus? Verbindungsskripte zum Selbst-Einrichten, mit Aura am Telefon sprechen. Ohne eigene Anlage bringt AuraCall alles mit (siehe Produkte). Premium-Feature.</p>
+          <p style="margin-top:12px; color:var(--cyan); font-size:13px; font-weight:600;" data-i18n="integrations.download2">⬇ ZIP herunterladen</p>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <section id="kontakt">
+    <div class="hero-glow" style="width:500px;height:300px;background:var(--blue);bottom:0;left:50%;transform:translateX(-50%);"></div>
+    <div class="kontakt-wrap">
+      <h2 data-i18n="contact.heading">Bereit, Aura kennenzulernen?</h2>
+      <p data-i18n="contact.text">Schreibt uns — wir zeigen euch AuraChat in einer kurzen Live-Demo und stellen euch das vollständige Datenblatt zusammen.</p>
+      <a href="mailto:info@gerber-backoffice-solutions.com" class="btn btn-primary">info@gerber-backoffice-solutions.com</a>
+    </div>
+  </section>
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+      <img src="images/logo.png" alt="AuraChat" width="637" height="153" loading="lazy" decoding="async">
+      <p>Gerber Backoffice Solutions · info@gerber-backoffice-solutions.com</p>
+    </div>
+  </footer>
+
+<script src="translations.js"></script>
+<script>
+(function () {
+    const listEl = document.getElementById('reviews-list');
+    const avgEl = document.getElementById('reviews-average');
+    const starsEl = document.getElementById('reviews-stars');
+    const countEl = document.getElementById('reviews-count');
+    const form = document.getElementById('review-form');
+    const statusEl = document.getElementById('review-form-status');
+    const starPicker = document.getElementById('review-star-picker');
+    const ratingInput = document.getElementById('review-rating');
+
+    // --- Mehrsprachigkeit ---
+    let currentLang = localStorage.getItem('aurachat_site_lang') || 'de';
+
+    function t(key) {
+        const parts = key.split('.');
+        let node = translations[currentLang];
+        for (const p of parts) { node = node && node[p]; }
+        if (node === undefined) { // Rückfall auf Deutsch, falls in einer Sprache mal ein Schlüssel fehlen sollte
+            node = translations.de;
+            for (const p of parts) { node = node && node[p]; }
+        }
+        return node !== undefined ? node : key;
+    }
+
+    function applyLanguage(lang) {
+        currentLang = lang;
+        localStorage.setItem('aurachat_site_lang', lang);
+        document.documentElement.lang = lang;
+        document.querySelectorAll('[data-i18n]').forEach(el => {
+            el.innerHTML = t(el.getAttribute('data-i18n'));
+        });
+        document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+            el.setAttribute('placeholder', t(el.getAttribute('data-i18n-placeholder')));
+        });
+        document.querySelectorAll('.lang-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.getAttribute('data-lang') === lang);
+        });
+        loadReviews(); // Bewertungsanzahl/Datum-Format hängt auch von der Sprache ab
+    }
+
+    document.querySelectorAll('.lang-btn').forEach(btn => {
+        btn.addEventListener('click', () => applyLanguage(btn.getAttribute('data-lang')));
+    });
+
+    function starString(n) {
+        const full = Math.round(n);
+        return '★★★★★'.slice(0, full) + '☆☆☆☆☆'.slice(0, 5 - full);
+    }
+
+    function renderStarPicker(selected) {
+        starPicker.innerHTML = '';
+        for (let i = 1; i <= 5; i++) {
+            const span = document.createElement('span');
+            span.textContent = i <= selected ? '★' : '☆';
+            span.style.color = i <= selected ? 'var(--cyan)' : '#475569';
+            span.addEventListener('click', () => { ratingInput.value = i; renderStarPicker(i); });
+            starPicker.appendChild(span);
+        }
+    }
+    renderStarPicker(0);
+
+    const localeMap = { de: 'de-DE', en: 'en-US', fr: 'fr-FR', it: 'it-IT', es: 'es-ES' };
+
+    async function loadReviews() {
+        try {
+            const res = await fetch('/api/reviews');
+            const data = await res.json();
+            avgEl.textContent = data.count > 0 ? data.average.toFixed(1) : '–';
+            starsEl.textContent = starString(data.average);
+            countEl.textContent = data.count > 0 ? `${data.count} ${data.count === 1 ? t('reviews.reviewWord') : t('reviews.reviewsWord')}` : t('reviews.noneYet');
+            listEl.innerHTML = '';
+            data.reviews.forEach(r => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.style.cssText = 'text-align:left;';
+                const date = new Date(r.createdAt).toLocaleDateString(localeMap[currentLang] || 'de-DE');
+                card.innerHTML = `
+                    <div style="color:var(--cyan); font-size:15px; letter-spacing:2px;">${starString(r.rating)}</div>
+                    <h3 style="margin-top:8px;">${escapeHtml(r.name)} <span style="color:#64748b; font-weight:400; font-size:12px;">· ${date}</span></h3>
+                    <p>${escapeHtml(r.comment)}</p>
+                `;
+                listEl.appendChild(card);
+            });
+        } catch (err) {
+            countEl.textContent = t('reviews.loadError');
+        }
+    }
+
+    function escapeHtml(str) {
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    }
+
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        statusEl.textContent = '';
+        const name = document.getElementById('review-name').value.trim();
+        const rating = parseInt(ratingInput.value, 10);
+        const comment = document.getElementById('review-comment').value.trim();
+        const website = document.getElementById('review-website').value;
+        if (!rating) { statusEl.textContent = t('reviews.chooseRating'); statusEl.style.color = '#f87171'; return; }
+
+        try {
+            const res = await fetch('/api/reviews', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, rating, comment, website })
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Absenden fehlgeschlagen.');
+            statusEl.textContent = t('reviews.thanks');
+            statusEl.style.color = '#4ade80';
+            form.reset();
+            ratingInput.value = 0;
+            renderStarPicker(0);
+            loadReviews();
+        } catch (err) {
+            statusEl.textContent = err.message;
+            statusEl.style.color = '#f87171';
+        }
+    });
+
+    applyLanguage(currentLang);
+})();
+</script>
+</body>
+</html>

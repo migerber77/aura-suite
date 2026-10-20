@@ -1,0 +1,49 @@
+# AuraCall = Asterisk (Telefonanlage) + AuraCall (Verwaltung und Anbindung an AuraChat).
+# Beide laufen im "Host-Netzwerk": SIP und Ton (RTP) brauchen echte Adressen, hinter Docker-NAT gehen sie oft verloren.
+# Die Steuerung (AMI, Port 5038) und der Ton-Anschluss zu AuraCall (AudioSocket, Port 9092) hören NUR auf 127.0.0.1.
+services:
+  asterisk:
+    build: ./asterisk
+    image: auracall-asterisk:latest
+    pull_policy: never          # lokal gebautes Image: nie aus dem Netz holen
+    container_name: auracall-asterisk
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      - AMI_SECRET=${AMI_SECRET:?AMI_SECRET fehlt - bitte ./setup.sh ausführen}
+    volumes:
+      - ./asterisk-conf:/etc/asterisk/auracall:ro     # hier legt AuraCall die Leitung und den Dialplan ab
+      - asterisk_lib:/var/lib/asterisk
+      - asterisk_log:/var/log/asterisk
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+
+  auracall:
+    build: .
+    image: auracall:latest
+    pull_policy: never
+    container_name: auracall
+    restart: unless-stopped
+    network_mode: host
+    depends_on: [asterisk]
+    environment:
+      - AMI_SECRET=${AMI_SECRET:?AMI_SECRET fehlt - bitte ./setup.sh ausführen}
+      - AURACALL_PORT=${AURACALL_PORT:-8110}
+      - AURACALL_BIND=${AURACALL_BIND:-0.0.0.0}
+      - TRUST_PROXY=${TRUST_PROXY:-false}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-}
+      - AURACALL_RESET_2FA=${AURACALL_RESET_2FA:-}
+      - LICENSE_SECRET=${LICENSE_SECRET:-}
+      - LICENSE_CHECKIN_HOST=${LICENSE_CHECKIN_HOST:-auralic.gerber-backoffice-solutions.com}
+      - AURA_SUITE_VERSION=${AURA_SUITE_VERSION:-}   # optional: Version der Aura-Suite, erscheint unter "Über Aura-Suite"
+    volumes:
+      - ./data:/data
+      - ./asterisk-conf:/asterisk-conf
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    read_only: true
+    tmpfs: ["/tmp"]
+
+volumes:
+  asterisk_lib:
+  asterisk_log:

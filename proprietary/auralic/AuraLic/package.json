@@ -1,0 +1,20 @@
+{
+  "name": "aurachat-license-server",
+  "version": "1.0.0",
+  "description": "Internes Web-Tool zum Erzeugen und Verwalten von AuraChat-Lizenzschlüsseln",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "express-rate-limit": "^7.4.0",
+    "sqlite3": "^5.1.7",
+    "adm-zip": "^0.5.16",
+    "multer": "^2.0.2",
+    "bcrypt": "^5.1.1",
+    "express-session": "^1.18.0",
+    "otplib": "^12.0.1",
+    "qrcode": "^1.5.3"
+  }
+}

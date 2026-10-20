@@ -1,0 +1,21 @@
+services:
+  auramail:
+    build: .
+    container_name: auramail
+    restart: unless-stopped
+    ports:
+      - "3300:3000"     # Web-Oberfläche - http://<Server-IP>:3300
+      - "2525:2525"     # Interner Mailserver-Empfang (nur relevant im "internal"-Modus) -
+                         # für echten Empfang aus dem Internet muss Port 25 extern auf 2525
+                         # weitergeleitet werden (Router/Firewall), 25 selbst bleibt hier
+                         # bewusst frei, da er auf den meisten Servern ohnehin reserviert ist
+    environment:
+      # Eigene Zufallswerte eintragen! Erzeugen z.B. mit: openssl rand -hex 32
+      - SESSION_SECRET=${SESSION_SECRET}
+      - CREDENTIAL_ENCRYPTION_KEY=${CREDENTIAL_ENCRYPTION_KEY}
+      # Muss GENAU derselbe Wert wie auf dem Lizenz-Server (LICENSE_SECRET) sein.
+      - LICENSE_SECRET=${LICENSE_SECRET}
+      - AURA_SUITE_VERSION=${AURA_SUITE_VERSION:-}   # optional: Version der Aura-Suite, erscheint unter "Über Aura-Suite"
+      - INTERNAL_SMTP_PORT=2525
+    volumes:
+      - ./data:/app/data

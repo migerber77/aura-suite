@@ -1,0 +1,14 @@
+*.zip
+*.db
+*.db-wal
+*.db-shm
+*.sqlite
+*.log
+.DS_Store
+._*
+.env
+node_modules/
+data/
+dist/
+build/
+models/

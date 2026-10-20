@@ -1,0 +1,20 @@
+.view-btn { background: transparent; color: #94a3b8; border: 1px solid transparent; }
+.view-btn:hover { background: rgba(148, 163, 184, 0.08); color: #e2e8f0; }
+.view-btn.active { background: #1e293b; color: white; border-color: #334155; }
+
+.status-filter-btn { background: transparent; color: #94a3b8; border: 1px solid transparent; }
+.status-filter-btn:hover { background: rgba(148, 163, 184, 0.08); }
+.status-filter-btn.active { background: #1e293b; color: white; border-color: #334155; }
+
+.admin-tab-btn { background: #0f172a; border: 1px solid #1e293b; color: #cbd5e1; }
+.admin-tab-btn:hover { background: #1e293b; }
+.admin-tab-btn.active { background: #2563eb; color: white; border-color: #2563eb; }
+
+.ticket-item { padding: 10px 14px; border-bottom: 1px solid #1e293b; cursor: pointer; }
+.ticket-item:hover { background: rgba(148, 163, 184, 0.06); }
+.ticket-item.active { background: #1e293b; }
+
+.msg-bubble { border-radius: 12px; padding: 10px 14px; font-size: 13px; line-height: 1.5; white-space: pre-wrap; }
+.msg-incoming { background: #1e293b; color: #e2e8f0; align-self: flex-start; max-width: 85%; }
+.msg-outgoing { background: #1d4ed8; color: white; align-self: flex-end; max-width: 85%; }
+.msg-note { background: #78350f33; border: 1px dashed #92400e; color: #fde68a; align-self: stretch; }

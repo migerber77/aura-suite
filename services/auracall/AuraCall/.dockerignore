@@ -1,0 +1,6 @@
+data
+asterisk-conf
+.env
+*.log
+node_modules
+.git

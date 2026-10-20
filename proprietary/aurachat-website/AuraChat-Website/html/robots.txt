@@ -1,0 +1,8 @@
+# Alle Suchmaschinen dürfen die Seite lesen. Nicht gebraucht in der Suche: die Schnittstelle und die grossen Programm-Dateien.
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /downloads/*.exe$
+Disallow: /downloads/*.zip$
+
+Sitemap: https://aurachat.gerber-backoffice-solutions.com/sitemap.xml

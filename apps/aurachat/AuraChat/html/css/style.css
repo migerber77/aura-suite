@@ -1,0 +1,107 @@
+/* Fliessende Skalierung über alle Geräte hinweg (Smartphone bis Fernseher) - die
+   Basis-Schriftgrösse hängt an der Fensterbreite, dadurch skalieren alle auf "rem"
+   basierenden Abstände/Grössen (praktisch alle Tailwind-Klassen in dieser App)
+   automatisch proportional mit. Ergebnis: dasselbe Layout, nur grösser/kleiner, statt
+   auf jeder Gerätegrösse ein komplett anderer Aufbau.
+   Wichtig zu wissen: ein Fernseher-Browser meldet üblicherweise dieselbe "CSS-Breite"
+   wie ein normaler Monitor (die Skalierung fürs 4K-Panel übernimmt das TV-Betriebssystem
+   selbst) - eine reine CSS-Regel kann TV nicht zuverlässig von einem grossen Monitor
+   unterscheiden. Das hier deckt daher Handy → Tablet → Monitor sauber ab; ein Fernseher
+   verhält sich meist wie ein grosser Monitor mit dementsprechend grosszügiger Skalierung. */
+html {
+    font-size: clamp(14px, 1vw + 10px, 20px);
+}
+
+/* Benutzerdefinierte Panel-Transparenz und Hintergründe */
+.custom-panel {
+    background-color: rgba(30, 41, 59, 0.9);
+    backdrop-filter: blur(10px);
+}
+
+/* Scrollbar Design für den Chat */
+#chat-container::-webkit-scrollbar {
+    width: 6px;
+}
+#chat-container::-webkit-scrollbar-track {
+    background: transparent;
+}
+#chat-container::-webkit-scrollbar-thumb {
+    background: rgba(100, 116, 139, 0.5);
+    border-radius: 3px;
+}
+#chat-container::-webkit-scrollbar-thumb:hover {
+    background: rgba(100, 116, 139, 0.8);
+}
+
+/* Datei-Vorschau Container */
+#file-preview-container:not(.hidden) {
+    display: flex;
+}
+
+/* Lade-Leiste oben (während Aura antwortet/generiert) - schöner, sich bewegender
+   Farbverlauf in Blau statt einer statischen Leiste */
+#top-loading-bar {
+    opacity: 0;
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: opacity 0.25s ease;
+    background: linear-gradient(90deg, #1e3a8a, #2563eb, #38bdf8, #2563eb, #1e3a8a);
+    background-size: 200% 100%;
+    box-shadow: 0 0 8px rgba(37, 99, 235, 0.6);
+}
+#top-loading-bar.active {
+    opacity: 1;
+    transform: scaleX(1);
+    transition: opacity 0.2s ease, transform 0.4s ease;
+    animation: top-loading-bar-flow 1.4s linear infinite;
+}
+@keyframes top-loading-bar-flow {
+    0% { background-position: 0% 0; }
+    100% { background-position: -200% 0; }
+}
+
+/* --- LAYOUT-VORLAGEN (Design-Einstellungen -> Layout) --- *//* Kompakt: schmalere Sidebar, dichtere Abstände */
+body.layout-kompakt #sidebar {
+    width: 15rem !important;
+    padding: 0.6rem !important;
+}
+
+/* Fokus: Sidebar komplett ausgeblendet, Chat nutzt die volle Breite */
+body.layout-fokus #sidebar {
+    display: none !important;
+}
+
+/* Rechts: Sidebar und Chat-Bereich seitenverkehrt */
+body.layout-rechts {
+    flex-direction: row-reverse;
+}
+body.layout-rechts #sidebar {
+    border-right: none;
+    border-left: 1px solid rgb(30 41 59);
+}
+
+/* Breit: Sidebar ausgeblendet wie bei Fokus, Chat-Inhalt zusätzlich zentriert
+   mit maximaler Breite (liest sich angenehmer auf sehr breiten Bildschirmen) */
+body.layout-breit #sidebar {
+    display: none !important;
+}
+body.layout-breit #chat-container {
+    max-width: 900px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* "Fruchtfliegenhirn"-Indikator: rot = inaktiv/ruht, blau-grün pulsierend = gerade
+   Denkaktivität (Werkzeug-Abfrage im Vektor-/Graph-Gedächtnis) oder frisch gelernt. */
+#memory-indicator.brain-idle {
+    filter: grayscale(1) sepia(1) hue-rotate(-50deg) saturate(6) brightness(0.9);
+    transition: filter 0.6s ease;
+}
+#memory-indicator.brain-active {
+    filter: grayscale(1) sepia(1) hue-rotate(140deg) saturate(6) brightness(1.1);
+    animation: brain-pulse 0.9s ease-in-out infinite;
+}
+@keyframes brain-pulse {
+    0%, 100% { transform: scale(1); opacity: 0.85; }
+    50% { transform: scale(1.25); opacity: 1; }
+}

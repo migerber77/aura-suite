@@ -1,0 +1,13 @@
+services:
+  auraticket:
+    build: .
+    container_name: auraticket
+    restart: unless-stopped
+    ports:
+      - "3400:3000"
+    environment:
+      - SESSION_SECRET=${SESSION_SECRET}
+      - LICENSE_SECRET=${LICENSE_SECRET}
+      - AURA_SUITE_VERSION=${AURA_SUITE_VERSION:-}   # optional: Version der Aura-Suite, erscheint unter "Über Aura-Suite"
+    volumes:
+      - ./data:/app/data

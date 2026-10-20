@@ -1,0 +1,13 @@
+{
+  "name": "Aura",
+  "short_name": "Aura",
+  "start_url": "/kiosk.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#020617",
+  "theme_color": "#020617",
+  "icons": [
+    { "src": "/api/branding/icon", "sizes": "192x192", "type": "image/png" },
+    { "src": "/api/branding/icon", "sizes": "512x512", "type": "image/png" }
+  ]
+}

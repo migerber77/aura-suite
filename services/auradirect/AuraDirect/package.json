@@ -1,0 +1,21 @@
+{
+  "name": "auradirect",
+  "version": "1.0.0",
+  "description": "Zentrale Benutzerverwaltung für AuraChat & AuraPlan, mit optionaler Active-Directory-Anbindung",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "express-session": "^1.18.0",
+    "express-rate-limit": "^7.4.0",
+    "sqlite3": "^5.1.7",
+    "bcrypt": "^5.1.1",
+    "ldapjs": "^3.0.7",
+    "otplib": "^12.0.1",
+    "qrcode": "^1.5.3",
+    "adm-zip": "^0.5.16",
+    "multer": "^2.0.2"
+  }
+}

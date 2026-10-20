@@ -1,0 +1,23 @@
+use_default_settings: true
+
+general:
+  instance_name: "AuraChat Search"
+
+search:
+  safe_search: 0
+  autocomplete: ""
+  formats:
+    - html
+    - json   # WICHTIG: das Backend braucht das JSON-Format für die Suche im Chat
+
+server:
+  # Zufälliger Wert - da diese Instanz NICHT nach aussen exponiert wird (kein
+  # Port-Mapping in docker-compose.yml), ist das Risiko gering. Trotzdem: für
+  # den Produktivbetrieb gerne durch einen eigenen Wert ersetzen, z.B. mit
+  # "openssl rand -hex 32".
+  secret_key: "6f45a4bcfcb3fe1c85539c9525f228f11b166ed5a228382961406de21d1a2ac0"
+  limiter: false
+  image_proxy: false
+
+ui:
+  static_use_hash: true

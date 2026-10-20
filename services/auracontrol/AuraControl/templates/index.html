@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="de" class="dark">
+<head>
+    <script src="/static/aura-i18n.js"></script>
+    <script src="/static/aura-i18n-words.js"></script>
+    <script src="/static/aura-intro.js" data-video="/static/images/intro/aurasuite-intro"></script>
+    <script src="/static/aura-prefs.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AuraControl - Server Management</title>
+    <!-- Favicon -->
+    <link rel="icon" type="image/jpeg" href="/static/Logo_1024_1024.jpg">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = { darkMode: 'class' }
+    </script>
+    <!-- Chart.js für Leistungsverlauf -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-gray-950 text-gray-100 min-h-screen flex flex-col relative">
+
+    <!-- Data-Center Hintergrund -->
+    <div class="fixed inset-0 z-0 opacity-15 bg-cover bg-center pointer-events-none" style="background-image: url('https://images.unsplash.com/photo-1558494949-ef010cbdcc31?q=80&w=2000&auto=format&fit=crop');"></div>
+
+    <!-- Header -->
+    <header class="relative z-10 bg-gray-900/90 backdrop-blur border-b border-gray-800 shadow-sm py-3 px-6 flex flex-wrap gap-3 justify-between items-center">
+        <div class="flex items-center space-x-3">
+            <img src="/static/Logo_1024_1024.jpg" alt="AuraControl Logo" class="w-9 h-9 rounded-lg object-cover border border-blue-500/30 shadow">
+            <span class="text-2xl font-bold text-blue-400 tracking-wide">AuraControl</span>
+            <span id="hdr-model" class="text-xs bg-blue-900/80 text-blue-200 px-2.5 py-0.5 rounded-full border border-blue-700/50">{{ server_model }}</span>
+        </div>
+        <div class="flex flex-wrap items-center gap-4 text-sm text-gray-400">
+            <span>Host: <strong id="hdr-host" class="text-gray-200">{{ host_address }}</strong> (<span id="hdr-os">{{ os_name }}</span>)</span>
+            <span id="hdr-license" class="text-xs px-2 py-0.5 rounded-full border border-gray-700 text-gray-400 hidden"></span>
+            <div id="aura-menu"></div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="relative z-10 flex-grow container mx-auto px-4 py-8 max-w-6xl space-y-8">
+        
+        <!-- Top Status Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div class="bg-gray-900/80 backdrop-blur p-5 rounded-lg border border-gray-800 shadow">
+                <h3 class="text-xs uppercase tracking-wider text-gray-400 font-semibold">System Status</h3>
+                <p class="text-2xl font-bold text-green-400 mt-1">Online / Aktiv</p>
+                <p class="text-xs text-gray-500 mt-1">RHEL 10 Host</p>
+            </div>
+            <div class="bg-gray-900/80 backdrop-blur p-5 rounded-lg border border-gray-800 shadow">
+                <h3 class="text-xs uppercase tracking-wider text-gray-400 font-semibold">Echtzeit-Stromverbrauch</h3>
+                <p id="powerWattsCard" class="text-2xl font-bold text-pink-400 mt-1 font-mono">-- W</p>
+                <p class="text-xs text-gray-500 mt-1">HPE Power Meter (Live)</p>
+            </div>
+            <div class="bg-gray-900/80 backdrop-blur p-5 rounded-lg border border-gray-800 shadow">
+                <h3 class="text-xs uppercase tracking-wider text-gray-400 font-semibold">CPU Auslastung</h3>
+                <p id="cpuUsageCard" class="text-2xl font-bold text-blue-400 mt-1">--%</p>
+                <p id="cpuCoresCard" class="text-xs text-gray-500 mt-1">Lade Kerne...</p>
+            </div>
+            <div class="bg-gray-900/80 backdrop-blur p-5 rounded-lg border border-gray-800 shadow">
+                <h3 class="text-xs uppercase tracking-wider text-gray-400 font-semibold">Arbeitsspeicher (RAM)</h3>
+                <p id="ramUsageCard" class="text-2xl font-bold text-purple-400 mt-1">--%</p>
+                <p id="ramDetailCard" class="text-xs text-gray-500 mt-1">Lade RAM...</p>
+            </div>
+        </div>
+
+        <!-- 24-Hour Power History Graph -->
+        <div class="bg-gray-900/80 backdrop-blur p-6 rounded-lg shadow border border-gray-800">
+            <div class="flex justify-between items-center mb-4">
+                <div>
+                    <h2 class="text-xl font-bold text-white">Power Meter — 24-Hour History Graph</h2>
+                    <p class="text-xs text-gray-400 mt-1">Leistungsverlauf über die letzten 24 Stunden</p>
+                </div>
+            </div>
+            <div class="h-64 relative">
+                <canvas id="powerChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Hardware & Storage Health -->
+        <div class="bg-gray-900/80 backdrop-blur p-6 rounded-lg shadow border border-gray-800 space-y-6">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h2 class="text-xl font-bold text-white">Storage, RAID & SSD Smart Health</h2>
+                    <p class="text-xs text-gray-400 mt-1">Physische Laufwerke, Verschleiß, Temperatur und Schreibvolumen (TBW)</p>
+                </div>
+                <span id="raidStatusBadge" class="text-xs bg-green-900/60 text-green-300 border border-green-700/50 px-3 py-1 rounded font-mono">RAID Optimal</span>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="drivesContainer">
+                <div class="bg-gray-950/50 p-4 rounded border border-gray-800 text-sm text-gray-400">Lade SSD-Status...</div>
+            </div>
+        </div>
+
+        <!-- Hardware Details -->
+        <div class="bg-gray-900/80 backdrop-blur p-6 rounded-lg shadow border border-gray-800 space-y-6">
+            <h2 class="text-xl font-bold text-white">Hardware & System Inventory</h2>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="bg-gray-950/60 p-4 rounded border border-gray-800 space-y-3">
+                    <h3 class="text-sm font-bold text-blue-400 uppercase tracking-wider">Prozessoren (CPUs)</h3>
+                    <div id="processorsContainer" class="space-y-2 text-xs text-gray-300">Lade Prozessoren...</div>
+                </div>
+                <div class="bg-gray-950/60 p-4 rounded border border-gray-800 space-y-3">
+                    <h3 class="text-sm font-bold text-purple-400 uppercase tracking-wider">Arbeitsspeicher (DIMMs)</h3>
+                    <div id="memoryContainer" class="space-y-2 text-xs text-gray-300">Lade RAM-Module...</div>
+                </div>
+                <div class="bg-gray-950/60 p-4 rounded border border-gray-800 space-y-3">
+                    <h3 class="text-sm font-bold text-green-400 uppercase tracking-wider">Lüfter (Fans)</h3>
+                    <div id="fansContainer" class="space-y-2 text-xs text-gray-300">Lade Lüfter...</div>
+                </div>
+                <div class="bg-gray-950/60 p-4 rounded border border-gray-800 space-y-3">
+                    <h3 class="text-sm font-bold text-yellow-400 uppercase tracking-wider">Netzwerk-Schnittstellen</h3>
+                    <div id="networkContainer" class="space-y-2 text-xs text-gray-300">Lade Netzwerk...</div>
+                </div>
+            </div>
+
+            <div class="pt-4 border-t border-gray-800">
+                <h3 class="text-sm font-bold text-white uppercase tracking-wider mb-3">Device Inventory (Embedded & PCI-E)</h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-gray-300 text-xs font-mono">
+                        <thead>
+                            <tr class="border-b border-gray-800 text-gray-400">
+                                <th class="pb-2">Location</th>
+                                <th class="pb-2">Product Name</th>
+                                <th class="pb-2">Part Number</th>
+                                <th class="pb-2">Serial Number</th>
+                                <th class="pb-2">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="inventoryTableBody">
+                            <tr><td colspan="5" class="py-2 text-gray-500">Lade Inventory...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Admin Panel -->
+    <div id="adminModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="adminTitle">
+        <div class="bg-gray-900 border border-gray-700 p-6 rounded-xl w-full max-w-xl space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between">
+                <h3 id="adminTitle" class="text-lg font-bold text-white">🛠️ Admin Panel</h3>
+                <button type="button" onclick="closeAdmin()" aria-label="Schliessen" class="text-gray-500 hover:text-white text-2xl leading-none">×</button>
+            </div>
+            <div class="flex flex-wrap gap-2 text-xs">
+                <button type="button" data-admin-tab="license" class="admin-tab px-3 py-1.5 rounded bg-gray-800 text-gray-300">🔑 Lizenz</button>
+                <button type="button" data-admin-tab="security" class="admin-tab px-3 py-1.5 rounded bg-gray-800 text-gray-300">🛡️ Sicherheit</button>
+                <button type="button" data-admin-tab="system" class="admin-tab px-3 py-1.5 rounded bg-gray-800 text-gray-300">🖥️ System</button>
+            </div>
+            <section data-admin-section="license" class="space-y-3 hidden">
+                <p id="licStatus" class="text-sm text-gray-300">Wird geladen…</p>
+                <p class="text-xs text-gray-500">14 Tage Testphase, danach ist ein Benutzer (der Administrator) kostenlos. Mehr Benutzer brauchen eine Lizenz.</p>
+                <label class="block text-xs text-gray-400" for="licKey">Lizenzschlüssel</label>
+                <textarea id="licKey" rows="4" spellcheck="false" autocomplete="off" placeholder="Lizenzschlüssel hier einfügen" class="w-full bg-gray-800 border border-gray-700 rounded p-2 text-white text-xs font-mono"></textarea>
+                <p id="licMsg" class="text-xs text-gray-400"></p>
+                <div class="flex gap-3">
+                    <button type="button" onclick="saveLicense()" class="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 rounded text-sm transition">Speichern</button>
+                    <button type="button" id="licRemove" onclick="removeLicense()" class="hidden flex-1 bg-gray-800 hover:bg-gray-700 text-gray-300 font-bold py-2 rounded text-sm transition">Lizenz entfernen</button>
+                </div>
+                <p id="licCheckin" class="text-xs text-gray-500"></p>
+            </section>
+            <section data-admin-section="security" class="space-y-3 hidden">
+                <p id="mustChange" class="hidden text-xs text-yellow-300 bg-yellow-950/60 border border-yellow-700/50 rounded p-2">Bitte ändern Sie jetzt das Anfangspasswort.</p>
+                <form onsubmit="changePassword(event)" class="space-y-3">
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1" for="currentPassword">Aktuelles Passwort</label>
+                        <input type="password" id="currentPassword" autocomplete="current-password" required class="w-full bg-gray-800 border border-gray-700 rounded p-2 text-white text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1" for="newPassword">Neues Passwort (mindestens 10 Zeichen)</label>
+                        <input type="password" id="newPassword" autocomplete="new-password" required class="w-full bg-gray-800 border border-gray-700 rounded p-2 text-white text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1" for="newPassword2">Neues Passwort wiederholen</label>
+                        <input type="password" id="newPassword2" autocomplete="new-password" required class="w-full bg-gray-800 border border-gray-700 rounded p-2 text-white text-sm">
+                    </div>
+                    <p id="passwordMsg" class="text-xs text-gray-400"></p>
+                    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 rounded text-sm transition">Passwort ändern</button>
+                    <p class="text-xs text-gray-500">Nach der Änderung werden alle anderen Anmeldungen beendet.</p>
+                </form>
+            </section>
+            <section data-admin-section="system" class="space-y-3 hidden">
+                <p class="text-xs text-gray-400">Diese Aktionen betreffen den ganzen Server.</p>
+                <div class="flex gap-3">
+                    <button type="button" onclick="confirmAction('reboot')" class="flex-1 bg-yellow-900/40 hover:bg-yellow-900/70 text-yellow-300 border border-yellow-700/50 py-2 rounded text-sm font-medium transition">Neustart</button>
+                    <button type="button" onclick="confirmAction('shutdown')" class="flex-1 bg-red-900/40 hover:bg-red-900/70 text-red-300 border border-red-700/50 py-2 rounded text-sm font-medium transition">Herunterfahren</button>
+                </div>
+                <p id="sysMsg" class="text-xs text-gray-400"></p>
+            </section>
+        </div>
+    </div>
+
+    <!-- Einstellungen -->
+    <div id="settingsModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+        <div class="bg-gray-900 border border-gray-700 p-6 rounded-xl w-full max-w-md space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between">
+                <h3 id="settingsTitle" class="text-lg font-bold text-white">⚙️ Einstellungen</h3>
+                <button type="button" onclick="closeSettings()" aria-label="Schliessen" class="text-gray-500 hover:text-white text-2xl leading-none">×</button>
+            </div>
+            <div id="prefsCard"></div>
+            <form onsubmit="saveSettings(event)" class="space-y-3">
+                <div><label class="block text-xs text-gray-400 mb-1" for="setServerName">Servername</label><input id="setServerName" maxlength="60" required class="w-full bg-gray-800 border border-gray-700 rounded p-2 text-white text-sm"></div>
+                <div><label class="block text-xs text-gray-400 mb-1" for="setServerModel">Modell</label><input id="setServerModel" maxlength="60" required class="w-full bg-gray-800 border border-gray-700 rounded p-2 text-white text-sm"></div>
+                <div><label class="block text-xs text-gray-400 mb-1" for="setHostAddress">Adresse des Servers</label><input id="setHostAddress" maxlength="60" required class="w-full bg-gray-800 border border-gray-700 rounded p-2 text-white text-sm"></div>
+                <div><label class="block text-xs text-gray-400 mb-1" for="setOsName">Betriebssystem</label><input id="setOsName" maxlength="60" required class="w-full bg-gray-800 border border-gray-700 rounded p-2 text-white text-sm"></div>
+                <p id="settingsMsg" class="text-xs text-gray-400"></p>
+                <div class="flex gap-3 pt-1">
+                    <button type="submit" class="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 rounded text-sm transition">Speichern</button>
+                    <button type="button" onclick="closeSettings()" class="flex-1 bg-gray-800 hover:bg-gray-700 text-gray-300 font-bold py-2 rounded text-sm transition">Abbrechen</button>
+                </div>
+            </form>
+            <div class="border-t border-gray-800 pt-4 space-y-2">
+                <h4 class="text-sm font-bold text-white">📄 Datenschutzerklärung</h4>
+                <p class="text-xs text-gray-500">Diese Erklärung sieht der Administrator beim ersten Anmelden und muss sie bestätigen. Ändern Sie den Text, ist eine neue Bestätigung nötig. Einfache Formatierung: <code># Titel</code>, <code>## Abschnitt</code>, <code>- Punkt</code>.</p>
+                <div id="privacyEditor"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="relative z-10 bg-gray-900/90 backdrop-blur border-t border-gray-800 py-4 text-center text-xs text-gray-500">
+        AuraControl Dashboard &copy; 2026 — Secure Server Infrastructure
+    </footer>
+
+    <!-- JavaScript -->
+    <script>
+        const AURA_HEADERS = { 'X-Aura-Request': '1' };
+        const $ = (id) => document.getElementById(id);
+        async function call(method, url, body, form) {
+            const opt = { method, headers: { ...AURA_HEADERS } };
+            if (form) opt.body = form;
+            else if (body !== undefined) { opt.headers['Content-Type'] = 'application/json'; opt.body = JSON.stringify(body); }
+            const res = await fetch(url, opt);
+            if (res.status === 401) { location.href = '/login'; throw new Error('Nicht angemeldet'); }
+            let data = {}; try { data = await res.json(); } catch (e) { /* keine Antwort */ }
+            return { ok: res.ok, data };
+        }
+        function setMsg(el, text, kind) { el.textContent = text; el.className = 'text-xs ' + (kind === 'ok' ? 'text-green-400' : (kind === 'error' ? 'text-red-400' : 'text-gray-400')); }
+        function showModal(id) { $(id).classList.remove('hidden'); }
+        function hideModal(id) { $(id).classList.add('hidden'); }
+
+        // ---- Admin Panel: Lizenz, Sicherheit, System (die Einträge im Menü öffnen den jeweiligen Bereich) ----
+        function openAdmin(section) {
+            showModal('adminModal');
+            document.querySelectorAll('[data-admin-section]').forEach(el => el.classList.toggle('hidden', el.dataset.adminSection !== section));
+            document.querySelectorAll('.admin-tab').forEach(b => { const on = b.dataset.adminTab === section; b.classList.toggle('bg-blue-600', on); b.classList.toggle('text-white', on); b.classList.toggle('bg-gray-800', !on); b.classList.toggle('text-gray-300', !on); });
+            if (section === 'license') loadLicense();
+        }
+        function closeAdmin() { hideModal('adminModal'); }
+        document.querySelectorAll('.admin-tab').forEach(b => b.addEventListener('click', () => openAdmin(b.dataset.adminTab)));
+
+        const STATE_TEXT = { licensed: 'Lizenziert', trial: 'Testphase', free: 'Kostenlos (1 Benutzer)', expired: 'Gesperrt' };
+        async function loadLicense() {
+            try {
+                const { data: l } = await call('GET', '/api/license');
+                let text = '';
+                if (l.state === 'licensed') text = `✓ Lizenziert für ${l.customer || 'unbekannt'}${l.expiresAt ? ' · gültig bis ' + new Date(l.expiresAt).toLocaleDateString('de-CH') : ' · unbefristet'}${l.expiresSoon ? ' (läuft bald ab)' : ''}`;
+                else if (l.state === 'trial') text = `⏳ Testphase: noch ${l.trialDaysRemaining} Tag(e).`;
+                else if (l.state === 'free') text = '✓ Kostenlose Stufe aktiv (1 Benutzer: der Administrator).';
+                else text = '✗ ' + (l.message || 'Keine gültige Lizenz.');
+                $('licStatus').textContent = text;
+                $('licRemove').classList.toggle('hidden', !l.hasKey);
+                const c = l.checkin && l.checkin.lastResult;
+                $('licCheckin').textContent = 'Rückmeldung an den Lizenzserver (anonym, alle 12 Stunden): ' + (c ? (c.success ? 'zuletzt erfolgreich' : 'zuletzt fehlgeschlagen') : 'noch keine seit dem Start');
+                const chip = $('hdr-license'); chip.textContent = STATE_TEXT[l.state] || ''; chip.classList.toggle('hidden', !STATE_TEXT[l.state]);
+            } catch (e) { /* Anzeige bleibt */ }
+        }
+        async function saveLicense() {
+            const { ok, data } = await call('POST', '/api/license', { key: $('licKey').value });
+            setMsg($('licMsg'), data.message || (ok ? 'Gespeichert.' : 'Fehler.'), ok ? 'ok' : 'error');
+            if (ok) { $('licKey').value = ''; loadLicense(); }
+        }
+        async function removeLicense() {
+            if (!confirm('Lizenz entfernen? Danach gilt die kostenlose Stufe (1 Benutzer: der Administrator).')) return;
+            const { ok, data } = await call('DELETE', '/api/license');
+            setMsg($('licMsg'), data.message || '', ok ? 'ok' : 'error'); loadLicense();
+        }
+        async function changePassword(e) {
+            e.preventDefault();
+            const msg = $('passwordMsg');
+            if ($('newPassword').value !== $('newPassword2').value) { setMsg(msg, 'Die beiden neuen Passwörter sind nicht gleich.', 'error'); return; }
+            const form = new URLSearchParams();
+            form.append('current_password', $('currentPassword').value);
+            form.append('new_password', $('newPassword').value);
+            const { data } = await call('POST', '/api/admin/change-password', undefined, form);
+            setMsg(msg, data.message || 'Fehler.', data.status === 'success' ? 'ok' : 'error');
+            if (data.status === 'success') { ['currentPassword', 'newPassword', 'newPassword2'].forEach(id => { $(id).value = ''; }); $('mustChange').classList.add('hidden'); }
+        }
+        async function confirmAction(action) {
+            const actionName = action === 'reboot' ? 'Neustart' : 'Herunterfahren';
+            if (!confirm(`Möchten Sie das System wirklich jetzt ${actionName}?`)) return;
+            try { const { data } = await call('POST', `/api/system/${action}`); setMsg($('sysMsg'), data.message || '', data.status === 'success' ? 'ok' : 'error'); }
+            catch (err) { setMsg($('sysMsg'), 'Fehler beim Ausführen des Befehls.', 'error'); }
+        }
+
+        // ---- Einstellungen: Anpassungen des Produkts ----
+        const SET_FIELDS = { server_name: 'setServerName', server_model: 'setServerModel', host_address: 'setHostAddress', os_name: 'setOsName' };
+        async function openSettings() {
+            showModal('settingsModal'); setMsg($('settingsMsg'), '', '');
+            window.AuraPrivacy.editor($('privacyEditor'), { headers: AURA_HEADERS });
+            window.AuraPrefs.card($('prefsCard'));
+            try { const { data } = await call('GET', '/api/settings'); Object.keys(SET_FIELDS).forEach(k => { $(SET_FIELDS[k]).value = data[k] || ''; }); } catch (e) { /* Felder bleiben leer */ }
+        }
+        function closeSettings() { hideModal('settingsModal'); }
+        async function saveSettings(e) {
+            e.preventDefault(); const body = {}; Object.keys(SET_FIELDS).forEach(k => { body[k] = $(SET_FIELDS[k]).value; });
+            const { ok, data } = await call('POST', '/api/settings', body);
+            setMsg($('settingsMsg'), data.message || (ok ? 'Gespeichert.' : 'Fehler.'), ok ? 'ok' : 'error');
+            if (ok && data.settings) { $('hdr-model').textContent = data.settings.server_model; $('hdr-host').textContent = data.settings.host_address; $('hdr-os').textContent = data.settings.os_name; setTimeout(closeSettings, 900); }
+        }
+        document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { closeAdmin(); closeSettings(); } });
+
+        let powerChartInstance = null;
+        async function loadPowerChart() {
+            try {
+                const res = await fetch('/api/system/power-history');
+                const data = await res.json();
+                const ctx = document.getElementById('powerChart').getContext('2d');
+                if (powerChartInstance) powerChartInstance.destroy();
+
+                powerChartInstance = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: data.labels,
+                        datasets: [
+                            { label: 'Peak Power (W)', data: data.peaks, backgroundColor: 'rgba(219, 39, 119, 0.8)', borderWidth: 1 },
+                            { label: 'Average Power (W)', data: data.consumption, backgroundColor: 'rgba(37, 99, 235, 0.9)', borderWidth: 1 }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            x: { grid: { color: 'rgba(255, 255, 255, 0.05)' }, ticks: { color: '#9ca3af', font: { size: 10 } } },
+                            y: { grid: { color: 'rgba(255, 255, 255, 0.05)' }, ticks: { color: '#9ca3af', font: { size: 10 } }, suggestedMax: 300 }
+                        },
+                        plugins: { legend: { display: false } }
+                    }
+                });
+            } catch (err) { console.error(err); }
+        }
+
+        async function loadHardwareInfo() {
+            try {
+                const res = await fetch('/api/system/hardware');
+                const data = await res.json();
+                
+                document.getElementById('powerWattsCard').innerText = `${data.power_watts} W`;
+                document.getElementById('cpuUsageCard').innerText = `${data.cpu.usage}%`;
+                document.getElementById('cpuCoresCard').innerText = `${data.cpu.cores} vCores aktiv`;
+                document.getElementById('ramUsageCard').innerText = `${data.ram.percent}%`;
+                document.getElementById('ramDetailCard').innerText = `${data.ram.used} GB von ${data.ram.total} GB`;
+                document.getElementById('raidStatusBadge').innerText = data.raid_status;
+
+                const drivesContainer = document.getElementById('drivesContainer');
+                drivesContainer.innerHTML = '';
+                data.drives.forEach(drive => {
+                    drivesContainer.innerHTML += `
+                        <div class="bg-gray-950/60 p-4 rounded border border-gray-800 space-y-2">
+                            <div class="flex justify-between items-center">
+                                <span class="font-semibold text-white text-sm">${drive.slot}</span>
+                                <span class="text-xs text-green-400 bg-green-950/80 px-2 py-0.5 rounded border border-green-800/50">${drive.health}</span>
+                            </div>
+                            <p class="text-xs text-gray-300">${drive.model}</p>
+                            <div class="grid grid-cols-3 gap-2 pt-2 text-xs text-gray-400 border-t border-gray-800/80">
+                                <div>Temp: <span class="text-gray-200 font-mono">${drive.temp}</span></div>
+                                <div>Read: <span class="text-gray-200 font-mono">${drive.reads}</span></div>
+                                <div>Write: <span class="text-gray-200 font-mono">${drive.writes}</span></div>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                const procContainer = document.getElementById('processorsContainer');
+                procContainer.innerHTML = '';
+                data.processors.forEach(p => {
+                    procContainer.innerHTML += `<div class="p-2 bg-gray-900 rounded border border-gray-800 flex justify-between"><span><strong>${p.socket}:</strong> ${p.model} (${p.cores})</span><span class="text-green-400">${p.status}</span></div>`;
+                });
+
+                const memContainer = document.getElementById('memoryContainer');
+                memContainer.innerHTML = '';
+                data.memory_modules.forEach(m => {
+                    memContainer.innerHTML += `<div class="p-2 bg-gray-900 rounded border border-gray-800 flex justify-between"><span><strong>${m.slot}:</strong> ${m.size} ${m.type} (${m.speed})</span><span class="text-green-400">${m.status}</span></div>`;
+                });
+
+                const fansContainer = document.getElementById('fansContainer');
+                fansContainer.innerHTML = '';
+                data.fans.forEach(f => {
+                    fansContainer.innerHTML += `<div class="p-2 bg-gray-900 rounded border border-gray-800 flex justify-between"><span><strong>${f.name}:</strong> ${f.speed}</span><span class="text-green-400">${f.status}</span></div>`;
+                });
+
+                const netContainer = document.getElementById('networkContainer');
+                netContainer.innerHTML = '';
+                data.network_interfaces.forEach(n => {
+                    netContainer.innerHTML += `<div class="p-2 bg-gray-900 rounded border border-gray-800 flex justify-between"><span><strong>${n.interface}:</strong> ${n.ip}</span><span class="text-blue-400">${n.status}</span></div>`;
+                });
+
+                const invTable = document.getElementById('inventoryTableBody');
+                invTable.innerHTML = '';
+                data.device_inventory.forEach(inv => {
+                    invTable.innerHTML += `
+                        <tr class="border-b border-gray-800/60">
+                            <td class="py-1.5">${inv.location}</td>
+                            <td class="text-white">${inv.product}</td>
+                            <td>${inv.part}</td>
+                            <td>${inv.serial}</td>
+                            <td><span class="text-green-400">${inv.status}</span></td>
+                        </tr>
+                    `;
+                });
+
+            } catch (err) { console.error(err); }
+        }
+
+        loadHardwareInfo();
+        loadPowerChart();
+
+        setInterval(loadHardwareInfo, 3000);
+    </script>
+<script src="/static/aura-privacy.js"></script>
+    <script src="/static/aura-menu.js"></script>
+    <script>
+        AuraMenu.mount('aura-menu', {
+            settings: () => window.openSettings(),
+            admin: { license: () => window.openAdmin('license'), security: () => window.openAdmin('security'), system: () => window.openAdmin('system') },
+            logout: '/logout'
+        });
+        {% if must_change %}window.addEventListener('load', () => { window.openAdmin('security'); document.getElementById('mustChange').classList.remove('hidden'); });{% endif %}
+        window.addEventListener('load', () => { loadLicense(); window.AuraPrivacy.check({ headers: { 'X-Aura-Request': '1' }, onLogout: () => { window.location.href = '/logout'; } }); });
+    </script>
+    <script src="/static/about.js"></script>
+</body>
+</html>

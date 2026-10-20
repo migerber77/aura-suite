@@ -1,0 +1,58 @@
+services:
+  auraproxy:
+    build: .
+    container_name: auraproxy
+    restart: unless-stopped
+    ports:
+      - "3500:3000"     # Web-Oberfläche - http://<Server-IP>:3500 (NICHT öffentlich freigeben!)
+    environment:
+      - SESSION_SECRET=${SESSION_SECRET}
+      - LICENSE_SECRET=${LICENSE_SECRET}
+      - AURA_SUITE_VERSION=${AURA_SUITE_VERSION:-}   # optional: Version der Aura-Suite, erscheint unter "Über Aura-Suite"
+      - CADDY_ADMIN_URL=http://caddy:2019
+      # Zusätzliche, fest vorbereitete externe Ports - bei Bedarf hier erweitern und
+      # Container neu starten (Docker kann Ports nicht ohne Neustart nachträglich öffnen).
+      # 8098 bewusst ausgelassen - wird auf diesem Server bereits von der Website belegt.
+      - EXTRA_PORTS=8090,8092,8093,8094,8095,8097,8099
+    volumes:
+      - ./data:/app/data
+      - caddy_data:/caddy-data           # Lesezugriff auf Caddys ausgestellte Zertifikate
+      - ./custom-certs:/app/custom-certs # eigene, hochgeladene Zertifikate pro Domain
+    depends_on:
+      - caddy
+
+  # Übernimmt die eigentliche Weiterleitung + automatische Let's-Encrypt-Zertifikate.
+  # Wird ausschliesslich über seine Admin-API von AuraProxy gesteuert (Port 2019, bewusst
+  # NICHT nach aussen freigegeben).
+  caddy:
+    image: caddy:2-alpine
+    container_name: auraproxy-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      # 8091, 8096 und 8098 bewusst ausgelassen - auf diesem Server bereits von AuraChat
+      # selbst belegt (direkter LAN-Zugriff, TTS/STT, Website).
+      - "8090:8090"
+      - "8092:8092"
+      - "8093:8093"
+      - "8094:8094"
+      - "8095:8095"
+      - "8097:8097"
+      - "8099:8099"
+    extra_hosts:
+      # Damit AuraProxy Dienste erreichen kann, die direkt auf dem Server-Host laufen (z.B.
+      # AuraChats eigenen Port 8091), statt nur andere Docker-Container.
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - caddy_data:/data
+      - caddy_config:/config
+      - ./caddy-init.json:/etc/caddy/init.json:ro
+    # Kein "--adapter" nötig - unsere Datei ist bereits echtes Caddy-JSON, kein Format, das
+    # erst umgewandelt werden müsste (das war mein Fehler: "json" ist gar kein gültiger
+    # Adapter-Name, nur für andere Formate wie "caddyfile" gedacht).
+    command: caddy run --config /etc/caddy/init.json
+
+volumes:
+  caddy_data:
+  caddy_config:

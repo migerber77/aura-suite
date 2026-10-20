@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+    <!-- Die Anwendung selbst (Anmeldung, Chat) gehört nicht in die Google-Suche; die öffentliche Website ist ein eigenes Projekt -->
+    <meta name="robots" content="noindex, nofollow">
+<title>Aura</title>
+
+<!-- iOS: als App vom Home-Bildschirm öffnen, ohne Safari-Oberfläche -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Aura">
+<link rel="apple-touch-icon" href="/api/branding/icon">
+<link rel="manifest" href="kiosk-manifest.webmanifest">
+<link rel="icon" href="/api/branding/icon">
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="js/screenformat.js"></script>
+<style>
+    html, body { height: 100%; overscroll-behavior: none; }
+    body {
+        background: #020617;
+        padding-top: env(safe-area-inset-top, 0px);
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+    #avatar-video { -webkit-user-select: none; user-select: none; }
+    .mic-btn { transition: transform .15s ease, box-shadow .15s ease; }
+    .mic-btn:active { transform: scale(0.94); }
+    .mic-btn.recording {
+        animation: pulse-ring 1.4s cubic-bezier(0.4,0,0.6,1) infinite;
+        background: #dc2626 !important;
+    }
+    @keyframes pulse-ring {
+        0%, 100% { box-shadow: 0 0 0 0 rgba(220,38,38,0.5); }
+        50% { box-shadow: 0 0 0 18px rgba(220,38,38,0); }
+    }
+</style>
+</head>
+<body class="h-full w-full overflow-hidden bg-slate-950 flex flex-col items-center relative">
+
+    <div class="flex-1 min-h-0 w-full flex items-center justify-center p-3">
+        <video id="avatar-video" autoplay loop muted playsinline class="max-w-full max-h-full object-contain rounded-[2rem]"></video>
+    </div>
+
+    <!-- Dezenter Ausgang zurück zur vollen App, oben rechts -->
+    <a href="/?nokiosk=1" class="absolute z-20 text-white/40 hover:text-white/80 transition text-xs" style="top: calc(env(safe-area-inset-top, 12px) + 8px); right: 16px;">✕</a>
+
+    <!-- Nur sichtbar, wenn ein Tagesrückblick tatsächlich verfügbar ist -->
+    <button id="recap-btn" class="hidden absolute z-20 items-center gap-1.5 text-white/60 hover:text-white/90 transition text-xs bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-full border border-white/10 cursor-pointer" style="top: calc(env(safe-area-inset-top, 12px) + 8px); left: 16px;">
+        <span>📅</span> <span>Tagesrückblick</span>
+    </button>
+
+    <div id="kiosk-status" class="z-20 text-center text-white/70 text-sm px-8 mt-2 min-h-[1.5em] max-w-xs shrink-0"></div>
+
+    <div id="login-gate" class="absolute inset-0 z-30 bg-slate-950 hidden flex-col items-center justify-center gap-4 px-8 text-center">
+        <div class="text-white text-base font-semibold">Nicht angemeldet</div>
+        <p class="text-slate-400 text-sm">Bitte einmal in der vollständigen AuraChat-Oberfläche einloggen, dann funktioniert diese Ansicht automatisch.</p>
+        <a href="/" class="bg-blue-600 text-white text-sm font-medium px-5 py-2.5 rounded-full">Zur Anmeldung</a>
+    </div>
+
+    <button id="mic-btn" class="mic-btn z-20 mt-8 mb-6 w-20 h-20 rounded-full bg-blue-600 shadow-2xl flex items-center justify-center cursor-pointer shrink-0">
+        <svg id="mic-icon" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+            <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+            <line x1="12" y1="19" x2="12" y2="23"/>
+            <line x1="8" y1="23" x2="16" y2="23"/>
+        </svg>
+    </button>
+
+<script>
+(function () {
+    const backendUrl = '/api';
+    const video = document.getElementById('avatar-video');
+    const micBtn = document.getElementById('mic-btn');
+    const statusEl = document.getElementById('kiosk-status');
+    const loginGate = document.getElementById('login-gate');
+    const recapBtn = document.getElementById('recap-btn');
+
+    let idleSrc = '', speechSrc = '';
+    let currentUserId = null;
+    let mediaRecorder = null, mediaStream = null, audioChunks = [];
+    let isRecording = false, isBusy = false;
+
+    function setStatus(text) { statusEl.textContent = text || ''; }
+
+    function setSpeaking(isSpeaking) {
+        if (isSpeaking && speechSrc) {
+            video.src = speechSrc;
+        } else if (idleSrc) {
+            video.src = idleSrc;
+        }
+        video.load();
+        video.play().catch(() => {});
+    }
+
+    async function init() {
+        try {
+            const meRes = await fetch(`${backendUrl}/me`, { credentials: 'include' });
+            const me = await meRes.json();
+            if (!me.user) {
+                loginGate.classList.remove('hidden');
+                loginGate.classList.add('flex');
+                return;
+            }
+            currentUserId = me.user.id;
+        } catch (err) {
+            setStatus('Verbindung fehlgeschlagen.');
+            return;
+        }
+
+        try {
+            const res = await fetch(`${backendUrl}/avatars/active`, { credentials: 'include' });
+            const data = await res.json();
+            idleSrc = data.idleVideo;
+            speechSrc = data.motionVideo;
+            setSpeaking(false);
+        } catch (err) {
+            setStatus('Avatar konnte nicht geladen werden.');
+        }
+
+        checkRecapAvailability();
+    }
+
+    function getYesterdayDateString() {
+        const d = new Date();
+        d.setDate(d.getDate() - 1);
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${day}`;
+    }
+
+    async function checkRecapAvailability() {
+        if (currentUserId && localStorage.getItem('aurachat_recap_seen_' + currentUserId) === getYesterdayDateString()) return;
+        try {
+            const res = await fetch(`${backendUrl}/daily-recap/check?date=${getYesterdayDateString()}`, { credentials: 'include' });
+            const data = await res.json();
+            if (data.available && recapBtn) {
+                recapBtn.classList.remove('hidden');
+                recapBtn.classList.add('flex');
+            }
+        } catch (err) { /* kein Rückblick-Knopf, wenn die Prüfung fehlschlägt - nicht kritisch */ }
+    }
+
+    async function startRecording() {
+        try {
+            mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        } catch (err) {
+            setStatus('Kein Zugriff aufs Mikrofon.');
+            return;
+        }
+        audioChunks = [];
+        mediaRecorder = new MediaRecorder(mediaStream);
+        mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) audioChunks.push(e.data); };
+        mediaRecorder.onstop = onRecordingStopped;
+        mediaRecorder.start();
+        isRecording = true;
+        micBtn.classList.add('recording');
+        setStatus('Ich höre zu …');
+    }
+
+    function stopRecording() {
+        if (mediaRecorder && isRecording) mediaRecorder.stop(); // stoppt die Spuren selbst erst NACH onstop (siehe unten) - vorher tun bricht die letzte Audio-Portion teils ab
+        isRecording = false;
+        micBtn.classList.remove('recording');
+    }
+
+    async function onRecordingStopped() {
+        if (mediaStream) mediaStream.getTracks().forEach((t) => t.stop());
+        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+        console.log('Aufnahme beendet, Grösse:', audioBlob.size, 'Bytes');
+        if (audioBlob.size < 500) { setStatus(''); isBusy = false; return; } // zu kurz, vermutlich versehentlich
+
+        setStatus('Verarbeite …');
+        try {
+            const formData = new FormData();
+            formData.append('file', audioBlob, 'recording.webm');
+            const sttRes = await fetch(`${backendUrl}/stt/transcribe`, { method: 'POST', credentials: 'include', body: formData, signal: AbortSignal.timeout(30000) });
+            const sttData = await sttRes.json();
+            console.log('STT-Antwort:', sttRes.status, sttData);
+            if (!sttRes.ok) throw new Error(sttData.error || 'Spracherkennung fehlgeschlagen.');
+            const question = (sttData.text || '').trim();
+            if (!question) { setStatus(''); isBusy = false; return; }
+
+            setStatus(question);
+            const chatRes = await fetch(`${backendUrl}/chat/generate`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ message: question }),
+                signal: AbortSignal.timeout(60000) // Sicherheitsnetz, falls die KI-Antwort hängt/sehr lange braucht
+            });
+            const chatData = await chatRes.json();
+            console.log('Chat-Antwort:', chatRes.status, chatData);
+            if (!chatRes.ok) throw new Error(chatData.error || 'Keine Antwort erhalten.');
+
+            const replyText = chatData.reply || '(keine Antwort erhalten)';
+            setStatus(replyText); // zeigt Auras Antwort auch als Text an, nicht nur hörbar
+            await speak(replyText);
+        } catch (err) {
+            console.error('Fehler im Ablauf:', err);
+            setStatus(err.name === 'TimeoutError' ? 'Die Antwort hat zu lange gedauert.' : err.message);
+            setTimeout(() => setStatus(''), 4000);
+            isBusy = false;
+            return;
+        }
+        isBusy = false;
+    }
+
+    // Ein einziges, wiederverwendetes <audio>-Element, das direkt beim ersten Antippen des
+    // Mikrofons (synchron, im Klick-Handler) "entsperrt" wird - iOS/Safari und andere Browser
+    // erlauben programmatisches audio.play() zuverlässig nur, wenn es entweder direkt aus
+    // einem Klick-Handler kommt, oder auf einem Element, das schon einmal so entsperrt wurde.
+    // Nach mehreren asynchronen Zwischenschritten (STT -> Chat -> TTS) zählt der ursprüngliche
+    // Tap sonst nicht mehr als "frischer" Klick, und die Wiedergabe wird lautlos verweigert.
+    const playbackAudio = new Audio();
+    let audioUnlocked = false;
+    function unlockAudioPlayback() {
+        if (audioUnlocked) return;
+        audioUnlocked = true;
+        // Kurzer, fast unhörbarer stiller Clip (1-Sample WAV) nur zum Entsperren
+        playbackAudio.src = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=';
+        playbackAudio.play().catch(() => {});
+    }
+
+    async function speak(text) {
+        setSpeaking(true);
+        try {
+            const res = await fetch(`${backendUrl}/tts/speak`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ text })
+            });
+            if (!res.ok) throw new Error();
+            const blob = await res.blob();
+            const url = URL.createObjectURL(blob);
+            playbackAudio.src = url;
+            await new Promise((resolve) => {
+                playbackAudio.onended = resolve;
+                playbackAudio.onerror = resolve;
+                playbackAudio.play().catch((playErr) => { console.error('Wiedergabe blockiert:', playErr); resolve(); });
+                setTimeout(resolve, Math.max(8000, text.length * 120)); // Sicherheitsnetz, falls das Ende-Ereignis nie feuert
+            });
+            URL.revokeObjectURL(url);
+        } catch (err) {
+            // Kein eigener TTS-Server konfiguriert/lizenziert - Browser-Sprachausgabe als Rückfalloption.
+            // Bekannter Chrome-Bug: speechSynthesis "verstummt" bei längeren Texten nach ca. 15
+            // Sekunden, das Ende-Ereignis feuert dann teils gar nicht mehr - Pause/Resume hält
+            // es am Laufen, das Sicherheitsnetz sorgt dafür, dass es so oder so weitergeht.
+            await new Promise((resolve) => {
+                const utter = new SpeechSynthesisUtterance(text);
+                utter.lang = 'de-DE';
+                let done = false;
+                const finish = () => { if (done) return; done = true; clearInterval(keepAlive); resolve(); };
+                utter.onend = finish;
+                utter.onerror = finish;
+                const keepAlive = setInterval(() => {
+                    if (!speechSynthesis.speaking) { clearInterval(keepAlive); return; }
+                    speechSynthesis.pause();
+                    speechSynthesis.resume();
+                }, 10000);
+                setTimeout(finish, Math.max(8000, text.length * 120));
+                speechSynthesis.speak(utter);
+            });
+        }
+        setSpeaking(false);
+        // Bewusst NICHT setStatus('') hier - die Antwort bleibt als Text stehen, bis das
+        // nächste Mal aufgenommen wird (überschreibt sie dann mit der neuen Frage).
+    }
+
+    micBtn.addEventListener('click', () => {
+        if (isBusy) return;
+        unlockAudioPlayback(); // MUSS synchron im Klick-Handler passieren, nicht erst nach den asynchronen Schritten
+        if (isRecording) {
+            isBusy = true;
+            stopRecording();
+        } else {
+            startRecording();
+        }
+    });
+
+    if (recapBtn) {
+        recapBtn.addEventListener('click', async () => {
+            if (isBusy) return;
+            isBusy = true;
+            unlockAudioPlayback();
+            recapBtn.classList.add('hidden');
+            recapBtn.classList.remove('flex');
+            setStatus('Erstelle Rückblick …');
+            try {
+                const res = await fetch(`${backendUrl}/daily-recap/generate`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ date: getYesterdayDateString() }),
+                    signal: AbortSignal.timeout(60000)
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'Rückblick konnte nicht erstellt werden.');
+                setStatus(data.recap);
+                if (currentUserId) localStorage.setItem('aurachat_recap_seen_' + currentUserId, getYesterdayDateString());
+                await speak(data.recap);
+            } catch (err) {
+                setStatus(err.message);
+                setTimeout(() => setStatus(''), 4000);
+            }
+            isBusy = false;
+        });
+    }
+
+    init();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,37 @@
+version: '3.8'
+
+# Eigenständiges Deployment - hat NICHTS mit dem AuraChat-Projekt zu tun,
+# eigenes Netzwerk. Läuft am besten sogar auf einer anderen Maschine/einem
+# anderen NAS als AuraChat selbst - es muss nur denselben LICENSE_SECRET-Wert
+# kennen, den auch die AuraChat-Instanz(en) in ihrer .env haben, die die von
+# hier erzeugten Lizenzen akzeptieren sollen.
+#
+# Aktuell bewusst simpel gehalten: reines HTTP auf Port 8451, kein eigenes
+# TLS/HTTPS. Setz deinen eigenen Reverse Proxy (mit echtem Zertifikat) davor,
+# der auf Port 8451 dieses Containers weiterleitet.
+
+services:
+  license-server:
+    build: .
+    container_name: aurachat-license-server
+    restart: unless-stopped
+    ports:
+      - "8451:3001"
+    environment:
+      - LICENSE_SECRET=${LICENSE_SECRET}
+      # Apaleo-Vermittler für AuraChat (Verbinden per Knopf, OAuth). Leer lassen = aus. Siehe README "Apaleo-Vermittler".
+      - APALEO_CLIENT_ID=${APALEO_CLIENT_ID:-}
+      - APALEO_CLIENT_SECRET=${APALEO_CLIENT_SECRET:-}
+      - APALEO_REDIRECT_URI=${APALEO_REDIRECT_URI:-}
+      - AURA_SUITE_VERSION=${AURA_SUITE_VERSION:-}   # optional: Version der Aura-Suite, erscheint unter "Über Aura-Suite"
+      - LICENSE_SERVER_PASSWORD=${LICENSE_SERVER_PASSWORD}
+      - SESSION_SECRET=${SESSION_SECRET}
+    volumes:
+      - ./data:/app/data
+    networks:
+      - license
+
+networks:
+  license:
+    name: aurachat-license
+    external: false

@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="de" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AuraProxy</title>
+    <link rel="icon" type="image/png" href="images/icon.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="js/aura-i18n.js"></script>
+    <script src="js/aura-i18n-words.js"></script>
+    <script src="js/aura-intro.js" data-video="images/intro/aurasuite-intro"></script>
+    <script src="js/aura-prefs.js"></script>
+</head>
+<body class="h-full bg-slate-950 text-slate-100">
+
+    <!-- Login -->
+    <div id="login-screen" class="min-h-screen flex items-center justify-center p-4">
+        <div class="w-full max-w-sm">
+            <div class="flex items-center gap-2 justify-center mb-6">
+                <img src="images/logo.png" alt="AuraProxy" class="h-10 w-auto rounded-lg">
+            </div>
+            <form id="login-step-credentials" class="bg-slate-900 border border-slate-800 rounded-2xl p-6 flex flex-col gap-4">
+                <div id="login-error" class="hidden bg-red-500/10 border border-red-500/30 text-red-300 rounded-xl px-3 py-2 text-xs"></div>
+                <input type="text" id="login-username" placeholder="Benutzername" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
+                <input type="password" id="login-password" placeholder="Passwort" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
+                <button type="submit" class="bg-blue-600 hover:bg-blue-500 text-white font-medium py-2.5 rounded-xl text-sm transition">Anmelden</button>
+                <p id="login-auradirect-hint" class="hidden text-[11px] text-slate-500 text-center">Anmeldung auch mit eurem AuraDirect-Konto möglich (z.B. aura.admin), sofern dort für AuraProxy freigeschaltet.</p>
+            </form>
+            <div id="login-step-2fa-setup" class="hidden bg-slate-900 border border-slate-800 rounded-2xl p-6 flex flex-col items-center gap-3">
+                <p class="text-xs text-slate-400 text-center">Zwei-Faktor-Authentifizierung einrichten: QR-Code scannen, dann Code eingeben.</p>
+                <img id="twofa-qr-code" class="rounded-xl bg-white p-2" alt="QR-Code">
+                <input type="text" id="twofa-setup-code" inputmode="numeric" maxlength="6" placeholder="123456" class="w-full max-w-xs text-center tracking-widest bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white">
+                <button id="twofa-setup-confirm-btn" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium py-2.5 rounded-xl text-sm transition">Aktivieren</button>
+            </div>
+            <div id="login-step-2fa" class="hidden bg-slate-900 border border-slate-800 rounded-2xl p-6 flex flex-col gap-3">
+                <p class="text-xs text-slate-400 text-center">Code aus deiner Authenticator-App:</p>
+                <input type="text" id="twofa-code" inputmode="numeric" maxlength="6" placeholder="123456" class="w-full text-center tracking-widest bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white">
+                <button id="twofa-confirm-btn" class="bg-blue-600 hover:bg-blue-500 text-white font-medium py-2.5 rounded-xl text-sm transition">Bestätigen</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lizenz fehlt -->
+    <div id="modal-license" class="hidden fixed inset-0 bg-slate-950/95 backdrop-blur-md z-[70] flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl w-full max-w-md shadow-2xl flex flex-col gap-4">
+            <div class="flex items-center gap-2 border-b border-slate-800 pb-3"><span class="text-lg">🔑</span><h3 class="text-sm font-bold text-white">AuraProxy ist nicht lizenziert</h3></div>
+            <textarea id="license-key-input" rows="4" placeholder="Lizenzschlüssel hier einfügen" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white font-mono"></textarea>
+            <div id="license-modal-error" class="hidden text-xs text-red-400"></div>
+            <button id="license-save-btn" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium py-2.5 rounded-xl text-sm transition">Lizenz aktivieren</button>
+        </div>
+    </div>
+
+    <!-- App -->
+    <div id="app" class="hidden h-screen flex flex-col">
+        <header class="h-14 border-b border-slate-800 flex items-center justify-between px-4 shrink-0">
+            <div class="flex items-center gap-2"><img src="images/icon.png" alt="AuraProxy" class="h-7 w-7 rounded-md"><h1 class="text-sm font-bold text-white">AuraProxy</h1></div>
+            <div class="flex items-center gap-3">
+                <span id="caddy-status" class="text-xs"></span>
+                <span id="user-name" class="text-xs text-slate-400"></span>
+                <div id="aura-menu"></div>
+            </div>
+        </header>
+
+        <main class="flex-1 overflow-y-auto p-6">
+            <div class="max-w-4xl mx-auto flex flex-col gap-6">
+                <div class="bg-amber-500/10 border border-amber-500/30 text-amber-300 rounded-xl px-4 py-3 text-xs">
+                    ⚠️ Port 80 bleibt immer für die Let's-Encrypt-Zertifikatsprüfung offen, unabhängig von euren Zuordnungen. Zusätzliche externe Ports (ausser 443) müssen vorher in der docker-compose.yml vorbereitet sein.
+                </div>
+
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5">
+                    <h2 class="text-sm font-bold text-white mb-3">➕ Neue Domain-Zuordnung</h2>
+                    <div class="grid grid-cols-2 gap-2 mb-2">
+                        <input type="text" id="new-domain" placeholder="Domain, z.B. aurachat.firma.ch" class="bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-white">
+                        <select id="new-domain-port" class="bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-white"></select>
+                        <input type="text" id="new-domain-target-host" placeholder="Ziel-Adresse (intern), z.B. 10.0.55.251" class="bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-white">
+                        <input type="text" id="new-domain-target-port" placeholder="Ziel-Port, z.B. 8091" class="bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-white">
+                        <select id="new-domain-tls" aria-label="Zertifikat" class="col-span-2 bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-white">
+                            <option value="auto">🌐 Automatisch (Let's Encrypt): für öffentliche Domains</option>
+                            <option value="internal">🏛️ Intern (eigene Zertifizierungsstelle): für interne Namen und IP-Adressen</option>
+                        </select>
+                    </div>
+                    <div id="new-domain-tls-hint" class="text-[11px] text-slate-500 mb-2"></div>
+                    <div id="new-domain-error" class="hidden text-xs text-red-400 mb-2"></div>
+                    <button id="new-domain-btn" class="bg-blue-600 hover:bg-blue-500 text-white font-medium px-4 py-2 rounded-xl text-sm transition">Anlegen</button>
+                </div>
+
+                <div>
+                    <h2 class="text-sm font-bold text-white mb-3">🌐 Domain-Zuordnungen</h2>
+                    <div id="domain-list" class="flex flex-col gap-2"></div>
+                </div>
+
+                <div>
+                    <h2 class="text-sm font-bold text-white mb-3">🔒 Zertifikate</h2>
+                    <div id="ca-card" class="bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 mb-2">
+                        <div class="text-sm text-white font-medium">🏛️ Eigene Zertifizierungsstelle (CA) für interne Namen</div>
+                        <p class="text-xs text-slate-500 mt-1">Für Namen, die es nur bei euch gibt (z. B. aurachat.lan oder eine IP-Adresse), kann Let's Encrypt kein Zertifikat ausstellen. Diese Namen bekommen ein Zertifikat von der eigenen Zertifizierungsstelle von AuraProxy. Jedes Gerät muss dem <b>Root-Zertifikat</b> einmal vertrauen, danach sind alle internen Adressen gültig (https ohne Warnung; Mikrofon und Kamera im Browser funktionieren).</p>
+                        <p id="ca-status" class="text-xs text-slate-400 mt-2"></p>
+                        <div id="ca-actions" class="hidden flex flex-wrap gap-2 mt-2">
+                            <a id="ca-download-crt" href="/ca.crt" download="AuraProxy-CA.crt" class="text-xs px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white">⬇️ Root-Zertifikat (.crt)</a>
+                            <a id="ca-download-cer" href="/ca.cer" download="AuraProxy-CA.cer" class="text-xs px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-slate-300 hover:bg-slate-700">⬇️ für Windows (.cer)</a>
+                        </div>
+                        <details class="text-xs text-slate-400 mt-2">
+                            <summary class="cursor-pointer text-slate-300">Wie installiere ich es auf meinen Geräten?</summary>
+                            <div class="mt-2 flex flex-col gap-1.5">
+                                <p>Das Root-Zertifikat ist öffentlich und liegt unter <code>http://&lt;Server&gt;:3500/ca.crt</code>. Prüfe vor dem Vertrauen den Fingerabdruck (SHA-256) oben.</p>
+                                <p><b>Windows:</b> Datei (.cer) doppelklicken → „Zertifikat installieren“ → „Lokaler Computer“ → „Alle Zertifikate in folgendem Speicher speichern“ → „Vertrauenswürdige Stammzertifizierungsstellen“.</p>
+                                <p><b>macOS:</b> Datei doppelklicken → Schlüsselbund „System“ → Zertifikat öffnen → „Vertrauen“ → „Immer vertrauen“.</p>
+                                <p><b>iPhone/iPad:</b> Datei in Safari öffnen → „Profil laden“ → Einstellungen → „Profil geladen“ → installieren. Danach unter Einstellungen → Allgemein → Info → „Zertifikatsvertrauenseinstellungen“ aktivieren.</p>
+                                <p><b>Android:</b> Einstellungen → Sicherheit → Weitere Einstellungen → Verschlüsselung &amp; Anmeldedaten → „Zertifikat installieren“ → „CA-Zertifikat“.</p>
+                                <p><b>Linux:</b> <code>sudo cp AuraProxy-CA.crt /usr/local/share/ca-certificates/ &amp;&amp; sudo update-ca-certificates</code></p>
+                                <p><b>Firefox</b> hat einen eigenen Speicher: Einstellungen → Datenschutz &amp; Sicherheit → „Zertifikate anzeigen“ → „Importieren“.</p>
+                            </div>
+                        </details>
+                    </div>
+                    <div id="certificate-list" class="flex flex-col gap-2"></div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Eigenes Zertifikat hochladen -->
+    <div id="modal-upload-cert" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 flex flex-col gap-3">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <h3 id="upload-cert-title" class="text-sm font-bold text-white">🔒 Eigenes Zertifikat hochladen</h3>
+                <button id="upload-cert-close-btn" class="text-slate-500 hover:text-white text-xl leading-none cursor-pointer">×</button>
+            </div>
+            <input type="hidden" id="upload-cert-domain-id">
+            <div>
+                <label class="text-[10px] text-slate-500 block mb-1">Zertifikat (.crt/.pem)</label>
+                <input type="file" id="upload-cert-file" accept=".crt,.pem" class="w-full text-xs text-slate-400 bg-slate-950 border border-slate-800 rounded-xl p-2">
+            </div>
+            <div>
+                <label class="text-[10px] text-slate-500 block mb-1">Privater Schlüssel (.key)</label>
+                <input type="file" id="upload-key-file" accept=".key,.pem" class="w-full text-xs text-slate-400 bg-slate-950 border border-slate-800 rounded-xl p-2">
+            </div>
+            <div id="upload-cert-error" class="hidden text-xs text-red-400"></div>
+            <button id="upload-cert-save-btn" class="bg-blue-600 hover:bg-blue-500 text-white font-medium py-2.5 rounded-xl text-sm transition self-start px-6">Hochladen</button>
+        </div>
+    </div>
+
+    <!-- Einstellungen -->
+    <!-- Zuordnung bearbeiten -->
+    <div id="modal-edit-domain" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 flex flex-col gap-3">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <h3 class="text-sm font-bold text-white">✏️ Zuordnung bearbeiten</h3>
+                <button id="edit-domain-close-btn" class="text-slate-500 hover:text-white text-xl leading-none cursor-pointer">×</button>
+            </div>
+            <input type="hidden" id="edit-domain-id">
+            <input type="text" id="edit-domain-domain" placeholder="Domain" class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white">
+            <select id="edit-domain-port" class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white"></select>
+            <input type="text" id="edit-domain-target-host" placeholder="Ziel-Adresse (intern)" class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white">
+            <input type="text" id="edit-domain-target-port" placeholder="Ziel-Port" class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white">
+            <select id="edit-domain-tls" aria-label="Zertifikat" class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white">
+                <option value="auto">🌐 Automatisch (Let's Encrypt)</option>
+                <option value="internal">🏛️ Intern (eigene Zertifizierungsstelle)</option>
+            </select>
+            <div id="edit-domain-error" class="hidden text-xs text-red-400"></div>
+            <button id="edit-domain-save-btn" class="bg-blue-600 hover:bg-blue-500 text-white font-medium py-2.5 rounded-xl text-sm transition self-start px-6">Speichern</button>
+        </div>
+    </div>
+
+    <div id="modal-settings" class="hidden fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-2xl max-h-[85vh] overflow-y-auto p-6 flex flex-col gap-6">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <h2 id="settings-modal-title" class="text-base font-bold text-white">🛠️ Admin Panel</h2>
+                <button id="settings-close-btn" class="text-slate-500 hover:text-white text-2xl leading-none cursor-pointer">×</button>
+            </div>
+
+            <div data-panel-section="users" class="bg-slate-950 border border-slate-800 rounded-xl p-4 flex flex-col gap-2">
+                <span class="text-xs font-semibold text-white">🗂️ AuraDirect (zentrale Anmeldung)</span>
+                <div id="auradirect-servicekey-status" class="text-xs"></div>
+                <input type="text" id="auradirect-url-input" placeholder="z.B. http://10.0.55.251:4000" class="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white">
+                <input type="password" id="auradirect-servicekey-input" placeholder="Dienst-Schlüssel (aus AuraDirect → Benutzer)" class="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white">
+                <div class="flex items-center gap-2">
+                    <button id="auradirect-save-btn" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white font-medium px-3 py-1.5 rounded-lg text-xs transition">Speichern</button>
+                    <button id="auradirect-test-btn" class="bg-blue-600 hover:bg-blue-500 text-white font-medium px-3 py-1.5 rounded-lg text-xs transition">Verbindung testen</button>
+                </div>
+                <div id="auradirect-test-result" class="hidden text-xs"></div>
+                <p class="text-[10px] text-slate-500">Damit sich z.B. "aura.admin" hier anmelden kann: in AuraDirect → Benutzer → die Person bearbeiten → Häkchen bei "AuraProxy" setzen. Das feste Konto "admin" bleibt immer lokal als Notzugang.</p>
+            </div>
+
+            <div data-panel-section="security" class="bg-slate-950 border border-slate-800 rounded-xl p-4">
+                <h3 class="text-xs font-semibold text-white mb-2">🔒 Passwort ändern</h3>
+                <div class="grid grid-cols-1 gap-2 max-w-xs">
+                    <input type="password" id="password-current" placeholder="Aktuelles Passwort" class="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white">
+                    <input type="password" id="password-new" placeholder="Neues Passwort" class="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white">
+                    <button id="password-save-btn" class="self-start bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white font-medium px-3 py-1.5 rounded-lg text-xs transition">Ändern</button>
+                </div>
+                <div id="password-status" class="hidden text-xs mt-2"></div>
+            </div>
+
+            <div data-panel-section="license" class="bg-slate-950 border border-slate-800 rounded-xl p-4">
+                <h2 class="text-sm font-bold text-white mb-1">🔑 Lizenz</h2>
+                <div id="license-admin-status" class="text-xs text-slate-400 mb-3">Wird geladen…</div>
+                <textarea id="license-admin-key-input" rows="3" placeholder="Neuen Lizenzschlüssel eintragen" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white font-mono mb-2"></textarea>
+                <button id="license-admin-save-btn" class="bg-blue-600 hover:bg-blue-500 text-white font-medium px-4 py-2 rounded-xl text-sm transition">Speichern</button>
+                <button id="license-admin-remove-btn" class="hidden bg-red-500/10 border border-red-500/30 text-red-300 hover:bg-red-500/20 font-medium px-4 py-2 rounded-xl text-sm transition ml-2">Lizenz entfernen</button>
+                <div id="license-admin-error" class="hidden text-xs text-red-400 mt-2"></div>
+            </div>
+
+            <div data-panel-section="appearance" class="bg-slate-950 border border-slate-800 rounded-xl p-4 flex flex-col gap-3">
+                <div id="admin-prefs-card"></div>
+            </div>
+            <div data-panel-section="privacy" class="bg-slate-950 border border-slate-800 rounded-xl p-4 flex flex-col gap-3">
+                <h2 class="text-sm font-bold text-white">📄 Datenschutzerklärung</h2>
+                <p class="text-xs text-slate-500">Diese Erklärung sehen alle beim ersten Anmelden und müssen sie bestätigen. Ändern Sie den Text, müssen alle die neue Fassung erneut bestätigen. Einfache Formatierung: <code># Titel</code>, <code>## Abschnitt</code>, <code>- Punkt</code>.</p>
+                <div id="admin-privacy-editor"></div>
+            </div>
+            <div data-panel-section="system" class="bg-slate-950 border border-slate-800 rounded-xl p-4 flex flex-col gap-3">
+                <h2 class="text-sm font-bold text-white">💾 Backup</h2>
+                <button id="backup-create-btn" class="self-start bg-blue-600 hover:bg-blue-500 text-white font-medium px-4 py-2 rounded-xl text-sm transition">Backup herunterladen</button>
+                <input type="file" id="backup-restore-file" accept=".zip" class="w-full text-xs text-slate-400 bg-slate-900 border border-slate-700 rounded-xl p-2">
+                <button id="backup-restore-btn" class="self-start bg-amber-600 hover:bg-amber-500 text-white font-medium px-4 py-2 rounded-xl text-sm transition">Wiederherstellen</button>
+                <div id="backup-restore-status" class="hidden text-xs"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/aura-privacy.js"></script>
+    <script src="js/aura-menu.js"></script>
+    <script src="js/aura-menu-init.js"></script>
+    <script src="js/app.js"></script>
+    <script src="js/about.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,73 @@
+.nav-btn {
+    background: transparent;
+    color: #94a3b8;
+    border: 1px solid transparent;
+}
+.nav-btn:hover {
+    background: rgba(148, 163, 184, 0.08);
+    color: #e2e8f0;
+}
+.nav-btn.active {
+    background: #3270FD;
+    color: white;
+}
+
+.admin-subnav-btn {
+    background: transparent;
+    color: #94a3b8;
+    border: 1px solid transparent;
+}
+.admin-subnav-btn:hover {
+    background: rgba(148, 163, 184, 0.08);
+    color: #e2e8f0;
+}
+.admin-subnav-btn.active {
+    background: #1e293b;
+    color: white;
+    border-color: #334155;
+}
+.overview-subnav-btn {
+    background: transparent;
+    color: #94a3b8;
+    border: 1px solid transparent;
+}
+.overview-subnav-btn:hover {
+    background: rgba(148, 163, 184, 0.08);
+    color: #e2e8f0;
+}
+.overview-subnav-btn.active {
+    background: #1e293b;
+    color: white;
+    border-color: #334155;
+}
+
+#clock-btn.clocked-out {
+    background: #16a34a;
+    color: white;
+}
+#clock-btn.clocked-out:hover { background: #15803d; }
+#clock-btn.clocked-in {
+    background: #dc2626;
+    color: white;
+}
+#clock-btn.clocked-in:hover { background: #b91c1c; }
+
+.shift-day {
+    min-height: 140px;
+}
+
+.status-pending { color: #fbbf24; }
+.status-approved { color: #34d399; }
+.status-rejected { color: #f87171; }
+
+/* Feste Grössenbegrenzung fürs Logo, unabhängig davon ob Tailwind geladen hat */
+#login-screen img[alt="AuraPlan"] { height: 40px; width: auto; max-width: 220px; }
+header img[alt="AuraPlan"] { height: 24px; width: auto; }
+
+/* Absicherung: Ein-/Ausblenden funktioniert auch, falls Tailwind CSS mal nicht laden sollte */
+.hidden { display: none !important; }
+
+/* Absicherung: Vollbild-Overlays funktionieren auch ohne Tailwind */
+#modal-privacy {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+}

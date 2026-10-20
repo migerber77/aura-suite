@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AuraCall</title>
+<link rel="icon" href="favicon.ico" sizes="48x48">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="site.webmanifest">
+<meta name="theme-color" content="#0f172a">
+<link rel="stylesheet" href="style.css">
+<script src="aura-i18n.js"></script>
+<script src="aura-i18n-words.js"></script>
+<script src="aura-intro.js" data-video="aurasuite-intro"></script>
+<script src="aura-prefs.js"></script>
+</head>
+<body>
+<div id="login" class="screen hidden">
+  <form id="login-form" class="card narrow" autocomplete="on">
+    <img class="logo-full" src="logo-full.png" alt="AuraCall" width="1200" height="291">
+    <p class="muted center">Telefon-Anbindung für AuraChat</p>
+    <div id="login-error" class="alert error hidden" role="alert"></div>
+    <label>Benutzername<input id="login-user" name="username" autocomplete="username" required></label>
+    <label>Passwort<input id="login-pass" name="password" type="password" autocomplete="current-password" required></label>
+    <button class="primary" type="submit">Anmelden</button>
+    <p class="muted small">Das Anfangspasswort steht im Protokoll des Programms (<code>docker compose logs auracall</code>) und in der Datei <code>INITIAL-ADMIN-PASSWORT.txt</code> im Datenordner.</p>
+    <p class="muted small center"><a href="/datenschutz" target="_blank" rel="noopener">Datenschutz</a></p>
+  </form>
+</div>
+
+<div id="login2fa" class="screen hidden">
+  <form id="login2fa-form" class="card narrow" autocomplete="off">
+    <img class="logo-full" src="logo-full.png" alt="AuraCall" width="1200" height="291">
+    <h2 class="center">Zwei-Faktor-Anmeldung</h2>
+    <p class="muted center">Code aus deiner Authenticator-App (oder ein Notfall-Code):</p>
+    <div id="login2fa-error" class="alert error hidden" role="alert"></div>
+    <label>Code<input id="login-code" name="one-time-code" autocomplete="one-time-code" inputmode="numeric" maxlength="40" spellcheck="false" required></label>
+    <button class="primary" type="submit">Bestätigen</button>
+    <button id="login-back" class="ghost" type="button">Zurück</button>
+  </form>
+</div>
+<div id="pwchange" class="screen hidden">
+  <form id="pw-form" class="card narrow">
+    <img class="logo-full" src="logo-full.png" alt="AuraCall" width="1200" height="291">
+    <h2 class="center">Neues Passwort</h2>
+    <p class="muted" id="pw-intro">Bitte ein eigenes Passwort wählen (mindestens 10 Zeichen, Buchstaben mit Ziffern oder Sonderzeichen mischen).</p>
+    <div id="pw-error" class="alert error hidden" role="alert"></div>
+    <label>Bisheriges Passwort<input id="pw-old" type="password" autocomplete="current-password" required></label>
+    <label>Neues Passwort<input id="pw-new" type="password" autocomplete="new-password" required></label>
+    <label>Neues Passwort wiederholen<input id="pw-new2" type="password" autocomplete="new-password" required></label>
+    <button class="primary" type="submit">Passwort ändern</button>
+  </form>
+</div>
+
+<div id="setup2fa" class="screen hidden">
+  <div class="card medium">
+    <img class="logo-full" src="logo-full.png" alt="AuraCall" width="1200" height="291">
+    <h2 class="center">Zwei-Faktor-Anmeldung einrichten</h2>
+    <p class="muted" id="s2-intro">Für alle Konten ist die Zwei-Faktor-Anmeldung vorgeschrieben: Beim Anmelden braucht es neben dem Passwort einen Code aus einer App auf Ihrem Handy.</p>
+    <div id="s2-body" class="stack"></div>
+    <div class="row end"><button id="s2-logout" class="ghost" type="button">Abmelden</button></div>
+  </div>
+</div>
+
+<div id="app" class="hidden">
+  <header class="top">
+    <div class="brand"><img src="logo-a.png" alt="" width="28" height="28"><span>AuraCall</span></div>
+    <nav id="tabs" aria-label="Bereiche"></nav>
+    <div class="who"><a class="small" href="/datenschutz" target="_blank" rel="noopener">Datenschutz</a><span id="who" class="muted small"></span><div id="aura-menu"></div></div>
+  </header>
+  <div id="toast" class="toast hidden" role="status"></div>
+  <div id="license-banner" class="banner hidden" role="status"></div>
+  <main>
+    <section id="tab-overview" class="tab"></section>
+    <section id="tab-calls" class="tab hidden"></section>
+    <section id="tab-out" class="tab hidden"></section>
+    <section id="tab-trunk" class="tab hidden"></section>
+    <section id="tab-aura" class="tab hidden"></section>
+    <section id="tab-security" class="tab hidden"></section>
+    <section id="tab-license" class="tab hidden"></section>
+    <section id="tab-settings" class="tab hidden"></section>
+  </main>
+  <div id="modal" class="modal hidden" role="dialog" aria-modal="true"><div class="card modal-card"><div id="modal-body"></div><button id="modal-close" class="ghost" type="button">Schliessen</button></div></div>
+</div>
+<script src="aura-privacy.js"></script>
+<script src="aura-menu.js"></script>
+<script src="aura-menu-init.js"></script>
+<script src="app.js"></script>
+<script src="about.js" defer></script>
+</body>
+</html>

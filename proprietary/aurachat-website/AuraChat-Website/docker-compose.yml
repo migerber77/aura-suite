@@ -1,0 +1,24 @@
+services:
+  aurachat-website:
+    build: .
+    container_name: aurachat-website
+    restart: unless-stopped
+    depends_on:
+      - aurachat-website-backend
+    ports:
+      - "8098:80"   # http://<Server-IP>:8098 - Port bei Bedarf anpassen
+    volumes:
+      - ./html:/usr/share/nginx/html   # Inhalte live bearbeitbar, kein Rebuild bei Textänderungen nötig
+
+  aurachat-website-backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: aurachat-website-backend
+    restart: unless-stopped
+    environment:
+      # Wird zum Löschen unangemessener Bewertungen gebraucht (DELETE /api/reviews/:id
+      # mit Header "X-Admin-Token") - eigenen Wert setzen, z.B. mit: openssl rand -hex 24
+      - REVIEWS_ADMIN_TOKEN=${REVIEWS_ADMIN_TOKEN}
+    volumes:
+      - ./data:/app/data   # Bewertungs-Datenbank bleibt bei Neustarts/Updates erhalten
