@@ -199,51 +199,6 @@ async function authenticateAgainstAd(cfg, username, password) {
 // Gleiches Format/Verfahren wie bei AuraChat/AuraPlan: offline per HMAC-SHA256 geprüfter
 // Schlüssel, kein Feature-System - nur "gültige, für 'auradirect' ausgestellte Lizenz
 // vorhanden?".
-function verifyLicenseKey(licenseKey) {
-    if (!licenseKey || typeof licenseKey !== 'string' || !licenseKey.includes('.')) {
-        return { valid: false, error: 'Ungültiges Lizenzformat.' };
-    }
-    const [payloadB64, signatureB64] = licenseKey.trim().split('.');
-    if (!payloadB64 || !signatureB64) return { valid: false, error: 'Ungültiges Lizenzformat.' };
-
-    const secret = process.env.LICENSE_SECRET || '';
-    if (!secret) return { valid: false, error: 'Lizenzsystem ist serverseitig nicht konfiguriert (LICENSE_SECRET fehlt).' };
-
-    const expectedSig = crypto.createHmac('sha256', secret).update(payloadB64).digest('base64url');
-    const sigBuf = Buffer.from(signatureB64);
-    const expectedBuf = Buffer.from(expectedSig);
-    if (sigBuf.length !== expectedBuf.length || !crypto.timingSafeEqual(sigBuf, expectedBuf)) {
-        return { valid: false, error: 'Lizenzsignatur ist ungültig.' };
-    }
-
-    let payload;
-    try {
-        payload = JSON.parse(Buffer.from(payloadB64, 'base64url').toString('utf-8'));
-    } catch {
-        return { valid: false, error: 'Lizenz-Daten sind beschädigt.' };
-    }
-    if (payload.product !== 'auradirect') return { valid: false, error: 'Diese Lizenz ist nicht für AuraDirect ausgestellt.' };
-    if (payload.expiresAt && new Date(payload.expiresAt).getTime() < Date.now()) {
-        return { valid: false, error: 'Lizenz ist abgelaufen.', payload };
-    }
-    return { valid: true, payload };
-}
-const TRIAL_DAYS = 14;
-function getTrialInfo() {
-    return getSetting('install_date').then(async (installDate) => {
-        if (!installDate) {
-            installDate = new Date().toISOString();
-            await setSetting('install_date', installDate);
-        }
-        const daysElapsed = (Date.now() - new Date(installDate).getTime()) / (1000 * 60 * 60 * 24);
-        return { active: daysElapsed < TRIAL_DAYS, daysRemaining: Math.max(0, Math.ceil(TRIAL_DAYS - daysElapsed)) };
-    });
-}
-// Dauerhafte Gratis-Stufe nach der Testphase: EIN aktives Konto, und das ist der Admin. Jedes weitere Konto braucht eine Lizenz.
-function isWithinFreeTier() {
-    return new Promise((resolve) => db.get(`SELECT COUNT(*) as c FROM users WHERE active = 1`, [], (err, row) => resolve(!err && !!row && row.c <= 1)));
-}
-
 // Zeichnet auf, dass sich ein Produkt gerade ECHT (über einen funktionierenden Anmelde-
 // Vorgang, nicht nur behauptet) bei AuraDirect gemeldet hat. Nur zur Anzeige, nicht mehr für die Lizenz.
 function recordProductConnection(product) {
@@ -255,24 +210,10 @@ function recordProductConnection(product) {
     );
 }
 
+// AuraDirect ist KOSTENLOS: es wird für die zentrale Benutzerverwaltung gebraucht. Keine Testphase, keine Lizenz, keine Sperre.
+// (In der kostenlosen 1-Benutzer-Version der anderen Produkte muss es nicht eingerichtet werden: dort genügt der Administrator.)
 async function getStoredLicenseInfo() {
-    const key = await getSetting('license_key');
-    let base = { valid: false, customer: null, expiresAt: null, error: 'Keine Lizenz hinterlegt.' };
-    if (key) {
-        const result = verifyLicenseKey(key);
-        base = {
-            valid: result.valid,
-            customer: (result.payload && result.payload.customer) || null,
-            expiresAt: (result.payload && result.payload.expiresAt) || null,
-            error: result.valid ? null : result.error
-        };
-    }
-    // Reihenfolge: erst die 14 Tage Testphase (alles erlaubt), dann eine gültige Lizenz, sonst die Gratis-Stufe (höchstens 1 aktives Konto: der Admin), sonst gesperrt.
-    const trial = await getTrialInfo();
-    if (trial.active) return { ...base, valid: true, licenseValid: base.valid, trial: true, trialDaysRemaining: trial.daysRemaining, freeTier: false };
-    if (base.valid) return { ...base, licenseValid: true, trial: false, trialDaysRemaining: 0, freeTier: false };
-    if (await isWithinFreeTier()) return { ...base, valid: true, licenseValid: false, trial: false, trialDaysRemaining: 0, freeTier: true, freeTierReason: 'users' };
-    return { ...base, licenseValid: false, trial: false, trialDaysRemaining: 0, freeTier: false };
+    return { valid: true, licenseValid: false, trial: false, trialDaysRemaining: 0, freeTier: true, freeTierReason: 'always-free', free: true, customer: null, expiresAt: null, error: null };
 }
 
 // --- Aura-Suite: "Über Aura-Suite" (Dialog in der Oberfläche, Datei about.js) ---
@@ -291,22 +232,19 @@ app.get('/api/version', (req, res) => {
 // Aus der Antwort kommt die Aura-Suite-Version, die im Lizenzserver eingetragen ist: sie erscheint unter "Über Aura-Suite" (siehe /api/version).
 const suitePing = createSuitePing({
     product: 'direct', version: AURA_APP_VERSION, suiteInstalled: AURA_SUITE_INSTALLED, dataDir, host: process.env.LICENSE_CHECKIN_HOST,
-    getState: async () => { const i = await getStoredLicenseInfo(); return i.licenseValid ? 'licensed' : i.trial ? 'trial' : i.freeTier ? 'free' : 'expired'; },
+    getState: async () => 'free',   // AuraDirect ist kostenlos
     getCounts: () => new Promise((resolve) => db.get(`SELECT COUNT(*) AS c FROM users WHERE active = 1`, [], (err, row) => resolve(err || !row ? null : { totalUsers: row.c, totalAdmins: null }))),
     getLicenseKey: () => getSetting('license_key')
 });
 
 function requireSuperAdmin(req, res, next) {
     if (!(req.session && req.session.isSuperAdmin)) return res.redirect('/login');
-    const exempt = ['/privacy-policy', '/privacy-policy/accept', '/license', '/license/save'];
+    const exempt = ['/privacy-policy', '/privacy-policy/accept'];
     if (exempt.includes(req.path)) return next();
     getSetting('privacy_policy_version').then(v => {
         const currentVersion = parseInt(v || '1', 10);
         if ((req.session.privacyAcceptedVersion || 0) < currentVersion) return res.redirect('/privacy-policy');
-        getStoredLicenseInfo().then(info => {
-            if (!info.valid) return res.redirect('/license');
-            next();
-        });
+        next();
     });
 }
 function layout(title, body, activeNav) {
@@ -314,9 +252,9 @@ function layout(title, body, activeNav) {
     const inSettings = ['ad', 'privacy', 'appearance'].includes(activeNav);
     const tabs = inSettings
         ? [['ad', '/ad-settings', '🔌 Active Directory'], ['appearance', '/appearance', '🎨 Darstellung'], ['privacy', '/privacy-policy-edit', '📄 Datenschutzerklärung']]
-        : [['users', '/', '👥 Benutzer'], ['license', '/license', '🔑 Lizenz'], ['twofa', '/2fa', '🛡️ 2FA'], ['password', '/change-password', '🔒 Passwort'], ['backup', '/backup', '🖥️ System']];
+        : [['users', '/', '👥 Benutzer'], ['twofa', '/2fa', '🛡️ 2FA'], ['password', '/change-password', '🔒 Passwort'], ['backup', '/backup', '🖥️ System']];
     const tabLink = ([key, href, label]) => `<a href="${href}" class="px-3 py-1.5 rounded-lg ${activeNav === key ? 'bg-blue-600 text-white' : 'bg-slate-900 border border-slate-800 text-slate-300 hover:bg-slate-800'}">${label}</a>`;
-    const menuData = JSON.stringify({ settings: '/ad-settings', admin: { users: '/', license: '/license', security: '/2fa', system: '/backup' } }).replace(/&/g, '&amp;').replace(/'/g, '&#39;');
+    const menuData = JSON.stringify({ settings: '/ad-settings', admin: { users: '/', security: '/2fa', system: '/backup' } }).replace(/&/g, '&amp;').replace(/'/g, '&#39;');
     return `<!DOCTYPE html>
 <html lang="de"><head><meta charset="UTF-8"><script src="/static/aura-i18n.js"></script><script src="/static/aura-i18n-words.js"></script><script src="/static/aura-intro.js" data-video="/static/images/intro/aurasuite-intro"></script><script src="/static/aura-prefs.js"></script><title>AuraDirect — ${title}</title>
 <link rel="icon" type="image/png" href="/static/images/icon.png"><script src="https://cdn.tailwindcss.com"></script></head>
@@ -447,62 +385,8 @@ app.post('/login/2fa', authLimiter, async (req, res) => {
 
 app.get('/logout', (req, res) => req.session.destroy(() => res.redirect('/login')));
 
-// --- Lizenz ---
-app.get('/license', async (req, res) => {
-    if (!(req.session && req.session.isSuperAdmin)) return res.redirect('/login');
-    const info = await getStoredLicenseInfo();
-    const trialBox = info.trial ? `<div class="bg-amber-500/10 border border-amber-500/30 text-amber-300 rounded-xl px-3 py-2 text-xs">⏳ Testphase aktiv - noch ${info.trialDaysRemaining} Tag(e).</div>` : '';
-    const freeTierBox = info.freeTier
-        ? `<div class="bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 rounded-xl px-3 py-2 text-xs">✓ Kostenlose Stufe aktiv (1 Benutzer: der Admin) - für weitere Konten wird eine Lizenz benötigt.</div>`
-        : '';
-    res.send(loginLayout('Lizenz', `
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-8 flex flex-col gap-4">
-            <div class="flex items-center gap-2 justify-center mb-2"><img src="/static/images/logo.png" alt="AuraDirect" style="height:36px;width:auto;"></div>
-            <h2 class="text-sm font-bold text-white text-center">🔑 Lizenz</h2>
-            ${trialBox}
-            ${freeTierBox}
-            ${info.licenseValid ? `<div class="bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 rounded-xl px-3 py-2 text-xs">✓ Lizenziert für "${info.customer}"${info.expiresAt ? ' · gültig bis ' + new Date(info.expiresAt).toLocaleDateString('de-DE') : ' · unbegrenzt'}</div>
-                   <form method="POST" action="/license/remove"><button type="submit" onclick="return confirm('Lizenz wirklich entfernen?');" class="w-full text-center bg-red-500/10 border border-red-500/30 text-red-300 hover:bg-red-500/20 font-medium py-2.5 rounded-xl text-sm transition">Lizenz entfernen</button></form>` : ''}
-            ${!info.licenseValid
-                // Das Eingabefeld gibt es IMMER, solange keine gültige Lizenz hinterlegt ist - auch in der
-                // kostenlosen Stufe und in der Testphase (früher fehlte es dort, man konnte keinen Schlüssel eintragen).
-                ? `<p class="text-xs text-slate-400">${info.freeTier ? 'Ihr nutzt aktuell die kostenlose Stufe. Falls ihr eine Lizenz habt (z.B. für mehr verwaltete Konten), könnt ihr den Schlüssel hier eintragen:' : (info.trial ? 'Zusätzlich könnt ihr schon jetzt einen Lizenzschlüssel eintragen:' : 'Für diese Installation ist keine gültige Lizenz hinterlegt' + (info.error ? ' (' + String(info.error).replace(/[<>&"]/g, '') + ')' : '') + '. Bitte einen Lizenzschlüssel eintragen:')}</p>
-                   <form method="POST" action="/license/save" class="flex flex-col gap-3">
-                       <textarea name="key" id="license-key-textarea" rows="4" placeholder="Lizenzschlüssel hier einfügen" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white font-mono"></textarea>
-                       <label class="text-center text-xs px-3 py-2 rounded-xl bg-slate-800 text-slate-300 hover:bg-slate-700 cursor-pointer transition">
-                           📁 Oder .lic-Datei auswählen
-                           <input type="file" id="license-key-file" accept=".lic,text/plain" class="hidden">
-                       </label>
-                       <script>
-                           document.getElementById('license-key-file').addEventListener('change', (e) => {
-                               const file = e.target.files[0];
-                               if (!file) return;
-                               const reader = new FileReader();
-                               reader.onload = () => { document.getElementById('license-key-textarea').value = reader.result.trim(); };
-                               reader.readAsText(file);
-                           });
-                       </script>
-                       ${req.query.error ? `<div class="bg-red-500/10 border border-red-500/30 text-red-300 rounded-xl px-3 py-2 text-xs">${String(req.query.error).replace(/[<>&"']/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;', "'": '&#39;' }[c]))}</div>` : ''}
-                       <button type="submit" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium py-2.5 rounded-xl text-sm transition">Aktivieren</button>
-                   </form>`
-                : ''}
-            ${info.valid ? `<a href="/" class="w-full text-center bg-slate-800 hover:bg-slate-700 text-white font-medium py-2.5 rounded-xl text-sm transition">Weiter zu AuraDirect</a>` : ''}
-        </div>
-    `));
-});
-app.post('/license/remove', async (req, res) => {
-    if (!(req.session && req.session.isSuperAdmin)) return res.redirect('/login');
-    await setSetting('license_key', '');
-    res.redirect('/license');
-});
-app.post('/license/save', async (req, res) => {
-    if (!(req.session && req.session.isSuperAdmin)) return res.redirect('/login');
-    const key = (req.body.key || '').trim();
-    const result = verifyLicenseKey(key);
-    if (!result.valid) return res.redirect('/license?error=' + encodeURIComponent(result.error));
-    await setSetting('license_key', key);
-    res.redirect('/license');
-});
+// --- Lizenz: gibt es nicht mehr (AuraDirect ist kostenlos); alte Lesezeichen führen zur Startseite ---
+app.get('/license', (req, res) => res.redirect('/'));
 
 // --- Datenschutzerklärung ---
 app.get('/privacy-policy', async (req, res) => {
@@ -715,7 +599,7 @@ app.get('/', requireSuperAdmin, async (req, res) => {
         const rowsHtml = rows.map(u => {
             const access = (u.access || '').split(',').filter(Boolean).map(a => {
                 const [product, role] = a.split(':');
-                const label = { aurachat: 'AuraChat', auraplan: 'AuraPlan', auradirect: 'AuraDirect', auramail: 'AuraMail', auraticket: 'AuraTicket', auraproxy: 'AuraProxy', auracall: 'AuraCall' }[product] || product;
+                const label = { aurachat: 'AuraChat', auraplan: 'AuraPlan', auradirect: 'AuraDirect', auramail: 'AuraMail', auraticket: 'AuraTicket', auraproxy: 'AuraProxy', auracall: 'AuraCall', auracontrol: 'AuraControl' }[product] || product;
                 return `<span class="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300 mr-1">${label}: ${role}</span>`;
             }).join('');
             return `<div class="flex items-center justify-between bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 flex-wrap gap-2">
@@ -844,6 +728,15 @@ function userFormPage(title, user, error) {
                         </select>
                         <span class="text-[10px] text-slate-500">einzige Rolle hier: Zugang zur Verwaltung von AuraCall (Telefon)</span>
                     </div>
+                    <div class="flex items-center gap-3">
+                        <label class="flex items-center gap-2 text-sm text-slate-300 w-32">
+                            <input type="checkbox" name="auracontrol_enabled" ${access.auracontrol ? 'checked' : ''} class="w-4 h-4"> AuraControl
+                        </label>
+                        <select name="auracontrol_role" class="bg-slate-950 border border-slate-800 rounded-lg px-2 py-1.5 text-xs text-white">
+                            <option value="admin" ${access.auracontrol === 'admin' ? 'selected' : ''}>Administrator:in</option>
+                        </select>
+                        <span class="text-[10px] text-slate-500">einzige Rolle hier: Zugang zu AuraControl (Server-Übersicht, Cockpit, Lizenz)</span>
+                    </div>
                 </div>
             </div>
 
@@ -957,7 +850,8 @@ function saveProductAccess(userId, body) {
         { product: 'auramail', enabled: !!body.auramail_enabled, role: body.auramail_role || 'user' },
         { product: 'auraticket', enabled: !!body.auraticket_enabled, role: body.auraticket_role || 'agent' },
         { product: 'auraproxy', enabled: !!body.auraproxy_enabled, role: 'admin' },
-        { product: 'auracall', enabled: !!body.auracall_enabled, role: 'admin' }
+        { product: 'auracall', enabled: !!body.auracall_enabled, role: 'admin' },
+        { product: 'auracontrol', enabled: !!body.auracontrol_enabled, role: 'admin' }
     ];
     return Promise.all(grants.map(g => new Promise((resolve, reject) => {
         db.run(

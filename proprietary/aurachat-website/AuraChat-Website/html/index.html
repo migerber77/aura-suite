@@ -384,7 +384,7 @@
       <img src="images/academy-logo.png" alt="Aura Academy" class="academy-logo" width="600" height="600" loading="lazy" decoding="async">
       <div>
         <h2 data-i18n="academy.title">Aura-Academy: ein Modell, das wirklich euch gehört.</h2>
-        <p data-i18n="academy.text">In der höchsten Lizenzstufe trainiert AuraChat jede Nacht automatisch ein eigenes, kleines KI-Modell mit den gesammelten Erkenntnissen eures Teams weiter. Kein Umweg über fremde Server, kein geteiltes Wissen mit anderen Kunden — nur euer eigenes, mit der Zeit wachsendes Modell, das versteht, wie bei euch gearbeitet wird.</p>
+        <p data-i18n="academy.text">In Business Advanced trainiert AuraChat jede Nacht automatisch ein eigenes, kleines KI-Modell mit den gesammelten Erkenntnissen eures Teams weiter. Kein Umweg über fremde Server, kein geteiltes Wissen mit anderen Kunden — nur euer eigenes, mit der Zeit wachsendes Modell, das versteht, wie bei euch gearbeitet wird.</p>
       </div>
     </div>
   </section>
@@ -392,46 +392,86 @@
   <section id="lizenz">
     <div class="wrap">
       <div class="section-head">
-        <h2 data-i18n="pricing.heading">Ein Lizenzmodell, das mit euch mitwächst.</h2>
-        <p data-i18n="pricing.sub">Kostenlos starten, pro Sitz erweitern — mit eigenen Preisen für Benutzer- und Administratorkonten.</p>
+        <h2 data-i18n="pricing.heading">Drei Pläne. Klar und fair.</h2>
+        <p data-i18n="pricing.sub">Kostenlos für die private Nutzung, mit voller Ausstattung für Firmen und Teams.</p>
       </div>
       <div class="pricing-grid">
         <div class="price-card">
-          <h3 data-i18n="pricing.basic.title">Basis</h3>
-          <p class="price" data-i18n="pricing.basic.price">kostenlos</p>
-          <p class="sub" data-i18n="pricing.basic.sub">bis 3 Benutzer / 1 Administrator</p>
+          <h3 data-i18n="pricing.free.title">Free Plan</h3>
+          <p class="plan-audience" data-i18n="pricing.free.audience">Privatpersonen & Hobby</p>
+          <p class="price"><b data-i18n="pricing.free.price">CHF 0</b> <span data-i18n="pricing.free.period">für immer</span></p>
+          <p class="sub" data-i18n="pricing.free.users">Exakt 1 Benutzer (private Nutzung)</p>
           <ul>
-            <li data-i18n="pricing.basic.li1">· Chat, Standard-Avatare, Gedächtnis</li>
-            <li data-i18n="pricing.basic.li2">· Persönlichkeit, Workspace</li>
-            <li data-i18n="pricing.basic.li3">· Quiz, Chat-Export, Erinnerungen</li>
-            <li data-i18n="pricing.basic.li4">· Basis-Integrationen</li>
+            <li data-i18n="pricing.free.li1">✓ AuraChat: Grundfunktionen (Standard-KI-Assistenz)</li>
+            <li data-i18n="pricing.free.li2">✓ AuraPlan: Zeiterfassung, Schicht- & Ferienplanung</li>
+            <li data-i18n="pricing.free.li3">✓ AuraTicket: Ticketsystem</li>
+            <li data-i18n="pricing.free.li4">– AuraMail und AuraCall nicht enthalten</li>
           </ul>
         </div>
         <div class="price-card popular">
           <span class="price-badge" data-i18n="pricing.popular">Beliebt</span>
-          <h3 data-i18n="pricing.pro.title">Pro</h3>
-          <p class="price">CHF 4.–<span data-i18n="pricing.perUser"> / Nutzer / Mt.</span></p>
-          <p class="sub" data-i18n="pricing.pro.sub">CHF 9.– pro Administrator / Mt.</p>
+          <h3 data-i18n="pricing.solo.title">Business Solo</h3>
+          <p class="plan-audience" data-i18n="pricing.solo.audience">Einzelfirmen & Selbstständige</p>
+          <p class="price"><b data-i18n="pricing.solo.price">CHF 19.90</b> <span data-i18n="pricing.solo.period">/ Monat</span></p>
+          <p class="sub" data-i18n="pricing.solo.users">1 Business-Benutzer mit kommerzieller Nutzungslizenz</p>
           <ul>
-            <li data-i18n="pricing.pro.li1">· Eigene Domain mit SSL</li>
-            <li data-i18n="pricing.pro.li2">· Sprachein- und -ausgabe</li>
-            <li data-i18n="pricing.pro.li3">· Eigene Avatare, Bildgenerierung</li>
-            <li data-i18n="pricing.pro.li4">· Coding-Modell, Zweitmodell</li>
-            <li data-i18n="pricing.pro.li5">· E-Mail-Integration, API-Zugriff</li>
+            <li data-i18n="pricing.solo.li1">✓ Alle Apps in der Vollversion</li>
+            <li data-i18n="pricing.solo.li2">✓ AuraChat mit allen erweiterten Funktionen</li>
+            <li data-i18n="pricing.solo.li3">✓ AuraPlan und AuraTicket</li>
+            <li data-i18n="pricing.solo.li4">✓ AuraMail: Mailserver-Integration</li>
+            <li data-i18n="pricing.solo.li5">✓ AuraCall: Anbindung für KI-Telefonie</li>
           </ul>
         </div>
         <div class="price-card academy">
-          <h3 data-i18n="pricing.academy.title">Academy</h3>
-          <p class="price">CHF 7.–<span data-i18n="pricing.perUser2"> / Nutzer / Mt.</span></p>
-          <p class="sub" data-i18n="pricing.academy.sub">CHF 15.– pro Administrator / Mt.</p>
+          <h3 data-i18n="pricing.advanced.title">Business Advanced</h3>
+          <p class="plan-audience" data-i18n="pricing.advanced.audience">Unternehmen & Teams</p>
+          <p class="price"><b data-i18n="pricing.advanced.price">CHF 19.90</b> <span data-i18n="pricing.advanced.period">/ Monat für den 1. Benutzer</span></p>
+          <p class="plan-extra" data-i18n="pricing.advanced.extra">+ CHF 9.90 / Monat für jeden weiteren Benutzer</p>
+          <p class="sub" data-i18n="pricing.advanced.users">Ab 2 Benutzern</p>
           <ul>
-            <li data-i18n="pricing.academy.li1">· Alles aus Pro</li>
-            <li data-i18n="pricing.academy.li2">· Aura-Academy: eigenes trainiertes Modell</li>
-            <li data-i18n="pricing.academy.li3">· Eigenes Logo &amp; Icon (White-Label)</li>
+            <li data-i18n="pricing.advanced.li1">✓ Voller Funktionsumfang aller Apps</li>
+            <li data-i18n="pricing.advanced.li2">✓ AuraMail und AuraCall inklusive</li>
+            <li data-i18n="pricing.advanced.li3">✓ Erweiterte Rechteverwaltung</li>
+            <li data-i18n="pricing.advanced.li4">✓ Team-Kollaboration</li>
+            <li data-i18n="pricing.advanced.li5">✓ Aura-Academy: eigenes, trainiertes Modell</li>
           </ul>
         </div>
       </div>
-      <p class="price-note" data-i18n="pricing.note">Alle Preise sind Richtwerte exkl. MwSt. Nutzer- und Administrator-Obergrenzen werden pro Lizenzschlüssel festgelegt.</p>
+      <div class="plan-example">
+        <h4 data-i18n="pricing.example.title">Rechenbeispiel Business Advanced mit 3 Benutzern</h4>
+        <table>
+          <tbody>
+            <tr><td data-i18n="pricing.example.first">1. Benutzer</td><td class="amount">CHF 19.90</td></tr>
+            <tr><td data-i18n="pricing.example.extra">2 weitere Benutzer (2 × CHF 9.90)</td><td class="amount">+ CHF 19.80</td></tr>
+            <tr class="total"><th scope="row" data-i18n="pricing.example.total">Total pro Monat</th><td class="amount">CHF 39.70</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <h3 class="plan-table-title" data-i18n="pricing.table.title">Übersicht der Lizenzmodelle</h3>
+      <div class="plan-table-wrap">
+        <table class="plan-table">
+          <thead>
+            <tr><th scope="col" data-i18n="pricing.table.feature">Feature / Umfang</th><th scope="col" data-i18n="pricing.free.title">Free Plan</th><th scope="col" data-i18n="pricing.solo.title">Business Solo</th><th scope="col" data-i18n="pricing.advanced.title">Business Advanced</th></tr>
+          </thead>
+          <tbody>
+            <tr><th scope="row"><span data-i18n="pricing.table.audience">Zielgruppe</span></th><td data-i18n="pricing.free.audience">Privatpersonen & Hobby</td><td data-i18n="pricing.solo.audience">Einzelfirmen & Selbstständige</td><td data-i18n="pricing.advanced.audience">Unternehmen & Teams</td></tr>
+            <tr><th scope="row"><span data-i18n="pricing.table.users">Benutzer</span></th><td data-i18n="pricing.table.freeUsers">1 Benutzer</td><td data-i18n="pricing.table.soloUsers">1 Benutzer</td><td data-i18n="pricing.table.advUsers">Ab 2 Benutzern</td></tr>
+            <tr><th scope="row"><span data-i18n="pricing.table.price">Preis</span></th><td data-i18n="pricing.table.freePrice">0 CHF / für immer</td><td data-i18n="pricing.table.soloPrice">19.90 CHF / Monat</td><td data-i18n="pricing.table.advPrice">19.90 CHF (1. User) + 9.90 CHF / weiteren User / Monat</td></tr>
+            <tr class="plan-group"><th scope="rowgroup" colspan="4" data-i18n="pricing.table.apps">Enthaltene Apps</th></tr>
+            <tr><th scope="row">• AuraChat</th><td data-i18n="pricing.table.basic">Grundfunktionen</td><td data-i18n="pricing.table.full">Vollversion</td><td data-i18n="pricing.table.full">Vollversion</td></tr>
+            <tr><th scope="row">• AuraPlan</th><td data-i18n="pricing.table.yes">Ja</td><td data-i18n="pricing.table.yes">Ja</td><td data-i18n="pricing.table.yes">Ja</td></tr>
+            <tr><th scope="row">• AuraTicket</th><td data-i18n="pricing.table.yes">Ja</td><td data-i18n="pricing.table.yes">Ja</td><td data-i18n="pricing.table.yes">Ja</td></tr>
+            <tr class="plan-group"><th scope="rowgroup" colspan="4" data-i18n="pricing.table.services">Enthaltene Dienste</th></tr>
+            <tr><th scope="row">• AuraMail</th><td data-i18n="pricing.table.no">–</td><td data-i18n="pricing.table.included">Inklusive</td><td data-i18n="pricing.table.included">Inklusive</td></tr>
+            <tr><th scope="row">• AuraCall</th><td data-i18n="pricing.table.no">–</td><td data-i18n="pricing.table.included">Inklusive</td><td data-i18n="pricing.table.included">Inklusive</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="grid2" style="margin-top:28px;">
+        <div class="card"><div class="icon">⚙️</div><h3>AuraDirect &amp; AuraProxy</h3><p data-i18n="pricing.services">AuraDirect (zentrale Benutzerverwaltung) und AuraProxy (Reverse-Proxy mit SSL) sind in jedem Plan kostenlos dabei.</p></div>
+        <div class="card"><div class="icon">🖥️</div><h3 data-i18n="pricing.hardware.title">Hardware</h3><p data-i18n="pricing.hardware.text">Die Hardware ist nicht Bestandteil der Lizenz. Sie wird durch den Kunden beschafft oder kann auch durch Gerber Backoffice Solutions beschafft werden.</p></div>
+      </div>
+      <p class="price-note" data-i18n="pricing.note">Alle Preise exkl. MwSt. AuraMail und AuraCall lassen sich 14 Tage kostenlos testen.</p>
     </div>
   </section>
 
@@ -443,7 +483,7 @@
       <div class="grid2">
         <div class="op-card">
           <h3 data-i18n="hosting.self.title">Self-Hosted</h3>
-          <p class="sub" data-i18n="hosting.self.sub">Keine Zusatzkosten, nur die Lizenz</p>
+          <p class="sub" data-i18n="hosting.self.sub">Keine Zusatzkosten, nur der gewählte Plan</p>
           <ul>
             <li data-i18n="hosting.self.li1">Läuft auf eurer eigenen Hardware oder NAS</li>
             <li data-i18n="hosting.self.li2">Daten bleiben zu 100% bei euch</li>
@@ -453,7 +493,7 @@
         </div>
         <div class="op-card">
           <h3><span data-i18n="hosting.cloud.title">Cloud</span> <span style="color:#f87171; font-size:12px; font-weight:700; vertical-align:middle;" data-i18n="hosting.cloud.badge">★ Noch nicht verfügbar</span></h3>
-          <p class="sub" data-i18n="hosting.cloud.sub">ab CHF 29.– / Monat Infrastruktur-Pauschale</p>
+          <p class="sub" data-i18n="hosting.cloud.sub">Preis auf Anfrage</p>
           <ul>
             <li data-i18n="hosting.cloud.li1">Vollständig durch uns betrieben</li>
             <li data-i18n="hosting.cloud.li2">Gehostet in unserer Cloud-Infrastruktur (EU/CH)</li>
@@ -519,8 +559,8 @@
         <p data-i18n="ecosystem.lead">AuraChat ist der Mittelpunkt — dazu kommen eigenständige Produkte für Zeiterfassung, Tickets, Mail, Telefon, Benutzerverwaltung und den sicheren Zugang von aussen. Einzeln nutzbar, gemeinsam am stärksten.</p>
       </div>
       <div class="grid3" style="grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); max-width:820px; margin:0 auto 36px;">
-        <div class="card"><div class="icon">🧩</div><h3 data-i18n="ecosystem.apps.title">Anwendungen</h3><p data-i18n="ecosystem.apps.sub">AuraChat, AuraPlan, AuraTicket, AuraCall — mit Testphase; die ersten drei zusätzlich mit kostenloser Basisstufe.</p></div>
-        <div class="card"><div class="icon">⚙️</div><h3 data-i18n="ecosystem.services.title">Dienste</h3><p data-i18n="ecosystem.services.sub">AuraDirect, AuraMail, AuraProxy — kostenlos bis 4 Konten oder sobald mindestens zwei Anwendungen verbunden sind, sonst CHF 15.– pro Installation / Mt.</p></div>
+        <div class="card"><div class="icon">🧩</div><h3 data-i18n="ecosystem.apps.title">Anwendungen</h3><p data-i18n="ecosystem.apps.sub">AuraChat, AuraPlan, AuraTicket im Free Plan (1 Benutzer); mit Business Solo oder Advanced in der Vollversion, dazu AuraMail und AuraCall.</p></div>
+        <div class="card"><div class="icon">⚙️</div><h3 data-i18n="ecosystem.services.title">Dienste</h3><p data-i18n="ecosystem.services.sub">AuraDirect und AuraProxy — immer kostenlos und in jedem Plan dabei.</p></div>
       </div>
       <div class="grid3">
         <a class="card" href="#auraplan-section" style="text-decoration:none; color:inherit; display:block;">
@@ -580,31 +620,13 @@
         <div class="card"><div class="icon">💬</div><h3 data-i18n="auraplan.features.aurachat.title">AuraChat-Widget</h3><p data-i18n="auraplan.features.aurachat.desc">Grüner/roter Knopf zum Ein-/Ausstempeln direkt in AuraChat, Ferienstand auf einen Blick, proaktive Benachrichtigungen bei Genehmigungen.</p></div>
         <div class="card"><div class="icon">🛠️</div><h3 data-i18n="auraplan.features.admin.title">Administration</h3><p data-i18n="auraplan.features.admin.desc">Zwei-Faktor-Authentifizierung, Backup &amp; Wiederherstellung, automatisches SSL, AuraDirect-Anbindung für zentrale Anmeldung.</p></div>
       </div>
-      <div class="pricing-grid" style="margin-top:40px; max-width:700px; margin-left:auto; margin-right:auto;">
-        <div class="price-card">
-          <h3 data-i18n="auraplan.pricing.basic.title">Basis</h3>
-          <p class="price" data-i18n="auraplan.pricing.basic.price">kostenlos</p>
-          <p class="sub" data-i18n="auraplan.pricing.basic.sub">einfache Zeiterfassung</p>
-          <ul>
-            <li data-i18n="auraplan.pricing.basic.li1">· Ein-/Ausstempeln</li>
-            <li data-i18n="auraplan.pricing.basic.li2">· Manuelle Erfassung</li>
-            <li data-i18n="auraplan.pricing.basic.li3">· Grundlegende Zeitarten</li>
-          </ul>
-        </div>
-        <div class="price-card popular">
-          <span class="price-badge" data-i18n="pricing.popular">Beliebt</span>
-          <h3 data-i18n="auraplan.pricing.pro.title">Pro</h3>
-          <p class="price">CHF 3.50<span data-i18n="pricing.perUser"> / Nutzer / Mt.</span></p>
-          <p class="sub" data-i18n="auraplan.pricing.pro.sub">CHF 3.50 pro Nutzer / CHF 7.50 pro Admin / Mt.</p>
-          <ul>
-            <li data-i18n="auraplan.pricing.pro.li1">· Schichtplan &amp; offene Schichten</li>
-            <li data-i18n="auraplan.pricing.pro.li2">· Ferien mit Farbzeitleiste</li>
-            <li data-i18n="auraplan.pricing.pro.li3">· Übersicht &amp; Benachrichtigungen</li>
-            <li data-i18n="auraplan.pricing.pro.li4">· AuraChat-Widget &amp; Sprachbefehle</li>
-          </ul>
-        </div>
+      <div class="card plan-included">
+        <div class="icon">🏷️</div>
+        <h3 data-i18n="auraplan.pricing.heading">Enthalten in</h3>
+        <p data-i18n="auraplan.pricing.text">Free Plan, Business Solo und Business Advanced. Im Free Plan für 1 Benutzer (private Nutzung).</p>
+        <p class="price-note" data-i18n="auraplan.pricing.note">Alle Preise exkl. MwSt. Hardware ist nicht Bestandteil der Lizenz.</p>
+        <a href="#lizenz" class="plan-link" data-i18n="auraplan.pricing.link">Alle Pläne und Preise ansehen →</a>
       </div>
-      <p class="price-note" data-i18n="auraplan.pricing.note">Alle Preise sind Richtwerte exkl. MwSt.</p>
       <div class="card" style="margin-top:32px; max-width:420px; margin-left:auto; margin-right:auto;">
         <div class="icon">📄</div>
         <h3 data-i18n="auraplan.downloads.sheet.title">Datenblatt &amp; Anleitung</h3>
@@ -641,29 +663,13 @@
         <div class="card"><div class="icon">🛡️</div><h3 data-i18n="auradirect.features.twofa.title">Zentrale Zwei-Faktor-Authentifizierung</h3><p data-i18n="auradirect.features.twofa.desc">Ein 2FA-Code pro Person, gültig für alle angebundenen Produkte — kein separates Einrichten mehr nötig.</p></div>
         <div class="card"><div class="icon">🛠️</div><h3 data-i18n="auradirect.features.admin.title">Administration</h3><p data-i18n="auradirect.features.admin.desc">Backup &amp; Wiederherstellung, automatisches SSL, eigene Datenschutzerklärung, Lizenzverwaltung mit Testphase.</p></div>
       </div>
-      <div class="pricing-grid" style="margin-top:40px; max-width:700px; margin-left:auto; margin-right:auto;">
-        <div class="price-card popular">
-          <span class="price-badge" data-i18n="pricing.popular">Beliebt</span>
-          <h3 data-i18n="auradirect.pricing.included.title">Inklusive</h3>
-          <p class="price" data-i18n="auradirect.pricing.included.price">kostenlos</p>
-          <p class="sub" data-i18n="auradirect.pricing.included.sub">bis 4 Benutzer, oder sobald mindestens zwei Aura-Anwendungen verbunden sind</p>
-          <ul>
-            <li data-i18n="auradirect.pricing.included.li1">· Zentrale Anmeldung</li>
-            <li data-i18n="auradirect.pricing.included.li2">· Active-Directory-Anbindung</li>
-            <li data-i18n="auradirect.pricing.included.li3">· Zentrale 2FA</li>
-          </ul>
-        </div>
-        <div class="price-card">
-          <h3 data-i18n="auradirect.pricing.standalone.title">Eigenständig</h3>
-          <p class="price">CHF 15.–</p>
-          <p class="sub" data-i18n="auradirect.pricing.standalone.sub">CHF 15.– pro Installation / Mt.</p>
-          <ul>
-            <li data-i18n="auradirect.pricing.standalone.li1">· Alle Funktionen</li>
-            <li data-i18n="auradirect.pricing.standalone.li2">· Ohne weitere Aura-Anwendung</li>
-          </ul>
-        </div>
+      <div class="card plan-included">
+        <div class="icon">🏷️</div>
+        <h3 data-i18n="auradirect.pricing.heading">Enthalten in</h3>
+        <p data-i18n="auradirect.pricing.text">Immer kostenlos und in jedem Plan dabei, auch im Free Plan. Ohne Testphase und ohne Sperre.</p>
+        <p class="price-note" data-i18n="auradirect.pricing.note">Alle Preise exkl. MwSt. Hardware ist nicht Bestandteil der Lizenz.</p>
+        <a href="#lizenz" class="plan-link" data-i18n="auradirect.pricing.link">Alle Pläne und Preise ansehen →</a>
       </div>
-      <p class="price-note" data-i18n="auradirect.pricing.note">Alle Preise sind Richtwerte exkl. MwSt.</p>
       <div class="card" style="margin-top:32px; max-width:420px; margin-left:auto; margin-right:auto;">
         <div class="icon">📄</div>
         <h3 data-i18n="auradirect.downloads.sheet.title">Datenblatt &amp; Anleitung</h3>
@@ -702,29 +708,13 @@
         <div class="card"><div class="icon">🗣️</div><h3 data-i18n="auramail.features.f5.title">Mails per Sprache</h3><p data-i18n="auramail.features.f5.desc">In AuraChat diktieren: „Aura, verfasse mir bitte ein Mail an …“ — AuraChat schreibt den Entwurf und sendet erst nach eurem „ja“.</p></div>
         <div class="card"><div class="icon">🎫</div><h3 data-i18n="auramail.features.f6.title">Ticket-Anbindung</h3><p data-i18n="auramail.features.f6.desc">Über die offene Schnittstelle macht AuraTicket aus eingehenden Mails Tickets und sendet Antworten über das richtige Postfach.</p></div>
       </div>
-      <div class="pricing-grid" style="margin-top:40px; max-width:700px; margin-left:auto; margin-right:auto;">
-        <div class="price-card popular">
-          <span class="price-badge" data-i18n="pricing.popular">Beliebt</span>
-          <h3 data-i18n="auramail.pricing.a.title">Inklusive</h3>
-          <p class="price" data-i18n="auramail.pricing.a.price">kostenlos</p>
-          <p class="sub" data-i18n="auramail.pricing.a.sub">bis 4 Benutzer, oder sobald mindestens zwei Aura-Anwendungen verbunden sind</p>
-          <ul>
-            <li data-i18n="auramail.pricing.a.li1">· Alle Funktionen</li>
-            <li data-i18n="auramail.pricing.a.li2">· Eigener Server, Microsoft 365 oder IMAP/SMTP</li>
-            <li data-i18n="auramail.pricing.a.li3">· Zentrale Anmeldung &amp; 2FA</li>
-          </ul>
-        </div>
-        <div class="price-card">
-          <h3 data-i18n="auramail.pricing.b.title">Eigenständig</h3>
-          <p class="price" data-i18n="auramail.pricing.b.price">CHF 15.–</p>
-          <p class="sub" data-i18n="auramail.pricing.b.sub">pro Installation / Mt.</p>
-          <ul>
-            <li data-i18n="auramail.pricing.b.li1">· Alle Funktionen</li>
-            <li data-i18n="auramail.pricing.b.li2">· Ohne weitere Aura-Anwendung</li>
-          </ul>
-        </div>
+      <div class="card plan-included">
+        <div class="icon">🏷️</div>
+        <h3 data-i18n="auramail.pricing.heading">Enthalten in</h3>
+        <p data-i18n="auramail.pricing.text">Business Solo (CHF 19.90 / Monat) und Business Advanced (ab 2 Benutzern). Nicht im Free Plan. 14 Tage kostenlos testen.</p>
+        <p class="price-note" data-i18n="auramail.pricing.note">Alle Preise exkl. MwSt. Hardware ist nicht Bestandteil der Lizenz.</p>
+        <a href="#lizenz" class="plan-link" data-i18n="auramail.pricing.link">Alle Pläne und Preise ansehen →</a>
       </div>
-      <p class="price-note" data-i18n="auramail.pricing.note">Alle Preise sind Richtwerte exkl. MwSt.</p>
       <div class="card" style="margin-top:32px; max-width:420px; margin-left:auto; margin-right:auto;">
         <div class="icon">📄</div>
         <h3 data-i18n="auramail.downloads.sheet.title">Datenblatt &amp; Anleitung</h3>
@@ -763,29 +753,13 @@
         <div class="card"><div class="icon">🔑</div><h3 data-i18n="auraticket.features.f5.title">Zentrale Anmeldung</h3><p data-i18n="auraticket.features.f5.desc">Anmeldung mit dem AuraDirect-Konto, inklusive zentraler Zwei-Faktor-Authentifizierung.</p></div>
         <div class="card"><div class="icon">🛠️</div><h3 data-i18n="auraticket.features.f6.title">Administration</h3><p data-i18n="auraticket.features.f6.desc">Benutzerverwaltung, Backup &amp; Wiederherstellung, Lizenzverwaltung mit Testphase.</p></div>
       </div>
-      <div class="pricing-grid" style="margin-top:40px; max-width:700px; margin-left:auto; margin-right:auto;">
-        <div class="price-card popular">
-          <span class="price-badge" data-i18n="pricing.popular">Beliebt</span>
-          <h3 data-i18n="auraticket.pricing.a.title">Basis</h3>
-          <p class="price" data-i18n="auraticket.pricing.a.price">kostenlos</p>
-          <p class="sub" data-i18n="auraticket.pricing.a.sub">bis 3 Agent:innen / 1 Administrator:in</p>
-          <ul>
-            <li data-i18n="auraticket.pricing.a.li1">· Tickets aus E-Mails</li>
-            <li data-i18n="auraticket.pricing.a.li2">· Antworten &amp; interne Notizen</li>
-            <li data-i18n="auraticket.pricing.a.li3">· Steuerung per AuraChat</li>
-          </ul>
-        </div>
-        <div class="price-card">
-          <h3 data-i18n="auraticket.pricing.b.title">Erweitert</h3>
-          <p class="price" data-i18n="auraticket.pricing.b.price">auf Anfrage</p>
-          <p class="sub" data-i18n="auraticket.pricing.b.sub">mehr Agent:innen und Administrator:innen</p>
-          <ul>
-            <li data-i18n="auraticket.pricing.b.li1">· Alle Funktionen</li>
-            <li data-i18n="auraticket.pricing.b.li2">· Obergrenzen pro Lizenzschlüssel</li>
-          </ul>
-        </div>
+      <div class="card plan-included">
+        <div class="icon">🏷️</div>
+        <h3 data-i18n="auraticket.pricing.heading">Enthalten in</h3>
+        <p data-i18n="auraticket.pricing.text">Free Plan, Business Solo und Business Advanced. Im Free Plan für 1 Benutzer (private Nutzung).</p>
+        <p class="price-note" data-i18n="auraticket.pricing.note">Alle Preise exkl. MwSt. Hardware ist nicht Bestandteil der Lizenz.</p>
+        <a href="#lizenz" class="plan-link" data-i18n="auraticket.pricing.link">Alle Pläne und Preise ansehen →</a>
       </div>
-      <p class="price-note" data-i18n="auraticket.pricing.note">14 Tage Testphase. Preise auf Anfrage — wir erstellen gern ein Angebot.</p>
       <div class="card" style="margin-top:32px; max-width:420px; margin-left:auto; margin-right:auto;">
         <div class="icon">📄</div>
         <h3 data-i18n="auraticket.downloads.sheet.title">Datenblatt &amp; Anleitung</h3>
@@ -824,29 +798,13 @@
         <div class="card"><div class="icon">🔑</div><h3 data-i18n="auraproxy.features.f5.title">Zentrale Anmeldung</h3><p data-i18n="auraproxy.features.f5.desc">Anmeldung mit dem AuraDirect-Konto, inklusive zentraler Zwei-Faktor-Authentifizierung.</p></div>
         <div class="card"><div class="icon">🛠️</div><h3 data-i18n="auraproxy.features.f6.title">Administration</h3><p data-i18n="auraproxy.features.f6.desc">Backup &amp; Wiederherstellung, Lizenzverwaltung mit Testphase.</p></div>
       </div>
-      <div class="pricing-grid" style="margin-top:40px; max-width:700px; margin-left:auto; margin-right:auto;">
-        <div class="price-card popular">
-          <span class="price-badge" data-i18n="pricing.popular">Beliebt</span>
-          <h3 data-i18n="auraproxy.pricing.a.title">Inklusive</h3>
-          <p class="price" data-i18n="auraproxy.pricing.a.price">kostenlos</p>
-          <p class="sub" data-i18n="auraproxy.pricing.a.sub">bis 4 Benutzer, oder sobald mindestens zwei Aura-Anwendungen verbunden sind</p>
-          <ul>
-            <li data-i18n="auraproxy.pricing.a.li1">· Alle Funktionen</li>
-            <li data-i18n="auraproxy.pricing.a.li2">· Domains, Ports und Zertifikate</li>
-            <li data-i18n="auraproxy.pricing.a.li3">· Zentrale Anmeldung &amp; 2FA</li>
-          </ul>
-        </div>
-        <div class="price-card">
-          <h3 data-i18n="auraproxy.pricing.b.title">Eigenständig</h3>
-          <p class="price" data-i18n="auraproxy.pricing.b.price">CHF 15.–</p>
-          <p class="sub" data-i18n="auraproxy.pricing.b.sub">pro Installation / Mt.</p>
-          <ul>
-            <li data-i18n="auraproxy.pricing.b.li1">· Alle Funktionen</li>
-            <li data-i18n="auraproxy.pricing.b.li2">· Ohne weitere Aura-Anwendung</li>
-          </ul>
-        </div>
+      <div class="card plan-included">
+        <div class="icon">🏷️</div>
+        <h3 data-i18n="auraproxy.pricing.heading">Enthalten in</h3>
+        <p data-i18n="auraproxy.pricing.text">Immer kostenlos und in jedem Plan dabei, auch im Free Plan. Ohne Testphase und ohne Sperre.</p>
+        <p class="price-note" data-i18n="auraproxy.pricing.note">Alle Preise exkl. MwSt. Hardware ist nicht Bestandteil der Lizenz.</p>
+        <a href="#lizenz" class="plan-link" data-i18n="auraproxy.pricing.link">Alle Pläne und Preise ansehen →</a>
       </div>
-      <p class="price-note" data-i18n="auraproxy.pricing.note">Alle Preise sind Richtwerte exkl. MwSt.</p>
       <div class="card" style="margin-top:32px; max-width:420px; margin-left:auto; margin-right:auto;">
         <div class="icon">📄</div>
         <h3 data-i18n="auraproxy.downloads.sheet.title">Datenblatt &amp; Anleitung</h3>
@@ -885,29 +843,13 @@
         <div class="card"><div class="icon">🔒</div><h3 data-i18n="auracall.features.f5.title">Datenschutz &amp; Sicherheit</h3><p data-i18n="auracall.features.f5.desc">Keine Tonaufnahmen. Gesprächstexte nur auf Wunsch und mit automatischer Löschung. Zwei-Faktor-Anmeldung, Anmeldung über AuraDirect und eine Vorlage für die Datenschutzerklärung.</p></div>
         <div class="card"><div class="icon">🛠️</div><h3 data-i18n="auracall.features.f6.title">Betrieb &amp; Sprachen</h3><p data-i18n="auracall.features.f6.desc">Eigener Asterisk im Docker-Container, beliebiger SIP-Anbieter, Verwaltung im Browser mit Anrufliste, Einstellungen und Lizenz. Spracherkennung, Antworten und Stimme kommen aus eurem eigenen AuraChat. Sprache am Telefon: Deutsch, Englisch, Französisch, Italienisch oder Spanisch.</p></div>
       </div>
-      <div class="pricing-grid" style="margin-top:40px; max-width:700px; margin-left:auto; margin-right:auto;">
-        <div class="price-card popular">
-          <span class="price-badge" data-i18n="pricing.popular">Beliebt</span>
-          <h3 data-i18n="auracall.pricing.a.title">Testphase</h3>
-          <p class="price" data-i18n="auracall.pricing.a.price">kostenlos</p>
-          <p class="sub" data-i18n="auracall.pricing.a.sub">14 Tage, alle Funktionen</p>
-          <ul>
-            <li data-i18n="auracall.pricing.a.li1">· Eingehende und ausgehende Anrufe</li>
-            <li data-i18n="auracall.pricing.a.li2">· Alle Sicherheitsfunktionen</li>
-            <li data-i18n="auracall.pricing.a.li3">· Danach mit Lizenz weiter</li>
-          </ul>
-        </div>
-        <div class="price-card">
-          <h3 data-i18n="auracall.pricing.b.title">Lizenz</h3>
-          <p class="price" data-i18n="auracall.pricing.b.price">auf Anfrage</p>
-          <p class="sub" data-i18n="auracall.pricing.b.sub">pro Installation</p>
-          <ul>
-            <li data-i18n="auracall.pricing.b.li1">· Alle Funktionen</li>
-            <li data-i18n="auracall.pricing.b.li2">· Voraussetzung: AuraChat mit Telefonie-Lizenz</li>
-          </ul>
-        </div>
+      <div class="card plan-included">
+        <div class="icon">🏷️</div>
+        <h3 data-i18n="auracall.pricing.heading">Enthalten in</h3>
+        <p data-i18n="auracall.pricing.text">Business Solo (CHF 19.90 / Monat) und Business Advanced (ab 2 Benutzern). Nicht im Free Plan. 14 Tage kostenlos testen. Telefonkosten des SIP-Anbieters kommen hinzu.</p>
+        <p class="price-note" data-i18n="auracall.pricing.note">Alle Preise exkl. MwSt. Hardware ist nicht Bestandteil der Lizenz.</p>
+        <a href="#lizenz" class="plan-link" data-i18n="auracall.pricing.link">Alle Pläne und Preise ansehen →</a>
       </div>
-      <p class="price-note" data-i18n="auracall.pricing.note">Nach der Testphase nimmt Aura ohne gültige Lizenz keine Anrufe mehr an. Telefonkosten des SIP-Anbieters kommen hinzu. Preise auf Anfrage — wir erstellen gern ein Angebot.</p>
       <div class="card" style="margin-top:32px; max-width:420px; margin-left:auto; margin-right:auto;">
         <div class="icon">📄</div>
         <h3 data-i18n="auracall.downloads.sheet.title">Datenblatt &amp; Anleitung</h3>

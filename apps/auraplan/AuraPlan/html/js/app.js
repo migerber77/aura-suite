@@ -45,19 +45,6 @@
 
     // Liest eine hochgeladene .lic-Datei (reiner Text) und füllt das zugehörige
     // Textfeld damit - für beide Lizenz-Eingabestellen (Sperr-Fenster + Admin Panel) nutzbar.
-    function wireLicenseFileInput(fileInputId, textareaId) {
-        const fileInput = document.getElementById(fileInputId);
-        if (!fileInput) return;
-        fileInput.addEventListener('change', () => {
-            const file = fileInput.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = () => { document.getElementById(textareaId).value = reader.result.trim(); };
-            reader.readAsText(file);
-        });
-    }
-    wireLicenseFileInput('license-key-file', 'license-key-input');
-    wireLicenseFileInput('license-admin-key-file', 'license-admin-key-input');
 
     // --- Login/Logout ---
     const loginStepCredentials = document.getElementById('login-step-credentials');
@@ -261,25 +248,10 @@
             statusEl.textContent = `✗ Keine gültige Lizenz (${info.error || 'unbekannt'})`;
             statusEl.className = 'text-xs text-red-400 mb-3';
         }
-        document.getElementById('license-admin-remove-btn').classList.toggle('hidden', !info.licenseValid);
+        if (info.licenseValid) statusEl.textContent += info.managedBy === 'auracontrol' ? ' · von AuraControl übertragen' : '';
+        if (info.plan) statusEl.textContent += ' · ' + (info.plan === 'advanced' ? 'Business Advanced' : info.plan === 'solo' ? 'Business Solo' : 'Aura-Suite');
     }
-    document.getElementById('license-admin-save-btn').addEventListener('click', async () => {
-        const errorEl = document.getElementById('license-admin-error');
-        errorEl.classList.add('hidden');
-        try {
-            await api('/admin/license', { method: 'POST', body: JSON.stringify({ key: document.getElementById('license-admin-key-input').value }) });
-            document.getElementById('license-admin-key-input').value = '';
-            loadLicenseAdminStatus();
-        } catch (err) {
-            errorEl.textContent = err.message;
-            errorEl.classList.remove('hidden');
-        }
-    });
-    document.getElementById('license-admin-remove-btn').addEventListener('click', async () => {
-        if (!confirm('Lizenz wirklich entfernen? Ohne gültige Lizenz (oder laufende Testphase) ist AuraPlan danach gesperrt.')) return;
-        await api('/admin/license/remove', { method: 'POST' });
-        loadLicenseAdminStatus();
-    });
+    // Lizenz eintragen/entfernen gibt es hier nicht mehr: sie kommt aus AuraControl
 
     async function loadAurachatServiceKey() {
         const s = await api('/admin/aurachat-service-key');
@@ -374,21 +346,10 @@
         document.getElementById('modal-license').classList.remove('hidden');
         const adminForm = document.getElementById('license-modal-admin-form');
         if (currentUser.role === 'admin') {
-            document.getElementById('license-modal-text').textContent = 'Für diese Installation ist keine gültige Lizenz hinterlegt. Bitte Lizenzschlüssel eintragen:';
-            adminForm.classList.remove('hidden');
-            document.getElementById('license-save-btn').onclick = async () => {
-                const errorEl = document.getElementById('license-modal-error');
-                errorEl.classList.add('hidden');
-                try {
-                    await api('/admin/license', { method: 'POST', body: JSON.stringify({ key: document.getElementById('license-key-input').value }) });
-                    document.getElementById('modal-license').classList.add('hidden');
-                    await boot();
-                } catch (err) {
-                    errorEl.textContent = err.message;
-                    errorEl.classList.remove('hidden');
-                }
-            };
+            document.getElementById('license-modal-text').textContent = 'Für diese Installation ist keine gültige Lizenz vorhanden. Die Lizenz wird zentral in AuraControl eingetragen (Admin Panel → Lizenz) und kommt automatisch hierher (spätestens nach 15 Minuten).';
         }
+        const recheck = document.getElementById('license-recheck-btn');
+        if (recheck) recheck.onclick = () => location.reload();
         return false;
     }
 
@@ -948,33 +909,7 @@
         });
     }
 
-    document.getElementById('user-form').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const statusEl = document.getElementById('user-form-status');
-        statusEl.textContent = '';
-        try {
-            await api('/users', {
-                method: 'POST',
-                body: JSON.stringify({
-                    name: document.getElementById('new-user-name').value,
-                    username: document.getElementById('new-user-username').value,
-                    password: document.getElementById('new-user-password').value,
-                    vacationDaysPerYear: parseFloat(document.getElementById('new-user-vacation').value),
-                    pensumPercent: parseFloat(document.getElementById('new-user-pensum').value),
-                    weeklyHours: parseFloat(document.getElementById('new-user-weekly-hours').value),
-                    role: document.getElementById('new-user-role').value,
-                    color: document.getElementById('new-user-color').value
-                })
-            });
-            statusEl.textContent = '✓ Angelegt.';
-            statusEl.className = 'col-span-2 text-xs text-emerald-400';
-            e.target.reset();
-            loadUsers();
-        } catch (err) {
-            statusEl.textContent = err.message;
-            statusEl.className = 'col-span-2 text-xs text-red-400';
-        }
-    });
+    // Mitarbeitende werden nicht mehr hier angelegt: das geschieht zentral in AuraDirect (kostenlos).
 
     // --- Übersicht: eine Zeile pro Person (Arbeitszeiten / Schichtplan / Ferien) ---
     let currentOverviewTab = 'hours';
@@ -1157,31 +1092,6 @@
     });
     document.getElementById('export-absences-btn').addEventListener('click', () => {
         window.location.href = `/api/admin/export/absences${exportDateRange()}`;
-    });
-
-    document.getElementById('import-employees-btn').addEventListener('click', async () => {
-        const fileInput = document.getElementById('import-employees-file');
-        const statusEl = document.getElementById('import-employees-status');
-        if (!fileInput.files[0]) { alert('Bitte zuerst eine CSV-Datei auswählen.'); return; }
-        const formData = new FormData();
-        formData.append('file', fileInput.files[0]);
-        statusEl.textContent = 'Wird importiert...';
-        statusEl.className = 'text-xs text-slate-400 mt-2';
-        statusEl.classList.remove('hidden');
-        try {
-            const res = await fetch('/api/admin/import/employees', { method: 'POST', credentials: 'include', body: formData });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.error || 'Fehler.');
-            let msg = `✓ ${data.created} neu angelegt, ${data.updated} aktualisiert.`;
-            if (data.errors && data.errors.length) msg += ` ${data.errors.length} Zeile(n) übersprungen.`;
-            statusEl.textContent = msg;
-            statusEl.className = 'text-xs text-emerald-400 mt-2';
-            fileInput.value = '';
-            loadUsers();
-        } catch (err) {
-            statusEl.textContent = '✗ ' + err.message;
-            statusEl.className = 'text-xs text-red-400 mt-2';
-        }
     });
 
     boot();

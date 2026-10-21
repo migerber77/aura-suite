@@ -3,6 +3,7 @@
 <head>
     <script src="/static/aura-i18n.js"></script>
     <script src="/static/aura-i18n-words.js"></script>
+    <script src="/static/aura-i18n-control.js"></script>
     <script src="/static/aura-intro.js" data-video="/static/images/intro/aurasuite-intro"></script>
     <script src="/static/aura-prefs.js"></script>
     <meta charset="UTF-8">
@@ -38,7 +39,15 @@
 
     <!-- Main Content -->
     <main class="relative z-10 flex-grow container mx-auto px-4 py-8 max-w-6xl space-y-8">
-        
+
+        <!-- Ansichten: Hardware (Strom, Speicher, Inventar) und Cockpit (Gesundheit des Servers: Docker, Updates, Schwachstellen) -->
+        <nav class="flex gap-2" role="tablist" aria-label="Ansicht">
+            <button id="tabHardware" type="button" role="tab" aria-selected="true" aria-controls="viewHardware" class="px-4 py-2 rounded-lg text-sm font-semibold transition bg-blue-600 text-white">📊 Hardware</button>
+            <button id="tabCockpit" type="button" role="tab" aria-selected="false" aria-controls="viewCockpit" class="px-4 py-2 rounded-lg text-sm font-semibold transition bg-gray-800 text-gray-300 hover:bg-gray-700">🖥️ Cockpit</button>
+        </nav>
+
+        <div id="viewHardware" role="tabpanel" aria-labelledby="tabHardware" class="space-y-8">
+
         <!-- Top Status Cards -->
         <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
             <div class="bg-gray-900/80 backdrop-blur p-5 rounded-lg border border-gray-800 shadow">
@@ -135,6 +144,36 @@
             </div>
         </div>
 
+        </div><!-- /viewHardware -->
+
+        <!-- Cockpit: Gesundheit des Servers (Daten von /api/cockpit) -->
+        <div id="viewCockpit" role="tabpanel" aria-labelledby="tabCockpit" class="hidden flex flex-col gap-3 bg-gray-900/80 backdrop-blur p-6 rounded-lg shadow border border-gray-800">
+                    <div class="flex items-center justify-between gap-2">
+                        <div id="cockpit-headline" class="text-sm font-semibold text-slate-300">Cockpit</div>
+                        <div class="flex items-center gap-2">
+                            <span id="cockpit-updated" class="text-[10px] text-slate-500"></span>
+                            <button id="cockpit-refresh-btn" title="Jetzt aktualisieren" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white font-medium px-2.5 py-1 rounded-lg text-[11px] transition cursor-pointer">⟳</button>
+                        </div>
+                    </div>
+                    <div id="cockpit-host-info" class="text-[11px] text-slate-500"></div>
+                    <div id="cockpit-error" class="hidden bg-red-500/10 border border-red-500/30 rounded-xl px-3 py-2 text-[11px] text-red-300 whitespace-pre-wrap"></div>
+                    <div id="cockpit-warnings" class="flex flex-col gap-1"></div>
+                    <div id="cockpit-cards" class="grid grid-cols-2 gap-2"></div>
+                    <div class="flex flex-col gap-1.5">
+                        <span class="text-xs font-semibold text-white">🐳 Docker-Container</span>
+                        <div id="cockpit-containers" class="flex flex-col gap-1"></div>
+                        <div id="cockpit-docker-usage" class="text-[11px] text-slate-400"></div>
+                    </div>
+                    <div class="flex flex-col gap-1.5">
+                        <span class="text-xs font-semibold text-white">🛡️ Schwachstellen in den Images</span>
+                        <div id="cockpit-vulns" class="flex flex-col gap-1"></div>
+                    </div>
+                    <div class="flex flex-col gap-1.5">
+                        <span class="text-xs font-semibold text-white">🔄 Updates des Servers</span>
+                        <div id="cockpit-updates" class="flex flex-col gap-1"></div>
+                    </div>
+        </div>
+
     </main>
 
     <!-- Admin Panel -->
@@ -151,7 +190,12 @@
             </div>
             <section data-admin-section="license" class="space-y-3 hidden">
                 <p id="licStatus" class="text-sm text-gray-300">Wird geladen…</p>
-                <p class="text-xs text-gray-500">14 Tage Testphase, danach ist ein Benutzer (der Administrator) kostenlos. Mehr Benutzer brauchen eine Lizenz.</p>
+                <p class="text-xs text-gray-500">Die Suite-Lizenz (Business Solo oder Business Advanced) wird <b>nur hier</b> eingetragen. AuraControl gibt sie automatisch an AuraChat, AuraPlan, AuraTicket, AuraMail und AuraCall weiter, und übernimmt beim Abgleich mit dem Lizenzserver eine neuere Fassung (z. B. mehr Mitarbeiter). In den einzelnen Produkten muss nichts eingetragen werden.</p>
+                <div id="licSuite" class="hidden bg-gray-800/60 border border-gray-700 rounded p-3 space-y-2">
+                    <p id="licSuiteHead" class="text-sm text-white"></p>
+                    <ul id="licSuiteList" class="text-xs text-gray-300 space-y-1"></ul>
+                    <p class="text-[11px] text-gray-500">Die Produkte holen die Lizenz alle 15 Minuten ab (Anzeige seit dem letzten Start von AuraControl).</p>
+                </div>
                 <label class="block text-xs text-gray-400" for="licKey">Lizenzschlüssel</label>
                 <textarea id="licKey" rows="4" spellcheck="false" autocomplete="off" placeholder="Lizenzschlüssel hier einfügen" class="w-full bg-gray-800 border border-gray-700 rounded p-2 text-white text-xs font-mono"></textarea>
                 <p id="licMsg" class="text-xs text-gray-400"></p>
@@ -160,9 +204,13 @@
                     <button type="button" id="licRemove" onclick="removeLicense()" class="hidden flex-1 bg-gray-800 hover:bg-gray-700 text-gray-300 font-bold py-2 rounded text-sm transition">Lizenz entfernen</button>
                 </div>
                 <p id="licCheckin" class="text-xs text-gray-500"></p>
+                <button type="button" id="licSync" onclick="syncLicense()" class="hidden w-full bg-gray-800 hover:bg-gray-700 border border-gray-700 text-gray-200 py-2 rounded text-sm transition">🔄 Mit Lizenzserver abgleichen</button>
             </section>
             <section data-admin-section="security" class="space-y-3 hidden">
+                <p class="text-xs text-gray-400">Angemeldet als: <span class="text-gray-200">{{ user_label }}</span></p>
+                {% if not local_admin %}<p class="text-xs text-gray-500">Ihr Passwort und die Zwei-Faktor-Anmeldung verwalten Sie in AuraDirect. Das Passwort des lokalen Notzugangs „admin“ und die Anbindung an AuraDirect kann nur „admin“ ändern.</p>{% endif %}
                 <p id="mustChange" class="hidden text-xs text-yellow-300 bg-yellow-950/60 border border-yellow-700/50 rounded p-2">Bitte ändern Sie jetzt das Anfangspasswort.</p>
+                {% if local_admin %}
                 <form onsubmit="changePassword(event)" class="space-y-3">
                     <div>
                         <label class="block text-xs text-gray-400 mb-1" for="currentPassword">Aktuelles Passwort</label>
@@ -180,6 +228,25 @@
                     <button type="submit" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 rounded text-sm transition">Passwort ändern</button>
                     <p class="text-xs text-gray-500">Nach der Änderung werden alle anderen Anmeldungen beendet.</p>
                 </form>
+                {% endif %}
+                <div class="border-t border-gray-800 pt-3 space-y-2">
+                    <h4 class="text-sm font-semibold text-white">🔑 Anmeldung über AuraDirect</h4>
+                    <p class="text-xs text-gray-500">Personen aus AuraDirect melden sich mit ihrem eigenen Konto an, wenn sie dort für „AuraControl“ freigeschaltet sind (inkl. Zwei-Faktor-Anmeldung von AuraDirect). Der lokale Benutzer „admin“ bleibt immer als Notzugang.</p>
+                    <label class="flex items-center gap-2 text-sm text-gray-200"><input type="checkbox" id="adEnabled" class="w-4 h-4"> Anmeldung über AuraDirect einschalten</label>
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1" for="adUrl">Adresse von AuraDirect</label>
+                        <input type="text" id="adUrl" placeholder="http://10.0.55.160:4000" autocomplete="off" class="w-full bg-gray-800 border border-gray-700 rounded p-2 text-white text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1" for="adKey">Dienst-Schlüssel (steht in AuraDirect auf der Startseite)</label>
+                        <input type="password" id="adKey" placeholder="" autocomplete="off" class="w-full bg-gray-800 border border-gray-700 rounded p-2 text-white text-sm">
+                    </div>
+                    <p id="adMsg" class="text-xs text-gray-400"></p>
+                    <div id="adButtons" class="flex gap-3">
+                        <button type="button" onclick="testAuraDirect()" class="flex-1 bg-gray-800 hover:bg-gray-700 border border-gray-700 text-gray-200 py-2 rounded text-sm transition">Verbindung testen</button>
+                        <button type="button" onclick="saveAuraDirect()" class="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 rounded text-sm transition">Speichern</button>
+                    </div>
+                </div>
             </section>
             <section data-admin-section="system" class="space-y-3 hidden">
                 <p class="text-xs text-gray-400">Diese Aktionen betreffen den ganzen Server.</p>
@@ -247,6 +314,7 @@
             document.querySelectorAll('[data-admin-section]').forEach(el => el.classList.toggle('hidden', el.dataset.adminSection !== section));
             document.querySelectorAll('.admin-tab').forEach(b => { const on = b.dataset.adminTab === section; b.classList.toggle('bg-blue-600', on); b.classList.toggle('text-white', on); b.classList.toggle('bg-gray-800', !on); b.classList.toggle('text-gray-300', !on); });
             if (section === 'license') loadLicense();
+            if (section === 'security') loadAuraDirect();
         }
         function closeAdmin() { hideModal('adminModal'); }
         document.querySelectorAll('.admin-tab').forEach(b => b.addEventListener('click', () => openAdmin(b.dataset.adminTab)));
@@ -262,6 +330,14 @@
                 else text = '✗ ' + (l.message || 'Keine gültige Lizenz.');
                 $('licStatus').textContent = text;
                 $('licRemove').classList.toggle('hidden', !l.hasKey);
+                const s = l.suite;
+                $('licSuite').classList.toggle('hidden', !s);
+                $('licSync').classList.toggle('hidden', !s);
+                if (s) {
+                    $('licSuiteHead').textContent = `${s.plan} · ${s.users} Benutzer · gilt für alle Produkte`;
+                    const ul = $('licSuiteList'); ul.textContent = '';
+                    s.deliveries.forEach(d => { const li = document.createElement('li'); li.textContent = (d.at ? '✓ ' : '… ') + d.name + ': ' + (d.at ? 'abgeholt ' + new Date(d.at).toLocaleString('de-CH') : 'noch nicht abgeholt'); li.className = d.at ? 'text-emerald-300' : 'text-gray-400'; ul.appendChild(li); });
+                }
                 const c = l.checkin && l.checkin.lastResult;
                 $('licCheckin').textContent = 'Rückmeldung an den Lizenzserver (anonym, alle 12 Stunden): ' + (c ? (c.success ? 'zuletzt erfolgreich' : 'zuletzt fehlgeschlagen') : 'noch keine seit dem Start');
                 const chip = $('hdr-license'); chip.textContent = STATE_TEXT[l.state] || ''; chip.classList.toggle('hidden', !STATE_TEXT[l.state]);
@@ -272,10 +348,34 @@
             setMsg($('licMsg'), data.message || (ok ? 'Gespeichert.' : 'Fehler.'), ok ? 'ok' : 'error');
             if (ok) { $('licKey').value = ''; loadLicense(); }
         }
+        async function syncLicense() {
+            setMsg($('licMsg'), 'Gleiche mit dem Lizenzserver ab …', 'ok');
+            const { ok, data } = await call('POST', '/api/license/sync');
+            setMsg($('licMsg'), data.message || (ok ? 'Abgeglichen.' : 'Fehler.'), ok ? 'ok' : 'error'); loadLicense();
+        }
         async function removeLicense() {
-            if (!confirm('Lizenz entfernen? Danach gilt die kostenlose Stufe (1 Benutzer: der Administrator).')) return;
+            if (!confirm('Lizenz entfernen? Auch die Produkte verlieren dann die von hier verteilte Lizenz (beim nächsten Abholen, innert 15 Minuten).')) return;
             const { ok, data } = await call('DELETE', '/api/license');
             setMsg($('licMsg'), data.message || '', ok ? 'ok' : 'error'); loadLicense();
+        }
+        async function loadAuraDirect() {
+            try {
+                const { data: d } = await call('GET', '/api/admin/auradirect');
+                $('adEnabled').checked = !!d.enabled; $('adUrl').value = d.url || '';
+                $('adKey').value = ''; $('adKey').placeholder = d.hasKey ? '•••••••• (gespeichert, leer lassen = behalten)' : 'Dienst-Schlüssel einfügen';
+                ['adEnabled', 'adUrl', 'adKey'].forEach(id => { $(id).disabled = !d.canEdit; });
+                $('adButtons').classList.toggle('hidden', !d.canEdit);
+                setMsg($('adMsg'), d.active ? '✓ Eingeschaltet: Personen aus AuraDirect können sich anmelden.' : 'Ausgeschaltet: nur der lokale Benutzer „admin“ kann sich anmelden.', d.active ? 'ok' : '');
+            } catch (e) { /* Anzeige bleibt */ }
+        }
+        async function saveAuraDirect() {
+            const { ok, data } = await call('POST', '/api/admin/auradirect', { enabled: $('adEnabled').checked, url: $('adUrl').value, key: $('adKey').value });
+            setMsg($('adMsg'), data.message || (ok ? 'Gespeichert.' : 'Fehler.'), ok ? 'ok' : 'error'); if (ok) { $('adKey').value = ''; loadAuraDirect(); }
+        }
+        async function testAuraDirect() {
+            setMsg($('adMsg'), 'Prüfe die Verbindung …', '');
+            const { ok, data } = await call('POST', '/api/admin/auradirect/test', { url: $('adUrl').value, key: $('adKey').value });
+            setMsg($('adMsg'), data.message || (ok ? 'OK' : 'Fehler.'), ok ? 'ok' : 'error');
         }
         async function changePassword(e) {
             e.preventDefault();
@@ -421,6 +521,7 @@
     </script>
 <script src="/static/aura-privacy.js"></script>
     <script src="/static/aura-menu.js"></script>
+    <script src="/static/cockpit.js"></script>
     <script>
         AuraMenu.mount('aura-menu', {
             settings: () => window.openSettings(),
@@ -428,6 +529,27 @@
             logout: '/logout'
         });
         {% if must_change %}window.addEventListener('load', () => { window.openAdmin('security'); document.getElementById('mustChange').classList.remove('hidden'); });{% endif %}
+        // Ansichten Hardware | Cockpit (Tastatur: Pfeiltasten wechseln; Adresse #cockpit öffnet das Cockpit direkt)
+        (function () {
+            const VIEWS = { hardware: ['tabHardware', 'viewHardware'], cockpit: ['tabCockpit', 'viewCockpit'] };
+            const ON = ['bg-blue-600', 'text-white'], OFF = ['bg-gray-800', 'text-gray-300', 'hover:bg-gray-700'];
+            function showView(name) {
+                Object.keys(VIEWS).forEach(k => {
+                    const tab = document.getElementById(VIEWS[k][0]), panel = document.getElementById(VIEWS[k][1]), on = k === name;
+                    tab.setAttribute('aria-selected', on ? 'true' : 'false'); tab.setAttribute('tabindex', on ? '0' : '-1');
+                    tab.classList.remove(...(on ? OFF : ON)); tab.classList.add(...(on ? ON : OFF));
+                    panel.classList.toggle('hidden', !on);
+                });
+                if (name === 'cockpit') window.AuraCockpit.show(); else window.AuraCockpit.hide();
+                try { history.replaceState(null, '', name === 'cockpit' ? '#cockpit' : window.location.pathname + window.location.search); } catch (e) { /* ohne Adressleiste */ }
+            }
+            Object.keys(VIEWS).forEach(k => {
+                const tab = document.getElementById(VIEWS[k][0]);
+                tab.addEventListener('click', () => showView(k));
+                tab.addEventListener('keydown', (e) => { if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { const n = k === 'hardware' ? 'cockpit' : 'hardware'; showView(n); document.getElementById(VIEWS[n][0]).focus(); } });
+            });
+            if (window.location.hash === '#cockpit') showView('cockpit');
+        })();
         window.addEventListener('load', () => { loadLicense(); window.AuraPrivacy.check({ headers: { 'X-Aura-Request': '1' }, onLogout: () => { window.location.href = '/logout'; } }); });
     </script>
     <script src="/static/about.js"></script>

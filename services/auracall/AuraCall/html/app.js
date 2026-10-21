@@ -278,9 +278,9 @@ let licenseInfo = null;
 const daysText = (n) => `${n} ${n === 1 ? 'Tag' : 'Tage'}`;
 function paintBanner() {
     const b = $('#license-banner'), l = licenseInfo; let msg = '', kind = 'warn';
-    if (l && l.state === 'expired') { msg = 'Keine gültige Lizenz: Aura nimmt keine Anrufe an und wählt nicht. Bitte unter „Lizenz“ einen Schlüssel eintragen.'; kind = 'error'; }
-    else if (l && l.state === 'trial') msg = `Testzeit: noch ${daysText(l.trialDaysRemaining)}. Danach ist ein Benutzer (der Admin) kostenlos, für mehr wird eine Lizenz nötig (Reiter „Lizenz“).`;
-    else if (l && l.expiresSoon) msg = `Die Lizenz läuft in ${l.daysLeft} ${l.daysLeft === 1 ? 'Tag' : 'Tagen'} ab. Bitte rechtzeitig erneuern (Reiter „Lizenz“).`;   // "in 5 Tagen" (Dativ), anders als "noch 5 Tage"
+    if (l && l.state === 'expired') { msg = 'Keine gültige Lizenz: Aura nimmt keine Anrufe an und wählt nicht. Die Lizenz wird zentral in AuraControl eingetragen und kommt automatisch hierher.'; kind = 'error'; }
+    else if (l && l.state === 'trial') msg = `Testzeit: noch ${daysText(l.trialDaysRemaining)}. Danach braucht AuraCall eine Lizenz (Business Solo oder Business Advanced, in AuraControl eingetragen).`;
+    else if (l && l.expiresSoon) msg = `Die Lizenz läuft in ${l.daysLeft} ${l.daysLeft === 1 ? 'Tag' : 'Tagen'} ab. Bitte rechtzeitig erneuern (in AuraControl).`;   // "in 5 Tagen" (Dativ), anders als "noch 5 Tage"
     b.className = msg ? 'banner alert ' + kind : 'banner hidden'; b.textContent = msg;
 }
 async function refreshLicense() { try { licenseInfo = await api('GET', '/api/license'); } catch { licenseInfo = null; } paintBanner(); }
@@ -288,18 +288,17 @@ async function renderLicense(root) {
     const l = await api('GET', '/api/license'); licenseInfo = l; paintBanner();
     const dt = (iso) => iso ? new Date(iso).toLocaleDateString('de-CH') : 'unbefristet';
     const status = l.state === 'licensed' ? h('div', { class: 'alert ok' }, `Lizenziert für ${l.customer || 'unbekannt'}. Gültig bis: ${dt(l.expiresAt)}${l.expiresSoon ? ` (noch ${daysText(l.daysLeft)})` : ''}.`)
-        : l.state === 'trial' ? h('div', { class: 'alert warn' }, `Testzeit: noch ${daysText(l.trialDaysRemaining)}. Danach ist ein Benutzer (der Admin) kostenlos; mit mehreren Benutzern braucht AuraCall eine Lizenz, sonst nimmt Aura keine Anrufe mehr an.`)
-        : l.state === 'free' ? h('div', { class: 'alert ok' }, 'Kostenlose Stufe aktiv (1 Benutzer: der Admin). Für weitere Benutzer wird eine Lizenz benötigt.')
+        : l.state === 'trial' ? h('div', { class: 'alert warn' }, `Testzeit: noch ${daysText(l.trialDaysRemaining)}. Danach braucht AuraCall eine Lizenz (Business Solo oder Business Advanced), sonst nimmt Aura keine Anrufe mehr an.`)
         : h('div', { class: 'alert error' }, `${l.message} Aura nimmt derzeit keine Anrufe an und wählt nicht.`);
-    const keyBox = h('textarea', { id: 'lic-key', rows: 4, placeholder: 'Lizenzschlüssel hier einfügen', spellcheck: 'false', autocomplete: 'off' }), msg = h('div', { class: 'hidden' });
-    const save = async () => { msg.className = 'hidden'; try { await api('POST', '/api/license', { key: keyBox.value }); toast('Lizenz gespeichert.'); load(); } catch (e) { msg.className = 'alert error'; msg.textContent = errText(e); } };
-    const remove = async () => { if (!confirm('Lizenz entfernen? Danach gilt die kostenlose Stufe (1 Benutzer: der Admin); mit mehreren Benutzern nimmt Aura keine Anrufe mehr an.')) return; try { await api('DELETE', '/api/license'); toast('Lizenz entfernt.'); load(); } catch (e) { toast(errText(e), 'error'); } };
+    const sy = l.sync || {}, lr = sy.lastResult;
+    const syncText = !sy.enabled ? 'Abholen bei AuraControl ist abgeschaltet (LICENSE_SYNC_URL).' : !lr ? 'Wird kurz nach dem Start bei AuraControl abgeholt, danach alle 15 Minuten.' : (lr.ok ? `Zuletzt bei AuraControl abgeholt: ${fmtTime(Date.parse(lr.at))}.` : `AuraControl: ${lr.message || 'Fehler'} (${fmtTime(Date.parse(lr.at))}).`);
     const ck = l.checkin || {}, last = ck.lastResult;
     const checkin = h('p', { class: 'muted' }, last ? (last.success ? `Zuletzt erfolgreich: ${fmtTime(Date.parse(last.at))}.` : `Zuletzt fehlgeschlagen (${fmtTime(Date.parse(last.at))}): ${last.message}`) : 'Noch keine Rückmeldung seit dem Start (die erste folgt kurz nach dem Start).');
     fill(root,
         h('div', { class: 'card stack' }, h('h3', {}, 'Lizenz'), status, l.keyError && l.state !== 'licensed' ? h('div', { class: 'alert error' }, 'Hinterlegter Schlüssel: ' + l.keyError) : null,
-            h('label', {}, 'Lizenzschlüssel (vom Lizenzserver, oder der Inhalt der .lic-Datei)', keyBox), msg,
-            h('div', { class: 'row end' }, l.hasKey ? h('button', { class: 'danger', type: 'button', on: { click: remove } }, 'Lizenz entfernen') : null, h('button', { class: 'primary', type: 'button', on: { click: save } }, 'Lizenz speichern'))),
+            l.plan ? h('p', {}, (l.plan === 'advanced' ? 'Business Advanced' : l.plan === 'solo' ? 'Business Solo' : 'Aura-Suite') + ' · gilt für alle Aura-Produkte') : null,
+            h('p', { class: 'muted' }, 'Die Lizenz der Aura-Suite wird zentral in AuraControl eingetragen (Admin Panel → Lizenz). AuraControl prüft sie beim Lizenzserver und überträgt sie automatisch hierher. Hier ist nichts einzutragen.'),
+            h('p', { class: 'muted small' }, syncText)),
         h('div', { class: 'card stack' }, h('h3', {}, 'Rückmeldung beim Lizenzserver'), checkin, h('p', { class: 'muted small' }, 'Alle 12 Stunden werden nur der Lizenzschlüssel, eine zufällige Installationskennung, die Programmversion und die Zahl der Konten gesendet. Nie Anrufe, Rufnummern oder Gespräche.')));
 }
 

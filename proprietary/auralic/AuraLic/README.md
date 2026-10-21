@@ -43,9 +43,22 @@ Anmeldung unter `/login` mit Benutzername `admin` + deinem `LICENSE_SERVER_PASSW
 
 ## Nutzung (Superadmin)
 
-- Formular ausfüllen: Kunde, Adresse, Features (Checkboxen), Preise,
-  optionales Ablaufdatum, optional einem Reseller zuordnen
-- "Lizenz erzeugen" → fertiger Schlüssel zum Kopieren + Download als `.lic`-Datei
+- **Lizenzmodell** wählen:
+  - **Business Solo** (1 Benutzer, CHF 19.90 / Monat) oder **Business Advanced** (ab 2 Benutzern,
+    CHF 19.90 + CHF 9.90 je weiteren Mitarbeiter / Monat, Feld „Weitere Mitarbeiter“): erzeugt EINEN
+    Suite-Schlüssel, der für AuraChat (Vollversion), AuraPlan, AuraTicket, AuraMail, AuraCall und AuraControl
+    gilt. Nur die Zahl der Mitarbeiter unterscheidet die Lizenzen; der Preis wird automatisch berechnet.
+  - Beim Kunden wird der Schlüssel **einmal in AuraControl** eingetragen. AuraControl verteilt ihn an die
+    Produkte (sie holen ihn alle 15 Minuten ab) und übernimmt beim Abgleich mit diesem Server (alle 12 Stunden
+    oder per Knopf) eine neuere Fassung.
+  - **✏️ Mitarbeiter ändern** (Kundenübersicht oder nach dem Erzeugen): stellt eine neue Fassung derselben
+    Lizenz aus (mehr/weniger Mitarbeiter, anderes Ablaufdatum). Beim Kunden ist nichts zu tun.
+  - **Einzelprodukt**: das bisherige Formular (ein Produkt, Features, Obergrenzen, eigene Preise),
+    z. B. für AuraControl.
+  - Der **Free Plan** (1 Benutzer: AuraChat-Grundfunktionen, AuraPlan, AuraTicket) braucht keinen Schlüssel.
+  - Die Hardware ist nicht Teil der Lizenz.
+- Kunde, Adresse, optionales Ablaufdatum, optional einem Reseller zuordnen
+- "Lizenz erzeugen" → fertige Schlüssel zum Kopieren + Download als `.lic`-Datei
 - **👥 Kunden**: alle Kunden (eigene + über Reseller), geschätzte Einnahmen,
   Check-in-Status
 - **🤝 Reseller**: eigene Wiederverkäufer-Konten anlegen (Name, Login,

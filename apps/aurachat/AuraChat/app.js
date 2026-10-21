@@ -283,6 +283,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const imageGenSaveBtn = document.getElementById('image-gen-save-btn');
     const imageGenStatus = document.getElementById('image-gen-status');
     const configUiLang = document.getElementById('config-ui-lang');
+    // Sprache wie in den anderen Aura-Produkten: eine Auswahl (Karte "Darstellung" im Reiter Design) und die Auswahl im Reiter "Sprache" stellen sofort um und bleiben im Gleichlauf.
+    // Für angemeldete Personen wird die Wahl als persönliche Einstellung gespeichert (sie folgt der Person auf jedes Gerät).
+    if (window.AuraI18n) {
+        window.AuraI18n.onChange((lang) => {
+            if (configUiLang && configUiLang.value !== lang) configUiLang.value = lang;
+            if (currentUser && appConfig.ui_lang !== lang) { appConfig.ui_lang = lang; saveConfigToDB('ui_lang', lang); applyUiLanguage(lang); }
+        });
+        if (configUiLang) configUiLang.addEventListener('change', () => window.AuraI18n.set(configUiLang.value));
+    }
     const configAvatarVoice = document.getElementById('config-avatar-voice');
     const configHeyAura = document.getElementById('config-hey-aura');
     const configDailyRecap = document.getElementById('config-daily-recap');
@@ -316,6 +325,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const logoutBtn = document.getElementById('logout-btn');
     const currentUserDisplay = document.getElementById('current-user-display');
     const guestContinueBtn = document.getElementById('guest-continue-btn');
+    const guestStayBtn = document.getElementById('guest-stay-btn');
+    const apaleoGuestCheck = document.getElementById('apaleo-guest-check');
 
     const menuItemAdminPanel = document.getElementById('menu-item-admin-panel');
     const modalAdminPanel = document.getElementById('modal-admin-panel');
@@ -323,6 +334,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const adminUsersError = document.getElementById('admin-users-error');
     const adminTabBtnUsers = document.getElementById('admin-tab-btn-users');
     const adminTabBtnBranding = document.getElementById('admin-tab-btn-branding');
+    const adminTabBtnAppstore = document.getElementById('admin-tab-btn-appstore');
+    const adminTabAppstore = document.getElementById('admin-tab-appstore');
     const adminTabUsers = document.getElementById('admin-tab-users');
     const adminTabBranding = document.getElementById('admin-tab-branding');
     const adminTabBtnMail = document.getElementById('admin-tab-btn-mail');
@@ -370,10 +383,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const adminTabBtnLicense = document.getElementById('admin-tab-btn-license');
     const adminTabLicense = document.getElementById('admin-tab-license');
     const adminLicenseCurrent = document.getElementById('admin-license-current');
-    const adminLicenseInput = document.getElementById('admin-license-input');
-    const adminLicenseFileInput = document.getElementById('admin-license-file-input');
-    const adminLicenseActivateBtn = document.getElementById('admin-license-activate-btn');
-    const adminLicenseStatus = document.getElementById('admin-license-status');
+    const licenseSyncStatus = document.getElementById('license-sync-status');   // Lizenz kommt aus AuraControl: hier nur die Anzeige des letzten Abholens
     const licenseCheckinStatus = document.getElementById('license-checkin-status');
     const chatBgPremiumBadge = document.getElementById('chat-bg-premium-badge');
     const chatBgPremiumNote = document.getElementById('chat-bg-premium-note');
@@ -388,17 +398,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const adminMailTestTo = document.getElementById('admin-mail-test-to');
     const adminMailTestBtn = document.getElementById('admin-mail-test-btn');
     const adminMailTestStatus = document.getElementById('admin-mail-test-status');
-    const adminNewUserToggleBtn = document.getElementById('admin-new-user-toggle-btn');
-    const adminNewUserForm = document.getElementById('admin-new-user-form');
-    const adminNewUsername = document.getElementById('admin-new-username');
-    const adminNewPassword = document.getElementById('admin-new-password');
-    const adminNewFirstname = document.getElementById('admin-new-firstname');
-    const adminNewLastname = document.getElementById('admin-new-lastname');
-    const adminNewEmail = document.getElementById('admin-new-email');
-    const adminNewIsAdmin = document.getElementById('admin-new-is-admin');
     const adminUserLimitDisplay = document.getElementById('admin-user-limit-display');
-    const adminNewUserSaveBtn = document.getElementById('admin-new-user-save-btn');
-    const adminNewUserStatus = document.getElementById('admin-new-user-status');
 
     const brandingPremiumBanner = document.getElementById('branding-premium-banner');
     const brandingLogoPreview = document.getElementById('branding-logo-preview');
@@ -523,6 +523,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let guestStayEnabled = false;   // bietet der Server "Mein Aufenthalt" an (Apaleo)?
     let guestStayVerified = false;  // hat sich dieser Gast schon mit seiner Reservierung ausgewiesen?
+    let guestStayOffered = false;   // Anmeldebildschirm: Knopf "mit Buchungsnummer anmelden" zeigen?
+    let authStep = 'form';          // Schritt im Anmeldefenster (form, 2FA ...)
     let guestChatEnabled = false; // vom Server beim "Als Gast fortfahren" geholt: darf ein Gast mit der KI chatten?
     let piperVoicesCache = new Map(); // Piper: Stimmenname -> { speakerCount, speakers[] }
     let piperVoicesLoaded = false;
@@ -612,6 +614,7 @@ document.addEventListener('DOMContentLoaded', () => {
             menuSettings: "⚙️ Einstellungen",
             menuAdminPanel: "🛠️ Admin Panel",
             guestContinue: "Als Gast fortfahren",
+            guestStayLogin: "🏨 Hotelgast: mit Buchungsnummer anmelden",
             guestIdleCleared: "🕐 Der Chat wurde wegen Inaktivität automatisch geleert.",
             ttsOn: "Sprache: An",
             ttsOff: "Sprache: Aus",
@@ -639,6 +642,7 @@ document.addEventListener('DOMContentLoaded', () => {
             menuSettings: "⚙️ Settings",
             menuAdminPanel: "🛠️ Admin Panel",
             guestContinue: "Continue as Guest",
+            guestStayLogin: "🏨 Hotel guest: sign in with booking number",
             guestIdleCleared: "🕐 The chat was automatically cleared due to inactivity.",
             ttsOn: "Speech: On",
             ttsOff: "Speech: Off",
@@ -672,6 +676,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (changePasswordBtn) changePasswordBtn.textContent = t.btnPassword;
         if (deleteAccountBtn) deleteAccountBtn.textContent = t.btnDeleteAcc;
         if (guestContinueBtn) guestContinueBtn.textContent = t.guestContinue;
+        if (guestStayBtn && t.guestStayLogin) guestStayBtn.textContent = t.guestStayLogin;
 
         if (menuItemAbout) menuItemAbout.innerHTML = `<span>ℹ️</span> <span>${t.menuAbout.replace("ℹ️ ", "")}</span>`;
         if (menuItemModel) menuItemModel.innerHTML = `<span>🔍</span> <span>${t.menuModel.replace("🔍 ", "")}</span>`;
@@ -835,6 +840,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (!currentUser) {
             if (authModal) authModal.classList.remove('hidden');
+            refreshGuestStayOffer();
         } else {
             if (currentUserDisplay) currentUserDisplay.textContent = currentUser.username;
             await loadPersonalConfig();
@@ -876,15 +882,32 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // "Als Gast fortfahren": AuraChat nutzen ohne Login, ohne Chat-Verlauf, ohne persönliche Settings
-    if (guestContinueBtn) {
-        guestContinueBtn.addEventListener('click', async () => {
-            currentUser = null;
-            await startGuestSession();
-            setGuestLang(defaultGuestLang());
-            if (authModal) authModal.classList.add('hidden');
-            applyRoleUI();
-            applyUiLanguage(appConfig.ui_lang);
-            resetGuestIdleTimer();
+    async function continueAsGuest() {
+        currentUser = null;
+        await startGuestSession();
+        setGuestLang(defaultGuestLang());
+        if (authModal) authModal.classList.add('hidden');
+        applyRoleUI();
+        applyUiLanguage(appConfig.ui_lang);
+        resetGuestIdleTimer();
+    }
+    if (guestContinueBtn) guestContinueBtn.addEventListener('click', continueAsGuest);
+
+    // Anmeldebildschirm: "Hotelgast: mit Buchungsnummer anmelden" - nur, wenn der Server das Ausweisen anbietet
+    // (Gast-Chat an, Apaleo-App aktiviert und verbunden, Schalter für Gäste an). Fragt dazu die öffentliche Route /guest/status.
+    async function refreshGuestStayOffer() {
+        try {
+            const res = await fetch(`${backendUrl}/guest/status`, { credentials: 'include', cache: 'no-store' });
+            const data = await res.json().catch(() => ({}));
+            guestStayOffered = !!(res.ok && data.enabled && data.stay);
+        } catch (err) { guestStayOffered = false; }
+        if (guestStayBtn) guestStayBtn.classList.toggle('hidden', !guestStayOffered || authStep !== 'form');
+    }
+    if (guestStayBtn) {
+        guestStayBtn.addEventListener('click', async () => {
+            await continueAsGuest();
+            if (guestChatEnabled && guestStayEnabled) openStayModal();
+            else appendMessageToDOM(guestLang === 'de' ? 'Das Anmelden mit Buchungsnummer ist gerade nicht verfügbar. Bitte an der Rezeption fragen.' : 'Signing in with a booking number is not available right now. Please ask at the reception.', 'assistant');
         });
     }
 
@@ -1042,6 +1065,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (authForm) authForm.classList.toggle('hidden', step !== 'form');
         if (authGuestDivider) authGuestDivider.classList.toggle('hidden', step !== 'form');
         if (guestContinueBtn) guestContinueBtn.classList.toggle('hidden', step !== 'form');
+        authStep = step; if (guestStayBtn) guestStayBtn.classList.toggle('hidden', step !== 'form' || !guestStayOffered);
         if (auth2faVerify) auth2faVerify.classList.toggle('hidden', step !== 'verify');
         if (auth2faSetup) auth2faSetup.classList.toggle('hidden', step !== 'setup');
     }
@@ -1260,19 +1284,18 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // "Über Aura-Suite": installierte Version vom Server; die aktuelle Aura-Suite-Version (Datum, Hinweis) kommt vom Lizenzserver. Alles als reiner Text.
+    // "Über Aura-Suite": die Version (mit Datum und Hinweis) kommt vom Lizenzserver (AuraLic, Kundenübersicht "Aura-Suite-Version"). Alles als reiner Text.
     // Ohne Antwort bleibt der feste Text im Seitenaufbau stehen.
     async function fillAboutVersion() {
         try {
             const res = await fetch(`${backendUrl}/version`, { cache: 'no-store' }); if (!res.ok) return; const d = await res.json();
             const $ = (id) => document.getElementById(id), show = (id, on) => { const e = $(id); if (e) e.classList.toggle('hidden', !on); };
-            if (typeof d.installed === 'string' && d.installed && $('about-version')) $('about-version').textContent = 'v' + d.installed.replace(/^v/i, '');
             // JJJJ-MM-TT als TT.MM.JJJJ, ohne Datumsobjekt (kein Weiterrollen unmöglicher Tage wie 30.2., keine Zeitzonen-Verschiebung); ein unmögliches Datum blendet die Zeile aus
             const fmtDate = (v) => { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(v || '')); if (!m) return ''; const t = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3])); return t.getUTCFullYear() === +m[1] && t.getUTCMonth() === +m[2] - 1 && t.getUTCDate() === +m[3] ? `${m[3]}.${m[2]}.${m[1]}` : ''; };
             const s = d.suite, dateText = s ? fmtDate(s.date) : '';
             const suiteInst = typeof d.suiteInstalled === 'string' && /^\d{1,4}\.\d{1,4}(\.\d{1,4})?$/.test(d.suiteInstalled) ? d.suiteInstalled : '';
             show('about-suite-row', !!suiteInst); if (suiteInst && $('about-suite')) $('about-suite').textContent = 'v' + suiteInst;
-            show('about-latest-row', !!s); show('about-date-row', !!dateText); show('about-note-row', !!(s && s.note)); show('about-update-badge', !!(s && d.updateAvailable));
+            show('about-latest', !!s); show('about-latest-pending', !s); show('about-date-row', !!dateText); show('about-note-row', !!(s && s.note)); show('about-update-badge', !!(s && d.updateAvailable));
             if (s) {
                 if ($('about-latest')) $('about-latest').textContent = 'v' + s.version;
                 if (dateText && $('about-date')) $('about-date').textContent = dateText;
@@ -1432,13 +1455,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 appendMessageToDOM(gt('ended'), 'assistant');
                 return;
             }
-            if (stayReservationInput) stayReservationInput.value = '';
-            if (stayLastNameInput) stayLastNameInput.value = '';
-            setStayStatus('', '');
-            applyGuestTexts();
-            if (modalStay) modalStay.classList.remove('hidden');
-            if (stayReservationInput) stayReservationInput.focus();
+            openStayModal();
         });
+    }
+    function openStayModal() {
+        if (stayReservationInput) stayReservationInput.value = '';
+        if (stayLastNameInput) stayLastNameInput.value = '';
+        setStayStatus('', '');
+        applyGuestTexts();
+        if (modalStay) modalStay.classList.remove('hidden');
+        if (stayReservationInput) stayReservationInput.focus();
     }
     async function submitStay() {
         if (!stayReservationInput || !stayLastNameInput) return;
@@ -1477,6 +1503,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (apaleoGuestEnabledBox) {
         apaleoGuestEnabledBox.addEventListener('change', async () => {
             await saveGlobalConfigToDB('apaleo_guest_enabled', apaleoGuestEnabledBox.checked ? 'true' : 'false');
+            appConfig.apaleo_guest_enabled = apaleoGuestEnabledBox.checked ? 'true' : 'false';
+            updateApaleoGuestCheck();
             setApaleoStatus(apaleoGuestEnabledBox.checked ? '✓ Gäste dürfen jetzt Fragen zu ihrer eigenen Reservierung stellen (braucht „Gäste dürfen mit Aura chatten“).' : '✓ Für Gäste ausgeschaltet.', 'text-emerald-400');
         });
     }
@@ -1927,7 +1955,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (menuItemSettings) menuItemSettings.addEventListener('click', () => {
         openModal(modalSettings);
         switchSettingsTab('lang');
-        if (window.AuraPrefs) window.AuraPrefs.card(document.getElementById('settings-prefs-card'), { language: false });   // Darstellung (Dunkel/Hell/Automatisch)
+        if (window.AuraPrefs) window.AuraPrefs.card(document.getElementById('settings-prefs-card'));   // Darstellung (Dunkel/Hell/Automatisch)
         loadPronunciationDict();
     });
 
@@ -2732,248 +2760,21 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- COCKPIT (Admin Panel): Gesundheit des Servers ---
-    const adminTabBtnCockpit = document.getElementById('admin-tab-btn-cockpit');
-    const adminTabCockpit = document.getElementById('admin-tab-cockpit');
-    const cockpitHeadline = document.getElementById('cockpit-headline');
-    const cockpitUpdated = document.getElementById('cockpit-updated');
-    const cockpitRefreshBtn = document.getElementById('cockpit-refresh-btn');
-    const cockpitHostInfo = document.getElementById('cockpit-host-info');
-    const cockpitErrorBox = document.getElementById('cockpit-error');
-    const cockpitWarnings = document.getElementById('cockpit-warnings');
-    const cockpitCards = document.getElementById('cockpit-cards');
-    const cockpitContainers = document.getElementById('cockpit-containers');
-    const cockpitDockerUsage = document.getElementById('cockpit-docker-usage');
-    const cockpitVulns = document.getElementById('cockpit-vulns');
-    const cockpitUpdates = document.getElementById('cockpit-updates');
-    let cockpitTimer = null;
-    let cockpitLoading = false;
-    const COCKPIT_REFRESH_MS = 10000;
-
-    // Alle Texte kommen als Text in die Seite (textContent), NIE als HTML: Namen von Containern und Images sowie
-    // Beschreibungen aus Schwachstellen-Berichten stammen nicht von uns.
-    function cockpitEl(tag, cls, text) {
-        const e = document.createElement(tag);
-        if (cls) e.className = cls;
-        if (text !== undefined && text !== null) e.textContent = text;
-        return e;
-    }
-    const cockpitNum = (n) => String(n).replace('.', ',');
-    function cockpitBytes(n) {
-        if (n === null || n === undefined || !Number.isFinite(n)) return '–';
-        const GB = 1024 ** 3, MB = 1024 ** 2;
-        if (n >= GB) return cockpitNum(n / GB >= 10 ? Math.round(n / GB) : Math.round(n / GB * 10) / 10) + ' GB';
-        if (n >= MB) return Math.round(n / MB) + ' MB';
-        return Math.round(n / 1024) + ' KB';
-    }
-    function cockpitDuration(seconds) {
-        if (!Number.isFinite(seconds)) return '–';
-        const d = Math.floor(seconds / 86400), h = Math.floor(seconds % 86400 / 3600), m = Math.floor(seconds % 3600 / 60);
-        return d > 0 ? `${d} Tage ${h} Std.` : (h > 0 ? `${h} Std. ${m} Min.` : `${m} Min.`);
-    }
-    function cockpitAgo(iso, now = Date.now()) {
-        const t = Date.parse(iso);
-        if (Number.isNaN(t)) return '–';
-        const s = Math.max(0, Math.round((now - t) / 1000));
-        if (s < 90) return 'gerade eben';
-        if (s < 3600) return `vor ${Math.round(s / 60)} Min.`;
-        if (s < 86400) return `vor ${Math.round(s / 3600)} Std.`;
-        return `vor ${Math.round(s / 86400)} Tagen`;
-    }
-    const COCKPIT_LEVEL_STYLE = {
-        crit: { row: 'bg-red-500/10 border-red-500/30 text-red-300', dot: '🔴', bar: 'bg-red-500', text: 'text-red-400' },
-        warn: { row: 'bg-amber-500/10 border-amber-500/30 text-amber-300', dot: '🟠', bar: 'bg-amber-500', text: 'text-amber-400' },
-        ok: { row: 'bg-emerald-500/5 border-emerald-500/20 text-emerald-300', dot: '🟢', bar: 'bg-emerald-500', text: 'text-emerald-400' },
-        info: { row: 'bg-slate-800/60 border-slate-700 text-slate-400', dot: 'ℹ️', bar: 'bg-slate-500', text: 'text-slate-400' }
-    };
-    const COCKPIT_RANK = { ok: 0, info: 0, warn: 1, crit: 2 };
-    function cockpitAreaLevel(items, area) {
-        return (items || []).filter(i => i.area === area).reduce((m, i) => (COCKPIT_RANK[i.level] > COCKPIT_RANK[m] ? i.level : m), 'ok');
-    }
-
-    // Kleiner Verlauf als Linie (SVG). Lücken (null) unterbrechen die Linie.
-    function cockpitSparkline(values) {
-        const NS = 'http://www.w3.org/2000/svg';
-        const svg = document.createElementNS(NS, 'svg');
-        svg.setAttribute('viewBox', '0 0 100 24');
-        svg.setAttribute('preserveAspectRatio', 'none');
-        svg.setAttribute('class', 'w-full h-6');
-        const n = values.length;
-        if (n < 2) return svg;
-        let segment = [];
-        const flush = () => {
-            if (segment.length >= 2) {
-                const line = document.createElementNS(NS, 'polyline');
-                line.setAttribute('points', segment.join(' '));
-                line.setAttribute('fill', 'none');
-                line.setAttribute('stroke', 'currentColor');
-                line.setAttribute('stroke-width', '1.5');
-                line.setAttribute('vector-effect', 'non-scaling-stroke');
-                svg.appendChild(line);
-            }
-            segment = [];
-        };
-        values.forEach((v, i) => {
-            if (typeof v !== 'number' || !Number.isFinite(v)) { flush(); return; }
-            const x = Math.round(i / (n - 1) * 1000) / 10;
-            const y = Math.round((23 - Math.min(100, Math.max(0, v)) / 100 * 22) * 10) / 10;
-            segment.push(`${x},${y}`);
-        });
-        flush();
-        return svg;
-    }
-
-    function cockpitCard(title, valueText, subText, percent, level, history) {
-        const st = COCKPIT_LEVEL_STYLE[level] || COCKPIT_LEVEL_STYLE.ok;
-        const card = cockpitEl('div', 'bg-slate-950 border border-slate-800 rounded-xl p-3 flex flex-col gap-1.5');
-        card.appendChild(cockpitEl('div', 'text-[10px] uppercase tracking-wider text-slate-500', title));
-        card.appendChild(cockpitEl('div', `text-lg font-semibold ${st.text}`, valueText));
-        if (subText) card.appendChild(cockpitEl('div', 'text-[10px] text-slate-500', subText));
-        if (Number.isFinite(percent)) {
-            const track = cockpitEl('div', 'h-1.5 bg-slate-800 rounded-full overflow-hidden');
-            const bar = cockpitEl('div', `h-full ${st.bar}`);
-            bar.style.width = Math.min(100, Math.max(0, percent)) + '%';
-            track.appendChild(bar);
-            card.appendChild(track);
-        }
-        if (history) { const w = cockpitEl('div', st.text); w.appendChild(cockpitSparkline(history)); card.appendChild(w); }
-        return card;
-    }
-
-    function cockpitContainerState(c) {
-        if (c.state === 'running') return c.health === 'unhealthy' ? 'crit' : (c.health === 'starting' ? 'warn' : 'ok');
-        if (c.state === 'restarting' || c.state === 'dead') return 'crit';
-        if (c.state === 'paused') return 'warn';
-        const code = (String(c.status).match(/Exited \((\d+)\)/) || [])[1];
-        return code !== undefined && code !== '0' ? 'crit' : 'info';
-    }
-
-    function cockpitClear(...els) { els.forEach(e => { if (e) e.innerHTML = ''; }); }
-
-    function renderCockpit(data) {
-        cockpitClear(cockpitWarnings, cockpitCards, cockpitContainers, cockpitVulns, cockpitUpdates, cockpitDockerUsage);
-        if (cockpitHostInfo) cockpitHostInfo.textContent = '';
-        if (!data || data.ok === false) {
-            if (cockpitHeadline) cockpitHeadline.textContent = '⚠️ Cockpit nicht erreichbar';
-            if (cockpitErrorBox) { cockpitErrorBox.textContent = ((data && data.error) || 'Unbekannter Fehler') + (data && data.hint ? '\n' + data.hint : ''); cockpitErrorBox.classList.remove('hidden'); }
-            return;
-        }
-        if (cockpitErrorBox) { cockpitErrorBox.textContent = ''; cockpitErrorBox.classList.add('hidden'); }
-        const snap = data.snapshot || {}, status = data.status || { level: 'ok', items: [] }, items = status.items || [], hist = data.history || [];
-        const host = snap.host || {}, docker = snap.docker || {};
-
-        // Ampel
-        const crit = items.filter(i => i.level === 'crit').length, warn = items.filter(i => i.level === 'warn').length;
-        if (cockpitHeadline) cockpitHeadline.textContent = status.level === 'crit' ? `🔴 ${crit} ${crit === 1 ? 'Problem' : 'Probleme'}${warn ? ` und ${warn} ${warn === 1 ? 'Hinweis' : 'Hinweise'}` : ''}` : (status.level === 'warn' ? `🟠 ${warn} ${warn === 1 ? 'Hinweis' : 'Hinweise'}` : '🟢 Alles in Ordnung');
-        if (cockpitUpdated) cockpitUpdated.textContent = snap.generatedAt ? `Stand ${new Date(snap.generatedAt).toLocaleTimeString('de-DE')}` : '';
-        if (cockpitHostInfo) cockpitHostInfo.textContent = [host.hostname, host.os, host.kernel ? 'Kernel ' + host.kernel : null, Number.isFinite(host.uptimeSeconds) ? 'läuft seit ' + cockpitDuration(host.uptimeSeconds) : null].filter(Boolean).join(' · ');
-        items.forEach(i => {
-            const st = COCKPIT_LEVEL_STYLE[i.level] || COCKPIT_LEVEL_STYLE.info;
-            cockpitWarnings.appendChild(cockpitEl('div', `border rounded-lg px-2.5 py-1.5 text-[11px] ${st.row}`, `${st.dot} ${i.text}`));
-        });
-
-        // Karten: Prozessor, Arbeitsspeicher, Speicherplatz, Docker-Speicher
-        const mem = host.memory || {}, disk = host.disk, usage = docker.usage;
-        const series = (key) => hist.map(p => p[key]);
-        cockpitCards.appendChild(cockpitCard('Prozessor', Number.isFinite(host.cpuPercent) ? cockpitNum(host.cpuPercent) + ' %' : '–', Array.isArray(host.load) ? `Last ${host.load.map(cockpitNum).join(' / ')} · ${host.cpuCount || '?'} Kerne` : '', host.cpuPercent, cockpitAreaLevel(items, 'cpu'), series('cpu')));
-        cockpitCards.appendChild(cockpitCard('Arbeitsspeicher', mem.totalBytes ? cockpitNum(mem.percent) + ' %' : '–', mem.totalBytes ? `${cockpitBytes(mem.usedBytes)} von ${cockpitBytes(mem.totalBytes)}${mem.swapTotalBytes ? ` · Swap ${cockpitBytes(mem.swapUsedBytes)}` : ''}` : '', mem.percent, cockpitAreaLevel(items, 'ram'), series('ram')));
-        cockpitCards.appendChild(cockpitCard('Speicherplatz', disk ? cockpitNum(disk.percent) + ' %' : '–', disk ? `${cockpitBytes(disk.freeBytes)} frei von ${cockpitBytes(disk.totalBytes)}` : 'nicht lesbar', disk ? disk.percent : null, cockpitAreaLevel(items, 'disk'), series('disk')));
-        const dockerTotal = usage ? usage.imagesBytes + usage.containersBytes + usage.volumesBytes + usage.buildCacheBytes : null;
-        cockpitCards.appendChild(cockpitCard('Docker belegt', dockerTotal !== null ? cockpitBytes(dockerTotal) : '–', docker.available ? `${docker.containersRunning} von ${docker.containersTotal} Container laufen · ${docker.imagesCount || 0} Images` : 'Docker nicht abfragbar', null, docker.available ? 'ok' : 'crit', null));
-
-        // Container
-        if (!docker.available) cockpitContainers.appendChild(cockpitEl('div', 'text-[11px] text-red-300', docker.error || 'Docker lässt sich nicht abfragen.'));
-        else if (!(docker.containers || []).length) cockpitContainers.appendChild(cockpitEl('div', 'text-[11px] text-slate-500', 'Keine Container gefunden.'));
-        (docker.containers || []).forEach(c => {
-            const st = COCKPIT_LEVEL_STYLE[cockpitContainerState(c)];
-            const row = cockpitEl('div', 'bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 flex items-center gap-2 text-[11px]');
-            row.appendChild(cockpitEl('span', '', st.dot));
-            const mid = cockpitEl('div', 'flex-1 min-w-0');
-            mid.appendChild(cockpitEl('div', 'text-white font-medium truncate', c.name));
-            mid.appendChild(cockpitEl('div', 'text-[10px] text-slate-500 truncate', `${c.image} · ${c.status}`));
-            row.appendChild(mid);
-            const nums = cockpitEl('div', 'text-right text-[10px] text-slate-400 whitespace-nowrap');
-            nums.appendChild(cockpitEl('div', '', Number.isFinite(c.cpuPercent) ? cockpitNum(c.cpuPercent) + ' % CPU' : ''));
-            nums.appendChild(cockpitEl('div', '', Number.isFinite(c.memoryBytes) ? cockpitBytes(c.memoryBytes) : ''));
-            row.appendChild(nums);
-            cockpitContainers.appendChild(row);
-        });
-        if (usage) {
-            cockpitDockerUsage.textContent = `Images ${cockpitBytes(usage.imagesBytes)} · Volumes ${cockpitBytes(usage.volumesBytes)} · Container ${cockpitBytes(usage.containersBytes)} · Zwischenspeicher vom Bauen ${cockpitBytes(usage.buildCacheBytes)}` + (usage.buildCacheReclaimableBytes > 0 ? ` (davon ${cockpitBytes(usage.buildCacheReclaimableBytes)} aufräumbar mit: docker builder prune -f)` : '');
-        }
-
-        // Schwachstellen
-        const v = snap.vulnerabilities;
-        if (!v || !v.configured) {
-            cockpitVulns.appendChild(cockpitEl('div', 'text-[11px] text-slate-500', 'Der Scan ist nicht eingerichtet. Einmalig starten mit: docker compose --profile scan up -d (der Scanner „Trivy“ prüft dann täglich nachts alle Images dieses Servers).'));
-        } else if (!(v.images || []).length) {
-            cockpitVulns.appendChild(cockpitEl('div', 'text-[11px] text-slate-500', 'Noch kein lesbarer Bericht. Der erste Scan kann einige Minuten dauern (Trivy lädt zuerst seine Datenbank).'));
-        } else {
-            v.images.forEach(img => {
-                const worst = img.counts.CRITICAL > 0 ? 'crit' : (img.counts.HIGH > 0 ? 'warn' : 'ok');
-                const box = cockpitEl('details', 'bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-[11px]');
-                const sum = cockpitEl('summary', 'cursor-pointer flex items-center gap-2');
-                sum.appendChild(cockpitEl('span', '', COCKPIT_LEVEL_STYLE[worst].dot));
-                sum.appendChild(cockpitEl('span', 'flex-1 min-w-0 truncate text-white', img.image));
-                sum.appendChild(cockpitEl('span', 'text-red-400', `K ${img.counts.CRITICAL}`));
-                sum.appendChild(cockpitEl('span', 'text-amber-400', `H ${img.counts.HIGH}`));
-                sum.appendChild(cockpitEl('span', 'text-slate-400', `M ${img.counts.MEDIUM}`));
-                sum.appendChild(cockpitEl('span', 'text-slate-500', `N ${img.counts.LOW}`));
-                box.appendChild(sum);
-                box.appendChild(cockpitEl('div', 'text-[10px] text-slate-500 mt-1', `K kritisch · H hoch · M mittel · N niedrig · ${img.critFixable !== undefined ? `${img.critFixable} kritische und ${img.highFixable} hohe behebbar` : `${img.fixable} mit verfügbarer Korrektur`} · gescannt ${cockpitAgo(img.scannedAt)}`));
-                (img.top || []).forEach(t => box.appendChild(cockpitEl('div', 'text-[10px] text-slate-400 mt-0.5', `${t.severity} · ${t.id} · ${t.pkg} ${t.installed}${t.fixed ? ' → ' + t.fixed : ''}${t.title ? ' – ' + t.title : ''}`)));
-                cockpitVulns.appendChild(box);
-            });
-        }
-
-        // Updates des Servers
-        const u = snap.hostUpdates;
-        if (!u || !u.configured) {
-            cockpitUpdates.appendChild(cockpitEl('div', 'text-[11px] text-slate-500', 'Nicht eingerichtet. Einmalig auf dem Server ausführen: sudo bash cockpit/host/install-hostcheck.sh (prüft dann täglich auf offene Updates und „Neustart nötig“; es wird nichts installiert).'));
-        } else {
-            cockpitUpdates.appendChild(cockpitEl('div', 'text-[11px] text-slate-300', `${u.upgradable} Updates offen, davon ${u.securityUpgradable} Sicherheits-Updates${u.rebootRequired ? ' · Neustart nötig' : ''} · geprüft ${u.checkedAt ? cockpitAgo(u.checkedAt) : '–'}`));
-            if ((u.packages || []).length) cockpitUpdates.appendChild(cockpitEl('div', 'text-[10px] text-slate-500', 'Sicherheits-Updates: ' + u.packages.map(p => `${p.name} ${p.version}`).join(', ')));
-        }
-    }
-
-    async function loadCockpit() {
-        if (cockpitLoading) return;
-        cockpitLoading = true;
-        if (cockpitRefreshBtn) cockpitRefreshBtn.disabled = true;
-        try {
-            const res = await fetch(`${backendUrl}/admin/cockpit`, { credentials: 'include' });
-            const data = await res.json().catch(() => null);
-            if (!res.ok) renderCockpit({ ok: false, error: (data && data.error) || `Status ${res.status}`, hint: res.status === 403 ? 'Das Cockpit ist nur für Administratoren.' : '' });
-            else renderCockpit(data);
-        } catch (err) {
-            renderCockpit({ ok: false, error: 'Der AuraChat-Server antwortet nicht (' + err.message + ').', hint: '' });
-        } finally {
-            cockpitLoading = false;
-            if (cockpitRefreshBtn) cockpitRefreshBtn.disabled = false;
-        }
-    }
-    const cockpitVisible = () => !!adminTabCockpit && !adminTabCockpit.classList.contains('hidden') && !(modalAdminPanel && modalAdminPanel.classList.contains('hidden'));
-    function stopCockpitRefresh() { if (cockpitTimer) { clearInterval(cockpitTimer); cockpitTimer = null; } }
-    function startCockpitRefresh() {
-        stopCockpitRefresh();
-        cockpitTimer = setInterval(() => { if (!cockpitVisible()) { stopCockpitRefresh(); return; } loadCockpit(); }, COCKPIT_REFRESH_MS);
-    }
-    if (cockpitRefreshBtn) cockpitRefreshBtn.addEventListener('click', loadCockpit);
-    // --- ENDE COCKPIT ---
-
+    // Das Cockpit (Gesundheit des Servers) ist nach AuraControl umgezogen (Ansicht "Cockpit").
     // --- ADMIN PANEL: TAB-STEUERUNG ---
 
     function switchAdminTab(tab) {
-        const tabs = { users: adminTabUsers, branding: adminTabBranding, mail: adminTabMail, twofa: adminTab2fa, ttsstt: adminTabTtsStt, api: adminTabApi, license: adminTabLicense, privacy: adminTabPrivacy, academy: adminTabAcademy, cockpit: adminTabCockpit, backup: adminTabBackup };
-        const btns = { users: adminTabBtnUsers, branding: adminTabBtnBranding, mail: adminTabBtnMail, twofa: adminTabBtn2fa, ttsstt: adminTabBtnTtsStt, api: adminTabBtnApi, license: adminTabBtnLicense, privacy: adminTabBtnPrivacy, academy: adminTabBtnAcademy, cockpit: adminTabBtnCockpit, backup: adminTabBtnBackup };
+        const tabs = { users: adminTabUsers, appstore: adminTabAppstore, branding: adminTabBranding, mail: adminTabMail, twofa: adminTab2fa, ttsstt: adminTabTtsStt, api: adminTabApi, license: adminTabLicense, privacy: adminTabPrivacy, academy: adminTabAcademy, backup: adminTabBackup };
+        const btns = { users: adminTabBtnUsers, appstore: adminTabBtnAppstore, branding: adminTabBtnBranding, mail: adminTabBtnMail, twofa: adminTabBtn2fa, ttsstt: adminTabBtnTtsStt, api: adminTabBtnApi, license: adminTabBtnLicense, privacy: adminTabBtnPrivacy, academy: adminTabBtnAcademy, backup: adminTabBtnBackup };
         const activeClass = 'admin-tab-btn flex-1 min-w-[30%] text-xs font-medium py-2 rounded-xl transition cursor-pointer bg-blue-600 text-white';
         const inactiveClass = 'admin-tab-btn flex-1 min-w-[30%] text-xs font-medium py-2 rounded-xl transition cursor-pointer bg-slate-800 text-slate-300 hover:bg-slate-700';
 
-        stopCockpitRefresh(); // die automatische Aktualisierung läuft nur, solange das Cockpit offen ist
         Object.entries(tabs).forEach(([key, el]) => { if (el) el.classList.toggle('hidden', key !== tab); });
         Object.entries(btns).forEach(([key, el]) => { if (el) el.className = key === tab ? activeClass : inactiveClass; });
 
-        if (tab === 'branding') {
+        if (tab === 'appstore') {
+            openAppstoreHome();
+        } else if (tab === 'branding') {
             refreshBrandingPreviews();
         } else if (tab === 'mail') {
             loadAdminMailConfig();
@@ -2994,14 +2795,12 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (tab === 'academy') {
             loadAcademyConfig();
             loadReflectionConfig();
-        } else if (tab === 'cockpit') {
-            loadCockpit();
-            startCockpitRefresh();
         }
     }
 
     if (adminTabBtnUsers) adminTabBtnUsers.addEventListener('click', () => switchAdminTab('users'));
     if (adminTabBtnBranding) adminTabBtnBranding.addEventListener('click', () => switchAdminTab('branding'));
+    if (adminTabBtnAppstore) adminTabBtnAppstore.addEventListener('click', () => switchAdminTab('appstore'));
     if (adminTabBtnMail) adminTabBtnMail.addEventListener('click', () => switchAdminTab('mail'));
     if (adminTabBtn2fa) adminTabBtn2fa.addEventListener('click', () => switchAdminTab('twofa'));
     if (adminTabBtnTtsStt) adminTabBtnTtsStt.addEventListener('click', () => switchAdminTab('ttsstt'));
@@ -3009,7 +2808,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (adminTabBtnLicense) adminTabBtnLicense.addEventListener('click', () => switchAdminTab('license'));
     if (adminTabBtnAcademy) adminTabBtnAcademy.addEventListener('click', () => switchAdminTab('academy'));
     if (adminTabBtnBackup) adminTabBtnBackup.addEventListener('click', () => switchAdminTab('backup'));
-if (adminTabBtnCockpit) adminTabBtnCockpit.addEventListener('click', () => switchAdminTab('cockpit'));
 
     // --- ADMIN PANEL: EXTERNE API (Premium) ---
 
@@ -3189,7 +2987,6 @@ if (adminTabBtnCockpit) adminTabBtnCockpit.addEventListener('click', () => switc
     }
 
     async function loadAdminLicenseStatus() {
-        if (adminLicenseStatus) adminLicenseStatus.classList.add('hidden');
         if (!adminLicenseCurrent) return;
         adminLicenseCurrent.innerHTML = '<div class="text-xs text-slate-500">Lade Lizenzstatus...</div>';
         try {
@@ -3233,39 +3030,31 @@ if (adminTabBtnCockpit) adminTabBtnCockpit.addEventListener('click', () => switc
     }
 
     function renderAdminLicenseStatus(info) {
+        if (licenseSyncStatus) {
+            const sy = info && info.sync, lr = sy && sy.lastResult;
+            licenseSyncStatus.textContent = !sy || !sy.enabled ? 'Abholen bei AuraControl ist abgeschaltet (LICENSE_SYNC_URL).'
+                : !lr ? 'Wird kurz nach dem Start bei AuraControl abgeholt, danach alle 15 Minuten.'
+                : (lr.ok ? '✓ Zuletzt bei AuraControl abgeholt: ' : '✗ AuraControl: ' + (lr.message || 'Fehler') + ' · ') + new Date(lr.at).toLocaleString('de-CH');
+        }
         if (!adminLicenseCurrent) return;
         if (info.licenseValid) {
             const expiryText = info.expiresAt ? new Date(info.expiresAt).toLocaleDateString('de-DE') : 'unbegrenzt';
             adminLicenseCurrent.innerHTML = `
                 <div class="flex items-center justify-between mb-1">
                     <span class="text-xs font-semibold text-emerald-400">✓ Lizenz aktiv</span>
-                    <button id="admin-license-remove-btn" class="text-[10px] text-red-400 hover:text-red-300 cursor-pointer">Entfernen</button>
                 </div>
+                ${info.plan ? `<div class="text-[11px] text-blue-300">${info.plan === 'advanced' ? 'Business Advanced' : info.plan === 'solo' ? 'Business Solo' : 'Aura-Suite'} · gilt für alle Aura-Produkte</div>` : ''}
+                ${info.managedBy === 'auracontrol' ? '<div class="text-[11px] text-slate-400">Wird von <span class="text-slate-200">AuraControl</span> verwaltet und automatisch aktualisiert.</div>' : ''}
                 <div class="text-[11px] text-slate-400">Kunde: <span class="text-slate-200">${info.customer || '-'}</span></div>
-                <div class="text-[11px] text-slate-400">Features: <span class="text-slate-200">${(info.features || []).join(', ') || '-'}</span></div>
+                <div class="text-[11px] text-slate-400">Umfang: <span class="text-slate-200">alle Funktionen</span></div>
                 <div class="text-[11px] text-slate-400">Gültig bis: <span class="text-slate-200">${expiryText}</span></div>
                 ${quotaLine(info)}
             `;
-            const removeBtn = document.getElementById('admin-license-remove-btn');
-            if (removeBtn) {
-                removeBtn.addEventListener('click', async () => {
-                    if (!confirm('Lizenz wirklich entfernen? Premium-Features werden danach wieder gesperrt (ausser während einer evtl. noch laufenden Testphase).')) return;
-                    try {
-                        const res = await fetch(`${backendUrl}/admin/license`, { method: 'DELETE', credentials: 'include' });
-                        if (!res.ok) throw new Error('Entfernen fehlgeschlagen.');
-                        await loadLicenseFeatures();
-                        applyLicenseUI();
-                        loadAdminLicenseStatus();
-                    } catch (err) {
-                        alert('Fehler: ' + err.message);
-                    }
-                });
-            }
         } else if (info.trial) {
             adminLicenseCurrent.innerHTML = `
                 <div class="text-xs font-semibold text-blue-400 mb-1">🎁 Testphase aktiv</div>
                 <div class="text-[11px] text-slate-400">Noch <span class="text-slate-200">${info.trialDaysRemaining}</span> Tag(e) - alle Premium-Features sind bis dahin freigeschaltet, auch ohne Lizenz.</div>
-                <div class="text-[11px] text-slate-500 mt-1">Trag eine Lizenz ein, damit die Features auch danach weiter funktionieren.</div>
+                <div class="text-[11px] text-slate-500 mt-1">Danach braucht es eine Lizenz: Sie wird in AuraControl eingetragen und kommt automatisch hierher.</div>
                 ${quotaLine(info)}
             `;
         } else {
@@ -3276,77 +3065,155 @@ if (adminTabBtnCockpit) adminTabBtnCockpit.addEventListener('click', () => switc
         }
     }
 
-    if (adminLicenseFileInput) {
-        adminLicenseFileInput.addEventListener('change', async () => {
-            const file = adminLicenseFileInput.files[0];
-            if (!file || !adminLicenseInput) return;
-            const text = await new Promise((resolve) => {
-                const reader = new FileReader();
-                reader.onload = () => resolve(reader.result);
-                reader.readAsText(file);
-            });
-            adminLicenseInput.value = text.trim();
+    // --- ADMIN PANEL: APP STORE (Apaleo, IKEA SmartHome, Sonos, Nuki) ---
+    // Eine App wirkt erst, wenn sie AKTIVIERT und EINGERICHTET ist. Das Einrichten steht in der App selbst und ist erst nach dem Aktivieren sichtbar.
+    // Logos: Dateien images/apps/<kennung>.png (oder .svg, .webp, .jpg), z. B. apaleo.png, ikea.png, sonos.png. Fehlt eine Datei, erscheint das Symbol der App.
+    const appstoreGrid = document.getElementById('appstore-grid');
+    const appstoreHome = document.getElementById('appstore-home');
+    const appstoreDetail = document.getElementById('appstore-detail');
+    const appstoreError = document.getElementById('appstore-error');
+    const appstoreToggleBtn = document.getElementById('appstore-detail-toggle');
+    const appstoreDetailStatus = document.getElementById('appstore-detail-status');
+    const APPSTORE_LOGO_EXTS = ['png', 'svg', 'webp', 'jpg'];
+    const APPSTORE_STATES = { inactive: ['Nicht aktiviert', 'bg-slate-800 text-slate-300'], needs_setup: ['Aktiviert · Einrichtung fehlt', 'bg-amber-500/15 text-amber-300'], active: ['Aktiv', 'bg-emerald-500/15 text-emerald-300'] };
+    let appstoreApps = [], appstoreOpenId = null;
+
+    function appstoreLogo(app, sizeClass) {
+        const box = document.createElement('div');
+        box.className = `${sizeClass} rounded-xl ring-1 ring-white/10 flex items-center justify-center overflow-hidden shrink-0`;
+        const img = document.createElement('img'); img.alt = ''; img.setAttribute('data-aura-keep', ''); img.className = 'w-full h-full object-cover'; let n = 0;
+        img.addEventListener('error', () => { n++; if (n < APPSTORE_LOGO_EXTS.length) img.src = `images/apps/${app.id}.${APPSTORE_LOGO_EXTS[n]}`; else { if (img.parentNode) box.removeChild(img); box.textContent = app.icon || '🧩'; box.classList.add('text-2xl', 'bg-white/5', 'border', 'border-slate-800'); } });
+        img.src = `images/apps/${app.id}.${APPSTORE_LOGO_EXTS[0]}`; box.appendChild(img);
+        return box;
+    }
+    function appstoreBadge(el, state) {
+        const [text, cls] = APPSTORE_STATES[state] || APPSTORE_STATES.inactive;
+        el.textContent = text; el.className = 'shrink-0 text-[10px] font-semibold px-2 py-1 rounded-full ' + cls;
+    }
+    function showAppstoreError(msg) { if (!appstoreError) return; appstoreError.textContent = msg || ''; appstoreError.classList.toggle('hidden', !msg); }
+
+    function renderAppstoreGrid() {
+        if (!appstoreGrid) return;
+        appstoreGrid.textContent = '';
+        appstoreApps.forEach((app) => {
+            const card = document.createElement('button'); card.type = 'button'; card.setAttribute('data-app', app.id);
+            card.className = 'text-left bg-slate-950 hover:bg-slate-900 border border-slate-800 hover:border-slate-700 rounded-2xl p-4 flex flex-col gap-3 transition cursor-pointer';
+            const top = document.createElement('div'); top.className = 'flex items-center gap-3';
+            top.appendChild(appstoreLogo(app, 'w-12 h-12'));
+            const names = document.createElement('div'); names.className = 'flex-1 min-w-0';
+            const nm = document.createElement('div'); nm.className = 'text-sm font-bold text-white'; nm.textContent = app.name;
+            const ct = document.createElement('div'); ct.className = 'text-[10px] text-slate-500'; ct.textContent = app.category;
+            names.appendChild(nm); names.appendChild(ct); top.appendChild(names);
+            const badge = document.createElement('span'); badge.setAttribute('data-role', 'badge'); appstoreBadge(badge, app.state); top.appendChild(badge);
+            const desc = document.createElement('p'); desc.className = 'text-[11px] text-slate-400'; desc.textContent = app.description;
+            const foot = document.createElement('div'); foot.className = 'flex items-center justify-between text-[11px]';
+            const open = document.createElement('span'); open.className = 'text-blue-400 font-medium'; open.textContent = 'Öffnen';
+            foot.appendChild(open);
+            if (app.locked) { const lock = document.createElement('span'); lock.setAttribute('data-role', 'premium'); lock.className = 'text-amber-300'; lock.textContent = '🔒 Premium'; foot.appendChild(lock); }
+            card.appendChild(top); card.appendChild(desc); card.appendChild(foot);
+            card.addEventListener('click', () => openAppstoreDetail(app.id));
+            appstoreGrid.appendChild(card);
         });
     }
 
-    if (adminLicenseActivateBtn) {
-        adminLicenseActivateBtn.addEventListener('click', async () => {
-            const licenseKey = adminLicenseInput ? adminLicenseInput.value.trim() : '';
-            if (!licenseKey) return;
-
-            if (adminLicenseStatus) {
-                adminLicenseStatus.textContent = 'Prüfe Lizenz...';
-                adminLicenseStatus.className = 'text-[11px] text-slate-400';
-                adminLicenseStatus.classList.remove('hidden');
-            }
-            try {
-                const res = await fetch(`${backendUrl}/admin/license`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
-                    body: JSON.stringify({ licenseKey })
-                });
-                const data = await res.json();
-                if (!res.ok) throw new Error(data.error || 'Lizenz konnte nicht aktiviert werden.');
-
-                if (adminLicenseStatus) {
-                    adminLicenseStatus.textContent = `✓ Lizenz aktiviert. Freigeschaltet: ${(data.features || []).join(', ')}`;
-                    adminLicenseStatus.className = 'text-[11px] text-emerald-400';
-                }
-                if (adminLicenseInput) adminLicenseInput.value = '';
-                if (adminLicenseFileInput) adminLicenseFileInput.value = '';
-                await loadLicenseFeatures();
-                applyLicenseUI();
-                loadAdminLicenseStatus();
-            } catch (err) {
-                if (adminLicenseStatus) {
-                    adminLicenseStatus.textContent = '✗ ' + err.message;
-                    adminLicenseStatus.className = 'text-[11px] text-red-400';
-                }
-            }
-        });
+    async function loadAppstoreApps() {
+        try {
+            const res = await fetch(`${backendUrl}/admin/apps`, { credentials: 'include' });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(data.error || 'Der App Store konnte nicht geladen werden.');
+            appstoreApps = Array.isArray(data.apps) ? data.apps : [];
+            showAppstoreError('');
+            return true;
+        } catch (err) { showAppstoreError(err.message); return false; }
     }
+
+    async function openAppstoreHome() {
+        appstoreOpenId = null;
+        if (appstoreDetail) { appstoreDetail.classList.add('hidden'); appstoreDetail.classList.remove('flex'); }
+        if (appstoreHome) { appstoreHome.classList.remove('hidden'); appstoreHome.classList.add('flex'); }
+        await loadAppstoreApps(); renderAppstoreGrid();
+    }
+
+    // Daten der Einrichtung einer App laden (die Felder stehen jetzt in der App)
+    function refreshAppData(id) {
+        if (id === 'apaleo') { if (typeof fillIntegrationFields === 'function') fillIntegrationFields(); }
+        else if (id === 'ikea' || id === 'nuki') loadIntegrations();
+        else if (id === 'sonos') { loadIntegrations(); loadLocalMediaBaseUrl(); }
+    }
+
+    function renderAppstoreDetail(app) {
+        const q = (id) => document.getElementById(id);
+        const logo = q('appstore-detail-logo'); logo.textContent = ''; logo.appendChild(appstoreLogo(app, 'w-14 h-14'));
+        q('appstore-detail-title').textContent = app.name; q('appstore-detail-category').textContent = app.category; appstoreBadge(q('appstore-detail-badge'), app.state);
+        q('appstore-detail-desc').textContent = app.description;
+        const ul = q('appstore-detail-unlocks'); ul.textContent = ''; (app.unlocks || []).forEach((u) => { const li = document.createElement('li'); li.textContent = u; ul.appendChild(li); });
+        q('appstore-detail-premium').classList.toggle('hidden', !app.locked);
+        q('appstore-detail-inactive').classList.toggle('hidden', app.enabled);
+        q('appstore-detail-needs-setup').classList.toggle('hidden', !(app.enabled && !app.configured));
+        appstoreToggleBtn.textContent = app.enabled ? 'Deaktivieren' : 'Aktivieren';
+        appstoreToggleBtn.className = (app.enabled ? 'bg-slate-800 hover:bg-red-900/60 border border-slate-700' : 'bg-blue-600 hover:bg-blue-500') + ' text-white font-medium px-4 py-2 rounded-lg text-xs transition cursor-pointer';
+        appstoreToggleBtn.disabled = !app.enabled && app.locked; appstoreToggleBtn.classList.toggle('opacity-50', appstoreToggleBtn.disabled); appstoreToggleBtn.classList.toggle('cursor-not-allowed', appstoreToggleBtn.disabled);
+        ['apaleo', 'ikea', 'sonos', 'nuki'].forEach((k) => { const box = q(`appstore-setup-${k}`); if (!box) return; const show = k === app.id && app.enabled; box.classList.toggle('hidden', !show); box.classList.toggle('flex', show); });
+        appstoreDetailStatus.classList.add('hidden');
+    }
+
+    async function openAppstoreDetail(id) {
+        appstoreOpenId = id;
+        if (appstoreHome) { appstoreHome.classList.add('hidden'); appstoreHome.classList.remove('flex'); }
+        if (appstoreDetail) { appstoreDetail.classList.remove('hidden'); appstoreDetail.classList.add('flex'); }
+        await loadAppstoreApps();
+        const app = appstoreApps.find((a) => a.id === id);
+        if (!app) { openAppstoreHome(); return; }
+        renderAppstoreDetail(app);
+        if (app.enabled) refreshAppData(id);
+    }
+
+    async function toggleAppstoreApp() {
+        const app = appstoreApps.find((a) => a.id === appstoreOpenId); if (!app) return;
+        const t = (txt) => (window.AuraI18n && window.AuraI18n.t ? window.AuraI18n.t(txt) : txt);
+        if (app.enabled && !confirm(t(`„${app.name}“ deaktivieren? Die Befehle und Funktionen dieser App stehen dann nicht mehr zur Verfügung. Zugang, Geräte und Einstellungen bleiben erhalten.`))) return;
+        appstoreToggleBtn.disabled = true;
+        try {
+            const res = await fetch(`${backendUrl}/admin/apps/${encodeURIComponent(app.id)}/${app.enabled ? 'deactivate' : 'activate'}`, { method: 'POST', credentials: 'include' });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(data.error || 'Das hat nicht geklappt.');
+            await openAppstoreDetail(app.id);
+        } catch (err) {
+            appstoreDetailStatus.textContent = err.message; appstoreDetailStatus.className = 'text-[11px] text-red-400';
+            appstoreToggleBtn.disabled = false;
+        }
+    }
+    if (appstoreToggleBtn) appstoreToggleBtn.addEventListener('click', toggleAppstoreApp);
+    const appstoreBackBtn = document.getElementById('appstore-back-btn');
+    if (appstoreBackBtn) appstoreBackBtn.addEventListener('click', openAppstoreHome);
 
     // --- ADMIN PANEL: INTEGRATIONEN (Dirigera & eigene Anwendungen) ---
 
     async function loadIntegrations() {
-        if (!integrationsList) return;
-        integrationsList.innerHTML = '<div class="text-xs text-slate-500 text-center py-2">Lade Integrationen...</div>';
+        if (integrationsList) integrationsList.innerHTML = '<div class="text-xs text-slate-500 text-center py-2">Lade Integrationen...</div>';
         try {
             const res = await fetch(`${backendUrl}/admin/integrations`, { credentials: 'include' });
             const items = await res.json();
             if (!res.ok) throw new Error(items.error || 'Integrationen konnten nicht geladen werden.');
             renderIntegrations(items);
         } catch (err) {
-            integrationsList.innerHTML = `<div class="text-xs text-red-400 text-center py-2">${err.message}</div>`;
+            for (const el of [integrationsList, document.getElementById('ikea-devices-list'), document.getElementById('sonos-speakers-list'), document.getElementById('nuki-doors-list')]) { if (el) { el.textContent = ''; const d = document.createElement('div'); d.className = 'text-xs text-red-400 text-center py-2'; d.textContent = err.message; el.appendChild(d); } }
         }
     }
 
+    // IKEA-Hub und Sonos-Lautsprecher stehen in ihrer App (App Store), Nuki und eigene Anwendungen weiter im API-Reiter
     function renderIntegrations(items) {
-        if (!integrationsList) return;
-        integrationsList.innerHTML = '';
+        renderIntegrationsInto(integrationsList, items.filter(i => i.type !== 'dirigera' && i.type !== 'sonos' && i.type !== 'nuki'), 'Noch keine Integrationen verbunden.');
+        renderIntegrationsInto(document.getElementById('ikea-devices-list'), items.filter(i => i.type === 'dirigera'), 'Noch kein Hub gekoppelt.');
+        renderIntegrationsInto(document.getElementById('sonos-speakers-list'), items.filter(i => i.type === 'sonos'), 'Noch kein Lautsprecher eingetragen.');
+        renderIntegrationsInto(document.getElementById('nuki-doors-list'), items.filter(i => i.type === 'nuki'), 'Noch kein Schloss eingetragen.');
+    }
+
+    function renderIntegrationsInto(container, items, emptyText) {
+        if (!container) return;
+        container.innerHTML = '';
         if (items.length === 0) {
-            integrationsList.innerHTML = '<div class="text-xs text-slate-500 text-center py-2">Noch keine Integrationen verbunden.</div>';
+            container.textContent = ''; const emptyEl = document.createElement('div'); emptyEl.className = 'text-xs text-slate-500 text-center py-2'; emptyEl.textContent = emptyText; container.appendChild(emptyEl);
             return;
         }
 
@@ -3559,7 +3426,7 @@ if (adminTabBtnCockpit) adminTabBtnCockpit.addEventListener('click', () => switc
                 card.appendChild(cmdList);
             }
 
-            integrationsList.appendChild(card);
+            container.appendChild(card);
         });
     }
 
@@ -3915,7 +3782,30 @@ if (adminTabBtnCockpit) adminTabBtnCockpit.addEventListener('click', () => switc
                 apaleoHousesBox.classList.toggle('hidden', !(data.properties || []).length);
             }
             if (data.connected && data.error) setApaleoStatus('✗ ' + data.error, 'text-red-400');
+            apaleoLastConnected = !!data.connected;
+            updateApaleoGuestCheck();
         } catch (err) { /* Anzeige bleibt wie sie ist */ }
+    }
+    // Admin: Warum erscheint bei Gästen (k)ein Anmelden mit Buchungsnummer? Zeigt alle vier Bedingungen auf einen Blick.
+    let apaleoLastConnected = false;
+    function updateApaleoGuestCheck() {
+        if (!apaleoGuestCheck) return;
+        const appEntry = (Array.isArray(appstoreApps) ? appstoreApps : []).find(a => a.id === 'apaleo');
+        const appOn = appEntry ? !!appEntry.enabled : true;   // die Einrichtung ist nur bei aktivierter App sichtbar
+        const items = [
+            [appConfig.guest_chat_enabled === 'true', 'Gast-Chat eingeschaltet (Reiter „Benutzer“: „Gäste dürfen mit Aura chatten“)'],
+            [!!appOn, 'Apaleo-App aktiviert'],
+            [apaleoLastConnected, 'Mit Apaleo verbunden'],
+            [!!(apaleoGuestEnabledBox && apaleoGuestEnabledBox.checked), 'Schalter oben für Gäste eingeschaltet'],
+        ];
+        apaleoGuestCheck.textContent = '';
+        items.forEach(([ok, text]) => {
+            const li = document.createElement('li');
+            li.className = ok ? 'text-emerald-400' : 'text-amber-300';
+            li.textContent = (ok ? '✓ ' : '✗ ') + text;
+            apaleoGuestCheck.appendChild(li);
+        });
+        apaleoGuestCheck.classList.toggle('hidden', !(apaleoGuestEnabledBox && apaleoGuestEnabledBox.checked) && items.every(([ok]) => !ok));
     }
     if (apaleoConnectBtn) {
         apaleoConnectBtn.addEventListener('click', async () => {
@@ -4588,57 +4478,7 @@ if (adminTabBtnCockpit) adminTabBtnCockpit.addEventListener('click', () => switc
         });
     }
 
-    // --- ADMIN PANEL: NEUEN BENUTZER ANLEGEN ---
-
-    if (adminNewUserToggleBtn) {
-        adminNewUserToggleBtn.addEventListener('click', () => {
-            if (adminNewUserForm) adminNewUserForm.classList.toggle('hidden');
-        });
-    }
-
-    if (adminNewUserSaveBtn) {
-        adminNewUserSaveBtn.addEventListener('click', async () => {
-            const username = adminNewUsername ? adminNewUsername.value.trim() : '';
-            const password = adminNewPassword ? adminNewPassword.value : '';
-            const firstname = adminNewFirstname ? adminNewFirstname.value.trim() : '';
-            const lastname = adminNewLastname ? adminNewLastname.value.trim() : '';
-            const email = adminNewEmail ? adminNewEmail.value.trim() : '';
-            const isAdmin = adminNewIsAdmin ? adminNewIsAdmin.checked : false;
-
-            if (adminNewUserStatus) {
-                adminNewUserStatus.textContent = 'Lege Benutzer an...';
-                adminNewUserStatus.className = 'text-[11px] text-slate-400';
-                adminNewUserStatus.classList.remove('hidden');
-            }
-
-            try {
-                const res = await fetch(`${backendUrl}/admin/users`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
-                    body: JSON.stringify({ username, password, firstname, lastname, email, isAdmin })
-                });
-                const data = await res.json();
-                if (!res.ok) throw new Error(data.error || 'Benutzer konnte nicht angelegt werden.');
-
-                if (adminNewUserStatus) {
-                    const mailNote = email ? (data.mailSent ? ' 📧 Willkommens-Mail verschickt.' : ` (Mail nicht verschickt: ${data.mailReason || 'unbekannter Fehler'})`) : '';
-                    adminNewUserStatus.textContent = `✓ Benutzer "${username}" angelegt.${mailNote}`;
-                    adminNewUserStatus.className = 'text-[11px] text-emerald-400';
-                }
-                [adminNewUsername, adminNewPassword, adminNewFirstname, adminNewLastname, adminNewEmail].forEach(el => { if (el) el.value = ''; });
-                if (adminNewIsAdmin) adminNewIsAdmin.checked = false;
-                loadAdminUsers();
-                loadAdminUserLimitDisplay();
-            } catch (err) {
-                if (adminNewUserStatus) {
-                    adminNewUserStatus.textContent = '✗ ' + err.message;
-                    adminNewUserStatus.className = 'text-[11px] text-red-400';
-                    adminNewUserStatus.classList.remove('hidden');
-                }
-            }
-        });
-    }
+    // Neue Benutzer werden nicht mehr hier angelegt: das geschieht zentral in AuraDirect (kostenlos). Hier erscheinen sie nach ihrer ersten Anmeldung.
 
     // --- REBRANDING (Premium "rebrand") ---
 
@@ -5099,7 +4939,11 @@ if (adminTabBtnCockpit) adminTabBtnCockpit.addEventListener('click', () => switc
             if (configAccentColor) await saveConfigToDB('accent_color', configAccentColor.value);
             if (configBgColor) await saveConfigToDB('bg_color', configBgColor.value);
             if (configLayout) await saveConfigToDB('layout', configLayout.value);
-            if (configAvatarSize) await saveConfigToDB('avatar_size', configAvatarSize.value);
+            if (configAvatarSize) {
+                // Neue "Aura-Grösse" gewählt: die mit der Maus gezogene Grösse (js/avatarresize.js) gilt nicht mehr, die Einstellung gewinnt
+                if (configAvatarSize.value !== (appConfig.avatar_size || 'medium') && window.AuraAvatarResize && window.AuraAvatarResize.controller) window.AuraAvatarResize.controller.clearManual();
+                await saveConfigToDB('avatar_size', configAvatarSize.value);
+            }
             if (configAvatarPosition) await saveConfigToDB('avatar_position', configAvatarPosition.value);
             if (configChatBg && configChatBg.files[0]) {
                 const base64ChatBg = await fileToBase64(configChatBg.files[0]);
@@ -5609,6 +5453,7 @@ if (adminTabBtnCockpit) adminTabBtnCockpit.addEventListener('click', () => switc
                 // Gast klickt auf "Einloggen"
                 if (dropdownMenu) dropdownMenu.classList.add('hidden');
                 if (authModal) authModal.classList.remove('hidden');
+                refreshGuestStayOffer();
             }
         });
     }

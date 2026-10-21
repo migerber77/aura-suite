@@ -1,0 +1,19 @@
+Logos für den App Store (Admin Panel -> App Store)
+===================================================
+
+Lege hier pro App eine Bilddatei ab. Der Dateiname ist die Kennung der App:
+
+    apaleo.png     für die Apaleo-App
+    ikea.png       für die App IKEA SmartHome
+    sonos.png      für die Sonos-App
+    nuki.png       für die Nuki-App
+
+Gesucht wird in dieser Reihenfolge: .png, .svg, .webp, .jpg (die erste, die es gibt, wird genommen).
+Empfohlen: quadratisch, 256 x 256 Punkte, mit eigenem Hintergrund (wie ein App-Symbol). Das Bild füllt die Kachel randlos aus.
+Enthalten sind bereits: apaleo.png, ikea.png, sonos.png, nuki.png.
+Fehlt eine Datei, zeigt der App Store stattdessen ein Symbol (Apaleo 🏨, IKEA 🏠, Sonos 🔊, Nuki 🔒). Es geht also nichts kaputt.
+
+Hinweis: Die Logos der Hersteller sind deren Marken. Bitte nur Dateien verwenden, die ihr dafür verwenden dürft
+(z. B. aus dem Presse- oder Partnerbereich des Herstellers).
+
+Nach dem Ablegen: Seite im Browser neu laden (Strg+F5). Ein neues Bauen des Images ist nur nötig, wenn die Dateien nicht per Volume eingebunden sind.

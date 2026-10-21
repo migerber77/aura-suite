@@ -9,12 +9,15 @@ services:
                          # für echten Empfang aus dem Internet muss Port 25 extern auf 2525
                          # weitergeleitet werden (Router/Firewall), 25 selbst bleibt hier
                          # bewusst frei, da er auf den meisten Servern ohnehin reserviert ist
+    extra_hosts:
+      - "host.docker.internal:host-gateway"   # AuraControl auf diesem Rechner (Lizenz abholen)
     environment:
       # Eigene Zufallswerte eintragen! Erzeugen z.B. mit: openssl rand -hex 32
       - SESSION_SECRET=${SESSION_SECRET}
       - CREDENTIAL_ENCRYPTION_KEY=${CREDENTIAL_ENCRYPTION_KEY}
       # Muss GENAU derselbe Wert wie auf dem Lizenz-Server (LICENSE_SECRET) sein.
       - LICENSE_SECRET=${LICENSE_SECRET}
+      - LICENSE_SYNC_URL=${LICENSE_SYNC_URL:-}   # Suite-Lizenz automatisch von AuraControl holen. Leer = host.docker.internal:8000; '-' schaltet ab
       - AURA_SUITE_VERSION=${AURA_SUITE_VERSION:-}   # optional: Version der Aura-Suite, erscheint unter "Über Aura-Suite"
       - INTERNAL_SMTP_PORT=2525
     volumes:

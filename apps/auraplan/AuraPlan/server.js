@@ -269,7 +269,7 @@ function verifyLicenseKey(licenseKey) {
     } catch {
         return { valid: false, error: 'Lizenz-Daten sind beschädigt.' };
     }
-    if (payload.product !== 'auraplan') return { valid: false, error: 'Diese Lizenz ist nicht für AuraPlan ausgestellt.' };
+    if (payload.product !== 'auraplan' && payload.product !== 'suite') return { valid: false, error: 'Diese Lizenz ist nicht für AuraPlan ausgestellt.' };   // 'suite': Suite-Lizenz (Business Solo/Advanced), kommt meist automatisch von AuraControl
     if (payload.expiresAt && new Date(payload.expiresAt).getTime() < Date.now()) {
         return { valid: false, error: 'Lizenz ist abgelaufen.', payload };
     }
@@ -292,6 +292,14 @@ function isWithinFreeTier() {
     return new Promise((resolve) => db.get(`SELECT COUNT(*) as c FROM users WHERE active = 1`, [], (err, row) => resolve(!err && !!row && row.c <= 1)));
 }
 
+// Suite-Lizenz automatisch von AuraControl übernehmen (gemeinsamer Baustein, siehe aura-license-sync.js)
+const licenseSync = require('./aura-license-sync').startLicenseSync({
+    product: 'plan', verify: (k) => verifyLicenseKey(k),
+    getKey: () => getSetting('license_key'), setKey: (k) => setSetting('license_key', k),
+    getSource: () => getSetting('license_source'), setSource: (v) => setSetting('license_source', v),
+    log: (m) => console.log(m)
+});
+
 async function getStoredLicenseInfo() {
     const key = await getSetting('license_key');
     let base = { valid: false, customer: null, expiresAt: null, error: 'Keine Lizenz hinterlegt.' };
@@ -301,7 +309,10 @@ async function getStoredLicenseInfo() {
             valid: result.valid,
             customer: (result.payload && result.payload.customer) || null,
             expiresAt: (result.payload && result.payload.expiresAt) || null,
-            error: result.valid ? null : result.error
+            error: result.valid ? null : result.error,
+            plan: (result.valid && result.payload && result.payload.product === 'suite') ? (result.payload.plan || 'suite') : null,
+            users: (result.valid && result.payload && result.payload.product === 'suite') ? (result.payload.users || result.payload.maxUsers || null) : null,
+            managedBy: (await getSetting('license_source')) === 'control' ? 'auracontrol' : null
         };
     }
     // Reihenfolge: erst die 14 Tage Testphase (alles erlaubt), dann eine gültige Lizenz, sonst die Gratis-Stufe (höchstens 1 aktives Konto: der Admin), sonst gesperrt.
@@ -317,7 +328,7 @@ async function getStoredLicenseInfo() {
 // und die Lizenz-Prüfung/-Eingabe/-Entfernung selbst bleiben bewusst ausgenommen (sonst käme
 // niemand mehr rein, um die Sperre wieder aufzuheben).
 async function requireLicense(req, res, next) {
-    const exempt = ['/api/login', '/api/logout', '/api/me', '/api/license', '/api/admin/license', '/api/admin/license/remove'];
+    const exempt = ['/api/login', '/api/logout', '/api/me', '/api/license'];
     if (!req.path.startsWith('/api/') || exempt.includes(req.path)) return next();
     const info = await getStoredLicenseInfo();
     if (info.valid) return next();
@@ -635,18 +646,7 @@ app.get('/api/me', requireAuth, (req, res) => {
 app.get('/api/license', requireAuth, async (req, res) => {
     res.json(await getStoredLicenseInfo());
 });
-app.post('/api/admin/license', requireAuth, requireAdmin, async (req, res) => {
-    const key = (req.body.key || '').trim();
-    if (!key) return res.status(400).json({ error: 'Bitte einen Lizenzschlüssel eintragen.' });
-    const result = verifyLicenseKey(key);
-    if (!result.valid) return res.status(400).json({ error: result.error });
-    await setSetting('license_key', key);
-    res.json({ success: true, customer: result.payload.customer, expiresAt: result.payload.expiresAt });
-});
-app.post('/api/admin/license/remove', requireAuth, requireAdmin, async (req, res) => {
-    await setSetting('license_key', '');
-    res.json({ success: true });
-});
+// Lizenz eintragen/entfernen gibt es hier nicht mehr: die Lizenz wird zentral in AuraControl eingetragen und von dort abgeholt (aura-license-sync.js).
 
 app.post('/api/change-password', requireAuth, async (req, res) => {
     const { currentPassword, newPassword } = req.body;
@@ -675,22 +675,6 @@ app.get('/api/users', requireAuth, (req, res) => {
         if (err) return res.status(500).json({ error: err.message });
         res.json(rows);
     });
-});
-
-app.post('/api/users', requireAuth, requireAdmin, async (req, res) => {
-    const { username, password, name, role, vacationDaysPerYear, color, pensumPercent, weeklyHours } = req.body;
-    if (!username || !password || !name) return res.status(400).json({ error: 'Benutzername, Passwort und Name sind erforderlich.' });
-    if (password.length < 8) return res.status(400).json({ error: 'Passwort muss mindestens 8 Zeichen haben.' });
-    const hash = await bcrypt.hash(password, 10);
-    const finalRole = ['admin', 'teamleiter'].includes(role) ? role : 'employee';
-    db.run(
-        `INSERT INTO users (username, passwordHash, name, role, vacationDaysPerYear, color, pensumPercent, weeklyHours) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-        [username.trim(), hash, name.trim(), finalRole, vacationDaysPerYear || 25, color || '#3270FD', pensumPercent || 100, weeklyHours || 42],
-        function (err) {
-            if (err) return res.status(400).json({ error: err.message.includes('UNIQUE') ? 'Dieser Benutzername ist bereits vergeben.' : err.message });
-            res.json({ success: true, id: this.lastID });
-        }
-    );
 });
 
 app.put('/api/users/:id', requireAuth, requireAdmin, (req, res) => {
@@ -1442,42 +1426,7 @@ app.get('/api/admin/export/employees', requireAuth, requireAdmin, (req, res) => 
     });
 });
 
-app.post('/api/admin/import/employees', requireAuth, requireAdmin, upload.single('file'), async (req, res) => {
-    if (!req.file) return res.status(400).json({ error: 'Keine Datei hochgeladen.' });
-    const { header, rows } = parseCsv(req.file.buffer.toString('utf-8'));
-    const col = (name) => header.indexOf(name);
-    const iUsername = col('username'), iName = col('name'), iRole = col('role'),
-        iVacation = col('vacationDaysPerYear'), iPensum = col('pensumPercent'), iWeekly = col('weeklyHours'), iColor = col('color');
-    if (iUsername === -1 || iName === -1) return res.status(400).json({ error: 'CSV braucht mindestens die Spalten "username" und "name".' });
-
-    let created = 0, updated = 0, errors = [];
-    for (const row of rows) {
-        const username = (row[iUsername] || '').trim();
-        const name = (row[iName] || '').trim();
-        if (!username || !name) { errors.push(`Zeile übersprungen (username/name fehlt): ${row.join(',')}`); continue; }
-        const role = iRole !== -1 && row[iRole] ? row[iRole].trim() : 'employee';
-        const vacationDaysPerYear = iVacation !== -1 && row[iVacation] ? parseFloat(row[iVacation]) : 25;
-        const pensumPercent = iPensum !== -1 && row[iPensum] ? parseFloat(row[iPensum]) : 100;
-        const weeklyHours = iWeekly !== -1 && row[iWeekly] ? parseFloat(row[iWeekly]) : 42;
-        const color = iColor !== -1 && row[iColor] ? row[iColor].trim() : '#3270FD';
-
-        const existing = await new Promise((resolve) => db.get(`SELECT id FROM users WHERE username = ?`, [username], (e, r) => resolve(r)));
-        if (existing) {
-            await new Promise((resolve) => db.run(
-                `UPDATE users SET name = ?, role = ?, vacationDaysPerYear = ?, pensumPercent = ?, weeklyHours = ?, color = ? WHERE id = ?`,
-                [name, role, vacationDaysPerYear, pensumPercent, weeklyHours, color, existing.id], () => resolve()));
-            updated++;
-        } else {
-            const tempHash = await hashPassword(require('crypto').randomBytes(24).toString('hex'));
-            await new Promise((resolve) => db.run(
-                `INSERT INTO users (username, passwordHash, name, role, vacationDaysPerYear, pensumPercent, weeklyHours, color) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-                [username, tempHash, name, role, vacationDaysPerYear, pensumPercent, weeklyHours, color], () => resolve()));
-            created++;
-        }
-    }
-    res.json({ success: true, created, updated, errors });
-});
-
+// Mitarbeitende werden nicht mehr hier angelegt oder importiert (keine Routen POST /api/users und POST /api/admin/import/employees): das geschieht zentral in AuraDirect (kostenlos).
 app.get('/api/admin/export/time-entries', requireAuth, requireAdmin, (req, res) => {
     const { from, to } = req.query;
     const conditions = ['t.deleted = 0'];

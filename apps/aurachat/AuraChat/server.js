@@ -612,7 +612,7 @@ function verifyLicenseKey(licenseKey) {
     }
 
     // Eine Lizenz für ein ANDERES Produkt (gleiche Signatur, gleiches LICENSE_SECRET) schaltet AuraChat nicht frei. Ganz alte Lizenzen ohne Produktfeld bleiben gültig.
-    if (payload && payload.product && payload.product !== 'aurachat') {
+    if (payload && payload.product && payload.product !== 'aurachat' && payload.product !== 'suite') {   // 'suite': Suite-Lizenz (Business Solo/Advanced), kommt meist automatisch von AuraControl
         return { valid: false, error: 'Diese Lizenz ist nicht für AuraChat ausgestellt.' };
     }
 
@@ -622,6 +622,16 @@ function verifyLicenseKey(licenseKey) {
 
     return { valid: true, payload };
 }
+
+// Suite-Lizenz automatisch von AuraControl übernehmen (gemeinsamer Baustein, siehe aura-license-sync.js). Danach gilt sie wie eine hier eingetragene Lizenz.
+const licenseSync = require('./aura-license-sync').startLicenseSync({
+    product: 'chat', verify: (k) => verifyLicenseKey(k),
+    getKey: () => getGlobalConfigValue('license_key'),
+    setKey: (k) => k ? setGlobalConfigValue('license_key', k).then(() => runLicenseCheckin())
+                     : new Promise((resolve) => db.run(`DELETE FROM configs WHERE userId = ? AND key = 'license_key'`, [GLOBAL_USER_ID], () => resolve())),
+    getSource: () => getGlobalConfigValue('license_source'), setSource: (v) => setGlobalConfigValue('license_source', v),
+    log: (m) => console.log(m)
+});
 
 // --- TRIAL-PERIODE (14 Tage, alle Premium-Features frei, ab erster Nutzung) ---
 const TRIAL_DAYS = 14;
@@ -655,7 +665,8 @@ function getStoredLicenseInfo(callback) {
                 const result = verifyLicenseKey(row.value);
                 base = {
                     valid: result.valid,
-                    features: (result.valid && result.payload && result.payload.features) || [],
+                    // Jede gültige Lizenz gilt für ALLE Funktionen (keine Auswahl einzelner Funktionen mehr auf dem Lizenzserver)
+                    features: result.valid ? Array.from(new Set([...ALL_PREMIUM_FEATURES, ...((result.payload && result.payload.features) || [])])) : [],
                     customer: (result.payload && result.payload.customer) || null,
                     expiresAt: (result.payload && result.payload.expiresAt) || null,
                     error: result.valid ? null : result.error,
@@ -663,7 +674,8 @@ function getStoredLicenseInfo(callback) {
                     // nur bei komplett FEHLENDEM Feld (ältere, vor diesem Feature erzeugte Lizenzen)
                     // greift der Standardwert. Eine UNGÜLTIGE oder abgelaufene Lizenz zählt nicht: dann gilt die Gratis-Stufe (1 Benutzer).
                     maxUsers: result.valid && result.payload ? (result.payload.maxUsers ?? 3) : 1,
-                    maxAdmins: result.valid && result.payload ? (result.payload.maxAdmins ?? 1) : 1
+                    maxAdmins: result.valid && result.payload ? (result.payload.maxAdmins ?? 1) : 1,
+                    plan: result.valid && result.payload && result.payload.product === 'suite' ? (result.payload.plan || 'suite') : null
                 };
             }
 
@@ -1121,6 +1133,29 @@ function getGlobalConfigValue(key) {
         db.get(`SELECT value FROM configs WHERE userId = ? AND key = ?`, [GLOBAL_USER_ID, key], (err, row) => resolve(row ? row.value : null));
     });
 }
+function setGlobalConfigValue(key, value) {
+    return new Promise((resolve, reject) => {
+        db.run(`INSERT OR REPLACE INTO configs (userId, key, value) VALUES (?, ?, ?)`, [GLOBAL_USER_ID, key, value], (err) => err ? reject(err) : resolve());
+    });
+}
+
+// --- APP STORE (Admin Panel -> App Store): Apaleo, IKEA SmartHome, Sonos, Nuki. Befehle und Funktionen einer App gibt es erst, wenn die App AKTIVIERT und EINGERICHTET ist (siehe apps.js) ---
+const { createAppStore, registerAppStoreRoutes } = require('./apps');
+const dbCount = (sql) => new Promise((resolve) => db.get(sql, [], (err, row) => resolve(!err && row ? Number(row.c) : 0)));
+const appStore = createAppStore({
+    getConfig: getGlobalConfigValue,
+    setConfig: setGlobalConfigValue,
+    configured: {
+        apaleo: async () => (await apaleoSettings()).connected,
+        ikea: async () => (await dbCount(`SELECT COUNT(*) AS c FROM integrations WHERE type = 'dirigera' AND token IS NOT NULL AND token <> ''`)) > 0,
+        sonos: async () => (await dbCount(`SELECT COUNT(*) AS c FROM integrations WHERE type = 'sonos'`)) > 0,
+        nuki: async () => (await dbCount(`SELECT COUNT(*) AS c FROM integrations WHERE type = 'nuki'`)) > 0,
+    },
+    // Bestand übernehmen: Apaleo gilt auch dann als in Benutzung, wenn nur Housekeeping-Meldungen an sind (sie gehören zur Apaleo-App)
+    legacy: { apaleo: async () => (await apaleoSettings()).connected || (await getGlobalConfigValue('hk_staff_report')) === 'true' || (await getGlobalConfigValue('hk_guest_report')) === 'true' },
+    features: () => new Promise((resolve) => getStoredLicenseInfo((info) => resolve(info && info.valid ? info.features : []))),
+});
+registerAppStoreRoutes(app, { requireAdmin, store: appStore });
 async function tryAuraDirectLogin(username, password, twofaCode) {
     const url = await getGlobalConfigValue('auradirect_url');
     const serviceKey = await getGlobalConfigValue('auradirect_service_key');
@@ -2477,7 +2512,7 @@ function loadSuiteInfo() {
 // Öffentlich (nur Anzeige): installierte Version, aktuelle Aura-Suite-Version vom Lizenzserver (falls bekannt) und ob ein Update verfügbar ist
 app.get('/api/version', async (req, res) => {
     const suite = await loadSuiteInfo();
-    res.set('Cache-Control', 'no-store').json({ product: 'AuraChat', installed: INSTALLED_VERSION, suiteInstalled: AURA_SUITE_INSTALLED, suite, updateAvailable: !!(suite && versionOlder(INSTALLED_VERSION, suite.version)) });
+    res.set('Cache-Control', 'no-store').json({ product: 'AuraChat', installed: INSTALLED_VERSION, suiteInstalled: AURA_SUITE_INSTALLED, suite, updateAvailable: !!(suite && AURA_SUITE_INSTALLED && versionOlder(AURA_SUITE_INSTALLED, suite.version)) });   // wie in allen Produkten: installierte Suite-Version gegen die vom Lizenzserver
 });
 
 const LICENSE_CHECKIN_PORT = 8451; // fester Port, mit dem der Lizenz-Server-Container standardmässig läuft
@@ -2583,35 +2618,12 @@ app.get('/api/admin/license', requireAdmin, (req, res) => {
         db.all(`SELECT username, is_admin FROM users`, [], (err, rows) => {
             const totalUsers = err ? null : rows.length;
             const totalAdmins = err ? null : rows.filter(r => isAdminRow(r)).length;
-            res.json({ ...info, totalUsers, totalAdmins });
+            getGlobalConfigValue('license_source').then((src) => res.json({ ...info, totalUsers, totalAdmins, managedBy: src === 'control' ? 'auracontrol' : null, sync: licenseSync.status() }));
         });
     });
 });
 
-app.post('/api/admin/license', requireAdmin, (req, res) => {
-    const licenseKey = (req.body.licenseKey || '').trim();
-    const result = verifyLicenseKey(licenseKey);
-    if (!result.valid) return res.status(400).json({ error: result.error || 'Lizenz ist ungültig.' });
-
-    db.run(`INSERT OR REPLACE INTO configs (userId, key, value) VALUES (?, 'license_key', ?)`, [GLOBAL_USER_ID, licenseKey], (err) => {
-        if (err) return res.status(500).json({ error: err.message });
-        runLicenseCheckin(); // im Hintergrund melden, ohne auf das Ergebnis zu warten
-        res.json({
-            success: true,
-            features: result.payload.features || [],
-            customer: result.payload.customer || null,
-            expiresAt: result.payload.expiresAt || null
-        });
-    });
-});
-
-app.delete('/api/admin/license', requireAdmin, (req, res) => {
-    db.run(`DELETE FROM configs WHERE userId = ? AND key = 'license_key'`, [GLOBAL_USER_ID], (err) => {
-        if (err) return res.status(500).json({ error: err.message });
-        runLicenseCheckin();
-        res.json({ success: true });
-    });
-});
+// Lizenz eintragen oder entfernen gibt es hier nicht mehr: Die Lizenz wird zentral in AuraControl eingetragen und von dort abgeholt (aura-license-sync.js).
 
 // --- ADMIN: INTEGRATIONEN (Dirigera & eigene Anwendungen) ---
 
@@ -5551,46 +5563,8 @@ app.get('/api/admin/users', requireAdmin, (req, res) => {
     });
 });
 
-// Neuen Benutzer anlegen (Admin-Variante von /api/register - erfordert keinen
-// eigenen Login des neuen Users, sondern wird direkt vom Admin ausgefüllt).
-// Nur HIER kann ein neues Konto Administratorrechte bekommen (isAdmin-Flag) -
-// die öffentliche Selbstregistrierung erlaubt das bewusst nicht.
-app.post('/api/admin/users', requireAdmin, async (req, res) => {
-    const { username, password, firstname, lastname, email, isAdmin } = req.body;
-    if (!username || !password) {
-        return res.status(400).json({ error: 'Benutzername und Passwort sind erforderlich.' });
-    }
-    if (password.length < 8) {
-        return res.status(400).json({ error: 'Das Passwort muss mindestens 8 Zeichen lang sein.' });
-    }
-
-    checkUserLimit(!!isAdmin, async (limitError) => {
-        if (limitError) return res.status(402).json({ error: limitError, licenseRequired: isAdmin ? 'maxAdmins' : 'maxUsers' });
-
-        try {
-            const hashed = await hashPassword(password);
-            db.run(
-                `INSERT INTO users (username, password, firstname, lastname, email, is_admin) VALUES (?, ?, ?, ?, ?, ?)`,
-                [username, hashed, firstname || '', lastname || '', email || '', isAdmin ? 1 : 0],
-                async function (err) {
-                    if (err) {
-                        return res.status(400).json({ error: 'Benutzername existiert bereits oder Fehler beim Speichern.' });
-                    }
-                    const mailResult = await sendMail(
-                        email,
-                        'Willkommen bei AuraChat',
-                        `Hallo ${firstname || username},\n\nEin Administrator hat für dich einen Account bei AuraChat angelegt.\n\nBenutzername: ${username}\nPasswort: ${password}\n\nBitte melde dich an und ändere dein Passwort zeitnah unter "Passwort" im Menü.\n\nViele Grüße`
-                    );
-                    const user = { id: this.lastID, username, firstname: firstname || '', lastname: lastname || '', email: email || '', role: (isAdminUsername(username) || isAdmin) ? 'admin' : 'user' };
-                    res.json({ success: true, user, mailSent: mailResult.sent, mailReason: mailResult.reason });
-                }
-            );
-        } catch (err) {
-            console.error('Admin-User-Erstellung Fehler:', err.message);
-            res.status(500).json({ error: 'Interner Fehler beim Anlegen des Benutzers.' });
-        }
-    });
-});
+// Neue Benutzer werden nicht mehr in AuraChat angelegt (keine Route POST /api/admin/users): das geschieht zentral in AuraDirect (kostenlos).
+// Wer sich über AuraDirect anmeldet, bekommt beim ersten Login ein Konto in AuraChat (siehe Anmeldung); der Administrator "admin" bleibt der lokale Notzugang.
 
 // Benutzerprofil bearbeiten (Vorname/Nachname/E-Mail). Der Username wird bewusst
 // NICHT änderbar gemacht, da er die Admin-Rolle bestimmt (siehe isAdminUsername).
@@ -6128,7 +6102,7 @@ function apaleoResetCaches() { apaleoTokenCache = { token: null, expiresAt: 0, k
 let apaleoRefreshPromise = null;
 async function apaleoGetToken(settings, force = false) {
     const o = await apaleoLoadOauth();
-    if (!o) throw new ApaleoError('Apaleo ist nicht verbunden (Admin Panel → API → Apaleo → „Mit Apaleo verbinden“).', 0);
+    if (!o) throw new ApaleoError('Apaleo ist nicht verbunden (Admin Panel → App Store → Apaleo → „Mit Apaleo verbinden“).', 0);
     if (!force && o.accessToken && Date.now() < o.expiresAt - 60000) {
         apaleoTokenCache = { token: o.accessToken, expiresAt: o.expiresAt, key: String(o.connectedAt), scope: 'identity:permissions' };
         return o.accessToken;
@@ -6163,7 +6137,7 @@ function apaleoStatusMessage(status, body) {
 // Liest (GET) bei Apaleo. Erneuert den Zugangs-Token bei 401 einmal, wartet bei 429 kurz und versucht es wieder.
 async function apaleoGet(pathAndQuery, { cacheMs = APALEO_CACHE_MS } = {}) {
     const settings = await apaleoSettings();
-    if (!settings.connected) throw new ApaleoError('Apaleo ist nicht verbunden (Admin Panel → API → Apaleo → „Mit Apaleo verbinden“).', 0);
+    if (!settings.connected) throw new ApaleoError('Apaleo ist nicht verbunden (Admin Panel → App Store → Apaleo → „Mit Apaleo verbinden“).', 0);
     const cacheKey = `${settings.cacheKey}|${pathAndQuery}`;
     const hit = apaleoDataCache.get(cacheKey);
     if (cacheMs && hit && Date.now() - hit.at < cacheMs) return hit.data;
@@ -6287,7 +6261,7 @@ async function apaleoSelectedProperties() {
     if (sel.length) return sel;
     if (ids.length) throw new ApaleoError('Die ausgewählten Häuser sind in Apaleo nicht mehr freigegeben. Bitte im Admin Panel (API → Apaleo) neu auswählen.', 0);
     if (granted.length === 1) return granted;
-    throw new ApaleoError('Es ist noch kein Haus ausgewählt (Admin Panel → API → Apaleo).', 0);
+    throw new ApaleoError('Es ist noch kein Haus ausgewählt (Admin Panel → App Store → Apaleo).', 0);
 }
 const apaleoNorm = (t) => String(t || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/ß/g, 'ss').replace(/[^a-z0-9]+/g, ' ').trim();
 const APALEO_GENERIC_NAME_WORDS = new Set(['hotel', 'haus', 'house', 'resort', 'apartments', 'apartment', 'residence', 'the', 'der', 'die', 'das', 'und', 'and', 'gmbh', 'ag']);
@@ -6621,6 +6595,7 @@ async function runApaleoIntentFor(intent, property) {
 
 async function handleApaleoChatCommand(lower, originalMessage, sessionUser) {
     if (!sessionUser) return null;
+    if (!(await appStore.isEnabled('apaleo'))) return null;   // Apaleo-App nicht aktiviert: diese Befehle gibt es nicht
     const writeResult = await handleApaleoWriteCommand(originalMessage, sessionUser);   // Check-in/-out/Zimmer zuweisen (nur mit Bestätigung)
     if (writeResult) return writeResult;
     const hkResult = await handleHousekeepingReport(originalMessage, sessionUser);     // Housekeeping melden (AuraTicket), braucht Apaleo nicht
@@ -6656,6 +6631,7 @@ const apaleoGuestVerifyLimiter = rateLimit({ standardHeaders: true, legacyHeader
 // Gäste-Funktion nur, wenn: Gast-Chat an + Apaleo verbunden + dieser Schalter an
 async function apaleoGuestFeatureEnabled() {
     if (!(await isGuestChatEnabled())) return false;
+    if (!(await appStore.isEnabled('apaleo'))) return false;   // ohne aktivierte Apaleo-App: kein Ausweisen mit Buchungsnummer, keine Fragen zur Reservierung
     const [flag, settings] = await Promise.all([getGlobalConfigValue('apaleo_guest_enabled'), apaleoSettings()]);
     return flag === 'true' && settings.connected;
 }
@@ -7199,7 +7175,7 @@ app.put('/api/admin/users/:id/apaleo-access', requireAdmin, (req, res) => {
 
 // --- APALEO SCHREIBEN: Check-in, Check-out, Zimmer zuweisen (nur für angemeldete Mitarbeitende, nur mit Bestätigung) ----------
 // Sicherheitsregeln:
-//  - Standardmässig AUS. Es braucht den Hauptschalter + den Schalter der Aktion (Admin Panel → API → Apaleo) + das Recht der Person (✏️).
+//  - Standardmässig AUS. Es braucht den Hauptschalter + den Schalter der Aktion (Admin Panel → App Store → Apaleo) + das Recht der Person (✏️).
 //  - Gäste kommen hier nie hinein (die Befehlsroute verlangt eine Anmeldung, die Gast-Sitzung hat keinen Benutzer).
 //  - ZWEI Schritte: Der Chat-Befehl bereitet nur VOR (es wird nichts geändert) und liefert einen einmaligen Code. Ausgeführt wird erst nach
 //    "Ausführen" (Knopf oder getippt "bestätigen"). Das Sprachmodell ist nie beteiligt: Befehle erkennt fester Code.
@@ -7315,7 +7291,7 @@ async function apaleoWriteUserAllowed(user) {
 async function apaleoWriteDenied(user, actionKey) {
     const st = await apaleoWriteState();
     if (!st.enabled) return 'Das Ändern in Apaleo ist ausgeschaltet. Ein Administrator kann es im Admin Panel (API → Apaleo → „Änderungen in Apaleo erlauben“) einschalten.';
-    if (!st.actions[actionKey]) return `„${APALEO_WRITE_ACTIONS[actionKey].label}“ ist in Apaleo für AuraChat nicht freigegeben (Admin Panel → API → Apaleo).`;
+    if (!st.actions[actionKey]) return `„${APALEO_WRITE_ACTIONS[actionKey].label}“ ist in Apaleo für AuraChat nicht freigegeben (Admin Panel → App Store → Apaleo).`;
     if (!(await apaleoWriteUserAllowed(user))) return 'Dafür hast du keine Schreibrechte in Apaleo. Ein Administrator kann sie dir im Admin Panel (Benutzer → ✏️) geben.';
     return null;
 }
@@ -7351,7 +7327,7 @@ function apaleoWriteStatusMessage(status, body, scope = 'reservations.manage') {
 async function apaleoSend(method, pathAndQuery, jsonBody, scope) {
     if (method !== 'PUT' && method !== 'PATCH') throw new ApaleoError('Diese Art von Abfrage ist nicht erlaubt.', 0);
     const settings = await apaleoSettings();
-    if (!settings.connected) throw new ApaleoError('Apaleo ist nicht verbunden (Admin Panel → API → Apaleo → „Mit Apaleo verbinden“).', 0);
+    if (!settings.connected) throw new ApaleoError('Apaleo ist nicht verbunden (Admin Panel → App Store → Apaleo → „Mit Apaleo verbinden“).', 0);
     let token = await apaleoGetToken(settings);
     for (let attempt = 0; attempt < 2; attempt++) {
         let resp;
@@ -7564,6 +7540,7 @@ async function handleApaleoWriteCommand(originalMessage, sessionUser) {
 }
 
 app.post('/api/apaleo/confirm', requireAuth, async (req, res) => {
+    if (!(await appStore.isEnabled('apaleo'))) return res.json({ ok: false, message: 'Die Apaleo-App ist nicht aktiviert (Admin Panel → App Store). Es wurde nichts geändert.' });
     try { const out = await apaleoExecutePending(req.session.user, req.body && req.body.token); res.json(out); }
     catch (err) { console.error('Apaleo-Ausführung fehlgeschlagen:', err.message); res.json({ ok: false, message: 'Unerwarteter Fehler: ' + err.message + ' Bitte in Apaleo nachsehen, ob etwas geändert wurde.' }); }
 });
@@ -8240,8 +8217,12 @@ app.post('/api/integrations/chat-match', requireAuth, async (req, res) => {
     const apaleoResult = await handleApaleoChatCommand(message.toLowerCase(), message, req.session.user);
     if (apaleoResult) return res.json(apaleoResult);
 
-    db.all(`SELECT * FROM integrations`, [], async (err, rows) => {
-        if (err || !rows || rows.length === 0) return res.json({ matched: false });
+    db.all(`SELECT * FROM integrations`, [], async (err, allRows) => {
+        if (err || !allRows || allRows.length === 0) return res.json({ matched: false });
+        // IKEA-Geräte (Dirigera), Sonos-Lautsprecher und Nuki-Schlösser nur mit aktivierter App; eigene Integrationen bleiben wie bisher
+        const [ikeaOn, sonosOn, nukiOn] = await Promise.all([appStore.isEnabled('ikea'), appStore.isEnabled('sonos'), appStore.isEnabled('nuki')]);
+        const rows = allRows.filter((r) => (r.type !== 'dirigera' || ikeaOn) && (r.type !== 'sonos' || sonosOn) && (r.type !== 'nuki' || nukiOn));
+        if (rows.length === 0) return res.json({ matched: false });
         const lower = message.toLowerCase();
 
         // 1) Dirigera-Geräte: Lampen/Steckdosen (ein/aus/%) oder Storen/Rollläden (rauf/runter/%)
@@ -8406,7 +8387,7 @@ app.post('/api/integrations/chat-match', requireAuth, async (req, res) => {
 
                         const baseUrlRow = await new Promise((resolve) => db.get(`SELECT value FROM configs WHERE userId = ? AND key = 'local_media_base_url'`, [GLOBAL_USER_ID], (e, r) => resolve(r)));
                         if (!baseUrlRow || !baseUrlRow.value) {
-                            return res.json({ matched: true, response: `Für Durchsagen muss im Admin Panel unter API eine "Lokale Server-Adresse" eingetragen sein, die ${row.name} im Netzwerk erreichen kann.` });
+                            return res.json({ matched: true, response: `Für Durchsagen muss im Admin Panel unter App Store → Sonos eine "Lokale Server-Adresse" eingetragen sein, die ${row.name} im Netzwerk erreichen kann.` });
                         }
                         const audioUrl = `${baseUrlRow.value.replace(/\/$/, '')}/api/sonos/audio/${audioId}`;
 
@@ -8684,156 +8665,7 @@ app.get('/api/search', searchLimiter, async (req, res) => {
 });
 
 // =====================================================================================================
-// --- COCKPIT: Gesundheit des Servers (Docker-Container, Speicher, Arbeitsspeicher, Schwachstellen) ---------------
-// Das Backend schaut NICHT selbst auf Docker (es ist von aussen erreichbar). Es fragt den kleinen "Cockpit-Agenten"
-// (eigener Container, siehe cockpit/agent.js), der nur liest, und bewertet hier die Werte mit Ampel-Schwellen.
-// Zugangsdaten: der Agent legt beim ersten Start selbst ein Passwort in /shared/token ab; das Backend sieht diesen Ordner
-// nur lesend.
-const COCKPIT_URL = (process.env.COCKPIT_URL || 'http://cockpit:3600').replace(/\/+$/, '');
-const COCKPIT_TOKEN_FILE = process.env.COCKPIT_TOKEN_FILE || '/shared/token';
-const GB = 1024 * 1024 * 1024;
-const COCKPIT_LIMITS = { ramWarn: 85, ramCrit: 95, swapWarn: 50, diskWarn: 80, diskCrit: 90, diskFreeCritBytes: 5 * GB, cpuWarn: 90, loadPerCoreWarn: 1.5,
-    containerMemWarn: 90, buildCacheWarnBytes: 10 * GB, scanMaxAgeDays: 7, hostCheckMaxAgeDays: 3 };
-const COCKPIT_HISTORY_MAX = 240;           // Punkte
-const COCKPIT_HISTORY_MIN_GAP_MS = 25000;  // höchstens alle 25 Sekunden ein Punkt (egal wie oft jemand aktualisiert)
-const cockpitHistory = [];
-
-class CockpitError extends Error { constructor(message, hint) { super(message); this.name = 'CockpitError'; this.hint = hint || ''; } }
-
-function cockpitReadToken() {
-    let token = '';
-    try { token = fs.readFileSync(COCKPIT_TOKEN_FILE, 'utf8').trim(); } catch { /* unten gemeldet */ }
-    if (!token) throw new CockpitError('Der Cockpit-Dienst ist noch nicht gestartet (kein Passwort gefunden).', 'Bitte neu bauen und starten: docker compose build && docker compose up -d. Der Dienst legt sein Passwort beim ersten Start selbst an.');
-    return token;
-}
-async function cockpitFetchSnapshot() {
-    const token = cockpitReadToken();
-    let resp;
-    try { resp = await fetch(`${COCKPIT_URL}/snapshot`, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(20000) }); }
-    catch (err) { throw new CockpitError(`Der Cockpit-Dienst ist nicht erreichbar (${describeFetchError(err).message}).`, 'Läuft der Container "cockpit"? Prüfen mit: docker compose ps'); }
-    if (resp.status === 401) throw new CockpitError('Der Cockpit-Dienst lehnt das Passwort ab.', 'Beide Dienste neu starten: docker compose restart backend cockpit');
-    if (!resp.ok) throw new CockpitError(`Der Cockpit-Dienst meldet einen Fehler (Status ${resp.status}).`, 'Siehe: docker compose logs cockpit');
-    try { return await resp.json(); } catch { throw new CockpitError('Die Antwort des Cockpit-Dienstes ist nicht lesbar.', 'Siehe: docker compose logs cockpit'); }
-}
-
-const COCKPIT_RANK = { ok: 0, info: 0, warn: 1, crit: 2 };
-const cockpitNum = (n) => String(n).replace('.', ',');   // deutsche Schreibweise: 37,5
-const cockpitGb = (b) => cockpitNum(b / GB >= 10 ? Math.round(b / GB) : Math.round(b / GB * 10) / 10);
-const cockpitAgeDays = (iso, now) => (iso && !Number.isNaN(Date.parse(iso)) ? (now - Date.parse(iso)) / 86400000 : null);
-
-// Bewertet einen Messwert-Satz: liefert die Gesamtampel und eine Liste von Hinweisen (jeder mit Stufe, Bereich, Text)
-function cockpitEvaluate(snap, now = Date.now()) {
-    const L = COCKPIT_LIMITS, items = [];
-    const add = (level, area, text) => items.push({ level, area, text });
-    const host = snap.host || {}, docker = snap.docker || {};
-
-    // Arbeitsspeicher, Prozessor, Speicherplatz
-    const mem = host.memory;
-    if (mem && mem.totalBytes) {
-        const txt = `Arbeitsspeicher zu ${cockpitNum(mem.percent)} % belegt (${cockpitGb(mem.usedBytes)} von ${cockpitGb(mem.totalBytes)} GB).`;
-        add(mem.percent >= L.ramCrit ? 'crit' : mem.percent >= L.ramWarn ? 'warn' : 'ok', 'ram', txt);
-        if (mem.swapTotalBytes > 0 && mem.swapUsedBytes / mem.swapTotalBytes * 100 >= L.swapWarn) add('warn', 'ram', `Der Auslagerungsspeicher (Swap) ist zu ${Math.round(mem.swapUsedBytes / mem.swapTotalBytes * 100)} % belegt: der Arbeitsspeicher ist knapp.`);
-    }
-    if (typeof host.cpuPercent === 'number' && host.cpuPercent >= L.cpuWarn) add('warn', 'cpu', `Der Prozessor ist zu ${cockpitNum(host.cpuPercent)} % ausgelastet.`);
-    if (Array.isArray(host.load) && host.cpuCount && host.load[0] / host.cpuCount >= L.loadPerCoreWarn) add('warn', 'cpu', `Die Systemlast ist hoch (${cockpitNum(host.load[0])} bei ${host.cpuCount} Prozessorkernen).`);
-    const disk = host.disk;
-    if (disk) {
-        const txt = `Speicherplatz zu ${cockpitNum(disk.percent)} % belegt (${cockpitGb(disk.freeBytes)} GB frei).`;
-        add(disk.percent >= L.diskCrit || disk.freeBytes < L.diskFreeCritBytes ? 'crit' : disk.percent >= L.diskWarn ? 'warn' : 'ok', 'disk', txt);
-    } else add('info', 'disk', 'Der Speicherplatz des Servers konnte nicht gelesen werden.');
-
-    // Docker
-    if (!docker.available) {
-        add('crit', 'docker', `Docker lässt sich nicht abfragen: ${docker.error || 'unbekannter Grund'}.`);
-    } else {
-        let problems = 0;
-        for (const c of docker.containers || []) {
-            const name = c.name;
-            if (c.state === 'running' && c.health === 'unhealthy') { add('crit', 'docker', `Container „${name}“ meldet sich als „unhealthy“ (Gesundheitsprüfung schlägt fehl).`); problems++; }
-            else if (c.state === 'restarting') { add('crit', 'docker', `Container „${name}“ startet ständig neu.`); problems++; }
-            else if (c.state === 'paused') { add('warn', 'docker', `Container „${name}“ ist angehalten (pausiert).`); problems++; }
-            else if (c.state === 'dead') { add('crit', 'docker', `Container „${name}“ ist abgestürzt (dead).`); problems++; }
-            else if (c.state !== 'running') {
-                const code = (String(c.status).match(/Exited \((\d+)\)/) || [])[1];
-                if (code !== undefined && code !== '0') add('crit', 'docker', `Container „${name}“ ist mit einem Fehler beendet worden (Code ${code}).`);
-                else add('warn', 'docker', `Container „${name}“ läuft nicht (${c.state === 'exited' ? 'beendet' : c.state}).`);
-                problems++;
-            } else if (c.health === 'starting') add('info', 'docker', `Container „${name}“ startet noch (Gesundheitsprüfung läuft).`);
-            if (c.state === 'running' && c.memoryBytes && c.memoryLimitBytes && host.memory && c.memoryLimitBytes < host.memory.totalBytes && c.memoryBytes / c.memoryLimitBytes * 100 >= L.containerMemWarn) { add('warn', 'docker', `Container „${name}“ nutzt ${Math.round(c.memoryBytes / c.memoryLimitBytes * 100)} % seines Speicher-Limits.`); problems++; }
-        }
-        if (!problems) add('ok', 'docker', `Alle ${docker.containersRunning} von ${docker.containersTotal} Container laufen.`);
-        const u = docker.usage;
-        if (u && u.buildCacheReclaimableBytes >= L.buildCacheWarnBytes) add('warn', 'disk', `${cockpitGb(u.buildCacheReclaimableBytes)} GB Zwischenspeicher vom Bauen sind aufräumbar (docker builder prune -f).`);
-    }
-
-    // Schwachstellen in den Images
-    const v = snap.vulnerabilities;
-    if (!v || !v.configured) add('info', 'vuln', 'Der Schwachstellen-Scan der Images ist nicht eingerichtet (Aktivieren: docker compose --profile scan up -d).');
-    else if (!v.images || !v.images.length) add('info', 'vuln', 'Es gibt noch keinen lesbaren Scan-Bericht (der erste Scan kann einige Minuten dauern).');
-    else {
-        const t = v.totals;
-        // Entscheidend ist, was sich BEHEBEN lässt (Aktualisieren/Neu bauen): kritische mit Korrektur = rot; kritische ohne Korrektur oder
-        // hohe mit Korrektur = Warnung. Zahlen ohne Korrektur sind eine Info, kein Alarm. (Ältere Agenten ohne diese Zahlen: alles zählt.)
-        const critFix = t.critFixable !== undefined ? t.critFixable : t.CRITICAL, highFix = t.highFixable !== undefined ? t.highFixable : t.HIGH;
-        const split = t.critFixable !== undefined ? ` ${critFix} kritische und ${highFix} hohe davon lassen sich durch Aktualisieren der Images beheben.` : '';
-        if (critFix > 0) add('crit', 'vuln', `${t.CRITICAL} kritische und ${t.HIGH} hohe Schwachstellen in den Images.${split}`);
-        else if (t.CRITICAL > 0 || highFix > 0) add('warn', 'vuln', `${t.CRITICAL} kritische (ohne verfügbare Korrektur) und ${t.HIGH} hohe Schwachstellen in den Images.${split}`);
-        else if (t.HIGH > 0) add('ok', 'vuln', `Keine behebbaren kritischen oder hohen Schwachstellen. ${t.HIGH} hohe haben noch keine Korrektur.`);
-        else add('ok', 'vuln', 'Keine kritischen oder hohen Schwachstellen in den Images gefunden.');
-        const age = cockpitAgeDays(v.oldestScan, now);
-        if (age !== null && age > L.scanMaxAgeDays) add('warn', 'vuln', `Der letzte Scan ist ${Math.floor(age)} Tage alt.`);
-    }
-
-    // Updates des Servers
-    const h = snap.hostUpdates;
-    if (!h || !h.configured) add('info', 'updates', 'Die Prüfung auf offene Updates des Servers ist nicht eingerichtet (einmalig: sudo bash cockpit/host/install-hostcheck.sh).');
-    else {
-        let fine = true;
-        if (h.securityUpgradable > 0) { add('warn', 'updates', `${h.securityUpgradable} Sicherheits-Updates des Servers sind offen.`); fine = false; }
-        if (h.rebootRequired) { add('warn', 'updates', 'Der Server braucht einen Neustart (ein Update ist erst danach wirksam).'); fine = false; }
-        const age = cockpitAgeDays(h.checkedAt, now);
-        if (age !== null && age > L.hostCheckMaxAgeDays) { add('warn', 'updates', `Die Prüfung auf Updates ist ${Math.floor(age)} Tage alt (läuft der Timer noch?).`); fine = false; }
-        if (fine) add('ok', 'updates', h.upgradable > 0 ? `Keine Sicherheits-Updates offen (${h.upgradable} sonstige Updates verfügbar).` : 'Der Server ist auf dem neuesten Stand.');
-    }
-    const level = items.reduce((m, i) => (COCKPIT_RANK[i.level] > COCKPIT_RANK[m] ? i.level : m), 'ok');
-    items.sort((a, b) => COCKPIT_RANK[b.level] - COCKPIT_RANK[a.level] || (a.level === 'info') - (b.level === 'info'));
-    return { level, items };
-}
-
-// Verlauf (nur im Arbeitsspeicher): Prozessor, Arbeitsspeicher, Speicherplatz in Prozent
-function cockpitRecord(snap, now = Date.now()) {
-    const last = cockpitHistory[cockpitHistory.length - 1];
-    if (last && now - last.t < COCKPIT_HISTORY_MIN_GAP_MS) return false;
-    const h = snap.host || {};
-    cockpitHistory.push({ t: now, cpu: typeof h.cpuPercent === 'number' ? h.cpuPercent : null, ram: h.memory && h.memory.totalBytes ? h.memory.percent : null, disk: h.disk ? h.disk.percent : null });
-    while (cockpitHistory.length > COCKPIT_HISTORY_MAX) cockpitHistory.shift();
-    return true;
-}
-
-app.get('/api/admin/cockpit', requireAdmin, async (req, res) => {
-    try {
-        const snapshot = await cockpitFetchSnapshot();
-        cockpitRecord(snapshot);
-        res.json({ ok: true, snapshot, status: cockpitEvaluate(snapshot), history: cockpitHistory.slice() });
-    } catch (err) {
-        res.json({ ok: false, error: err.message, hint: err.hint || '', history: cockpitHistory.slice() });
-    }
-});
-
-// Im Hintergrund jede Minute eine Messung ablegen, damit der Verlauf auch da ist, wenn gerade niemand hinschaut.
-// Gemeldet wird nur, wenn sich der Zustand ändert (kein Protokoll-Lärm, wenn der Dienst gar nicht läuft).
-let cockpitLastReachable = null;
-async function cockpitSample() {
-    try {
-        const snap = await cockpitFetchSnapshot();
-        cockpitRecord(snap);
-        if (cockpitLastReachable === false) console.log('Cockpit: Verbindung zum Cockpit-Dienst steht wieder.');
-        cockpitLastReachable = true;
-    } catch (err) {
-        if (cockpitLastReachable !== false) console.warn('Cockpit: ' + err.message);
-        cockpitLastReachable = false;
-    }
-}
+// Das Cockpit (Gesundheit des Servers: Docker, Speicher, Schwachstellen, Updates) ist nach AuraControl umgezogen.
 
 // Server starten
 app.listen(PORT, () => {
@@ -8842,7 +8674,4 @@ app.listen(PORT, () => {
     // hundert MB; bleibt im Piper-Volumen). Etwas Verzögerung, damit der Piper-Container nach einem gemeinsamen Start bereit ist.
     const warmUp = setTimeout(() => { warmUpPiperVoices(); }, 45000);
     if (warmUp.unref) warmUp.unref();
-    // Cockpit: erste Messung nach 30 Sekunden, dann jede Minute
-    const cockpitStart = setTimeout(() => { cockpitSample(); const iv = setInterval(cockpitSample, 60000); if (iv.unref) iv.unref(); }, 30000);
-    if (cockpitStart.unref) cockpitStart.unref();
 });

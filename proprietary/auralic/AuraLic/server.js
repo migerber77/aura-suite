@@ -397,7 +397,8 @@ db.all(`PRAGMA table_info(licenses)`, [], (err, columns) => {
         lastCheckin: 'TEXT', lastTotalUsers: 'INTEGER', lastTotalAdmins: 'INTEGER', lastVersion: 'TEXT',
         contactPerson: 'TEXT', street: 'TEXT', zip: 'TEXT', city: 'TEXT', country: 'TEXT',
         billingDifferent: 'INTEGER', billingStreet: 'TEXT', billingZip: 'TEXT', billingCity: 'TEXT', billingCountry: 'TEXT',
-        resellerId: 'INTEGER'
+        resellerId: 'INTEGER',
+        plan: 'TEXT', planGroup: 'TEXT', planUsers: 'INTEGER'
     };
     Object.entries(newColumns).forEach(([col, type]) => {
         if (!existing.includes(col)) {
@@ -432,6 +433,10 @@ db.run(`UPDATE installations SET ip = NULL WHERE ip IS NOT NULL`, function (err)
 // null bei maxUsers/maxAdmins (= unbegrenzt) macht eine Berechnung unmöglich - dann wird
 // "individuell" zurückgegeben statt einer falschen Zahl.
 function calcMonthlyCost(row) {
+    if (row.plan && PLANS[row.plan]) {   // Lizenzmodell: Preis ergibt sich aus Plan und Benutzerzahl (eine Kundengruppe = ein Preis)
+        const cloudCost = row.hostingType === 'cloud' ? (row.cloudMonthlyFee || 0) : 0;
+        return planMonthlyPrice(row.plan, row.planUsers, row.planDiscount || 0) + cloudCost;
+    }
     if (row.maxUsers === null || row.maxAdmins === null || row.pricePerUser === null || row.pricePerAdmin === null) {
         return null; // individuell / nicht berechenbar
     }
@@ -551,39 +556,48 @@ function summarizeInstalls(rows, now = Date.now(), windowMs = 48 * 60 * 60 * 100
 // Eigene Richtpreise (Endkundenpreis) je Lizenzstufe - nur zur Anzeige/Orientierung für
 // Reseller, keine feste Regel. Bei Änderungen an den echten Preisen (Datenblatt/Webseite)
 // hier mit nachziehen.
-const LIST_PRICES = {
-    pro: { user: 4.00, admin: 9.00 },
-    academy: { user: 7.00, admin: 15.00 }
+// Keine Auswahl einzelner Funktionen mehr: jede Lizenz gilt für ALLES. Für ältere AuraChat-Versionen (die die Liste im Schlüssel lesen)
+// steht trotzdem die vollständige Liste drin. Neue Funktionen von AuraChat hier ergänzen.
+const ALL_FEATURES = ['chat_bg', 'tts_stt', 'api_access', 'avatar', 'integrations', 'image_gen', 'coding_model', 'study_report', 'dual_model', 'email', 'academy', 'rebrand', 'telephony'];
+
+// Lizenzmodelle (Stand 20.10.2026):
+//   Free Plan          0 CHF, 1 Benutzer: braucht KEINEN Schlüssel (AuraChat-Grundfunktionen, AuraPlan, AuraTicket laufen ohne Lizenz mit 1 Benutzer)
+//   Business Solo      19.90 CHF / Monat, genau 1 Benutzer, alle Apps in der Vollversion + AuraMail + AuraCall
+//   Business Advanced  19.90 CHF für den 1. Benutzer + 9.90 CHF je weiteren Benutzer / Monat, ab 2 Benutzern
+// Die Hardware ist nicht Teil der Lizenz (beschafft der Kunde selbst oder über Gerber Backoffice Solutions).
+// Bei Änderungen an den echten Preisen (Webseite) hier mit nachziehen.
+// Eine Suite-Lizenz (product "suite") gilt für ALLE diese Produkte gleich; nur die Zahl der Mitarbeiter unterscheidet die Lizenzen.
+// Sie wird EINMAL in AuraControl beim Kunden eingetragen; AuraControl gleicht sie mit diesem Server ab (neuere Fassung, z. B. mehr Mitarbeiter)
+// und verteilt sie an AuraChat, AuraPlan, AuraTicket, AuraMail und AuraCall.
+const PLAN_PRODUCTS = ['aurachat', 'auraplan', 'auraticket', 'auramail', 'auracall', 'auracontrol'];
+const SUITE_PRODUCT = 'suite';
+const PLANS = {
+    solo: { id: 'solo', label: 'Business Solo', firstUser: 19.90, extraUser: 9.90, minUsers: 1, maxUsers: 1,
+            features: ALL_FEATURES },
+    advanced: { id: 'advanced', label: 'Business Advanced', firstUser: 19.90, extraUser: 9.90, minUsers: 2, maxUsers: 10000,
+            features: ALL_FEATURES }
 };
+// Preis pro Monat für einen Plan; discountPercent nur für die Anzeige des Reseller-Einkaufspreises
+function planMonthlyPrice(planId, users, discountPercent = 0) {
+    const plan = PLANS[planId]; if (!plan) return null;
+    const n = Math.max(plan.minUsers, Math.min(plan.maxUsers, parseInt(users, 10) || plan.minUsers));
+    const total = plan.firstUser + (n - 1) * plan.extraUser;
+    return Math.round(total * (1 - (discountPercent || 0) / 100) * 100) / 100;
+}
 
-const AVAILABLE_FEATURES = [
-    { id: 'chat_bg', label: 'Chat-Hintergrundbild' },
-    { id: 'tts_stt', label: 'Eigener TTS/STT-Server' },
-    { id: 'api_access', label: 'Externe API für andere Plattformen' },
-    { id: 'avatar', label: 'Avatar ändern (Galerie & eigener Upload)' },
-    { id: 'integrations', label: 'Integrationen (Smart-Home-Geräte & eigene Anwendungen)' },
-    { id: 'image_gen', label: 'Bildgenerierung (eigener Server)' },
-    { id: 'coding_model', label: 'Separates Coding-Modell (eigener Server)' },
-    { id: 'study_report', label: 'Lernprotokoll (druckbares PDF aus Chat)' },
-    { id: 'dual_model', label: 'Zweitmodell zur Genauigkeitsprüfung' },
-    { id: 'email', label: 'E-Mail-Integration (IMAP oder Microsoft 365)' },
-    { id: 'academy', label: 'Aura-Academy (experimentelles Nebenmodell-Training, im Backend integriert)' },
-    { id: 'rebrand', label: 'Eigenes Logo/Icon (Rebranding für Wiederverkäufer)' },
-    { id: 'telephony', label: 'Telefonanlagen-Anbindung (Asterisk/3CX über offene API)' }
-];
 
+// AuraDirect und AuraProxy sind KOSTENLOS (sie werden für die zentrale Benutzerverwaltung gebraucht) und hier nicht mehr lizenzierbar.
+// Ihre anonymen Rückmeldungen erscheinen weiter unter PING_PRODUCTS (Zustand "free").
 const AVAILABLE_PRODUCTS = [
     { id: 'aurachat', label: 'AuraChat' },
     { id: 'auraplan', label: 'AuraPlan' },
-    { id: 'auradirect', label: 'AuraDirect' },
     { id: 'auramail', label: 'AuraMail' },
     { id: 'auraticket', label: 'AuraTicket' },
-    { id: 'auraproxy', label: 'AuraProxy' },
     { id: 'auracall', label: 'AuraCall' },
     { id: 'auracontrol', label: 'AuraControl' }
 ];
 
-function generateLicenseKey(customer, features, expiresAt, maxUsers, maxAdmins, product) {
+function generateLicenseKey(customer, features, expiresAt, maxUsers, maxAdmins, product, extra) {
     // Bewusst OHNE Preisinfos im signierten Payload - das geht die einzelne AuraChat-
     // Installation nichts an, das ist reine Buchhaltung hier auf dem Lizenz-Server.
     const payload = {
@@ -593,7 +607,8 @@ function generateLicenseKey(customer, features, expiresAt, maxUsers, maxAdmins, 
         issuedAt: new Date().toISOString(),
         expiresAt: expiresAt || null,
         maxUsers: maxUsers === null ? null : maxUsers,
-        maxAdmins: maxAdmins === null ? null : maxAdmins
+        maxAdmins: maxAdmins === null ? null : maxAdmins,
+        ...(extra || {})   // Suite-Lizenz: plan, users, licenseId
     };
     const payloadB64 = Buffer.from(JSON.stringify(payload)).toString('base64url');
     const signature = crypto.createHmac('sha256', LICENSE_SECRET).update(payloadB64).digest('base64url');
@@ -669,33 +684,29 @@ app.get('/', (req, res) => {
                 ${AVAILABLE_PRODUCTS.map(p => `<a href="/?product=${p.id}" class="px-3 py-1.5 rounded-lg ${productFilter === p.id ? 'bg-blue-600 text-white' : 'bg-slate-900 border border-slate-800 text-slate-300 hover:bg-slate-800'}">${p.label}</a>`).join('')}
             </div>`;
         const history = (rows || []).map(r => {
-            const features = JSON.parse(r.features || '[]');
-            const limitsText = `${r.maxUsers ?? 'unbegrenzt'} Nutzer, ${r.maxAdmins ?? 'unbegrenzt'} Admins`;
-            const productLabel = AVAILABLE_PRODUCTS.find(p => p.id === r.product)?.label || r.product || 'AuraChat';
+            const limitsText = r.plan && PLANS[r.plan] ? `${PLANS[r.plan].label}, ${r.planUsers} Benutzer${r.product === SUITE_PRODUCT ? ' (Suite)' : ''}` : `${r.maxUsers ?? 'unbegrenzt'} Nutzer, ${r.maxAdmins ?? 'unbegrenzt'} Admins`;
+            const productLabel = (r.product === SUITE_PRODUCT ? 'Aura-Suite' : AVAILABLE_PRODUCTS.find(p => p.id === r.product)?.label || r.product || 'AuraChat');
             return `
                 <div class="flex items-center justify-between bg-slate-900 border border-slate-800 rounded-xl px-4 py-3">
                     <div class="flex flex-col min-w-0">
                         <span class="text-sm font-semibold text-white truncate">${r.customer} <span class="text-[10px] font-normal text-slate-400 bg-slate-800 border border-slate-700 rounded-full px-2 py-0.5 ml-1">${productLabel}</span> ${r.resellerName ? `<span class="text-[10px] font-normal text-blue-400 bg-blue-500/10 border border-blue-500/30 rounded-full px-2 py-0.5 ml-1">${r.resellerName}</span>` : ''}</span>
-                        <span class="text-xs text-slate-500">${r.product === 'aurachat' || !r.product ? features.join(', ') + ' · ' : ''}${limitsText} · ausgestellt ${new Date(r.issuedAt).toLocaleDateString('de-DE')} · gültig bis ${r.expiresAt ? new Date(r.expiresAt).toLocaleDateString('de-DE') : 'unbegrenzt'}</span>
+                        <span class="text-xs text-slate-500">${limitsText} · ausgestellt ${new Date(r.issuedAt).toLocaleDateString('de-DE')} · gültig bis ${r.expiresAt ? new Date(r.expiresAt).toLocaleDateString('de-DE') : 'unbegrenzt'}</span>
                     </div>
-                    <a href="/download/${r.id}" class="text-xs text-blue-400 hover:text-blue-300 shrink-0 ml-3">⬇️ .lic</a>
+                    <div class="flex items-center gap-3 shrink-0 ml-3">
+                        <a href="/download/${r.id}" class="text-xs text-blue-400 hover:text-blue-300">⬇️ .lic</a>
+                        <form method="POST" action="/licenses/${r.id}/delete" class="inline" onsubmit="return confirm('Diese Lizenz wirklich löschen?' + (${!!r.planGroup} ? ' Alle Fassungen dieser Lizenz werden gelöscht.' : '') + ' Das kann nicht rückgängig gemacht werden.');"><input type="hidden" name="back" value="/"><button type="submit" class="text-xs text-red-400 hover:text-red-300 cursor-pointer">🗑️ Löschen</button></form>
+                    </div>
                 </div>`;
         }).join('') || '<div class="text-sm text-slate-500">Noch keine Lizenzen ausgestellt.</div>';
 
-        const featureCheckboxes = AVAILABLE_FEATURES.map(f => `
-            <label class="flex items-center gap-2 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 cursor-pointer">
-                <input type="checkbox" name="features" value="${f.id}" class="rounded">
-                <span class="text-sm text-slate-200">${f.label}</span>
-            </label>
-        `).join('');
 
         function renderForm(resellerOptionsHtml) {
             const resellerPricingBox = isReseller ? `
                 <div class="bg-blue-500/10 border border-blue-500/30 rounded-xl p-3 text-xs text-blue-300">
                     Eure Konditionen: <span class="font-semibold">${req.session.discountPercent}% Rabatt</span> auf die Richtpreise ·
-                    Pro: CHF ${(LIST_PRICES.pro.user * (1 - req.session.discountPercent / 100)).toFixed(2)} / ${(LIST_PRICES.pro.admin * (1 - req.session.discountPercent / 100)).toFixed(2)} ·
-                    Academy: CHF ${(LIST_PRICES.academy.user * (1 - req.session.discountPercent / 100)).toFixed(2)} / ${(LIST_PRICES.academy.admin * (1 - req.session.discountPercent / 100)).toFixed(2)}
-                    <div class="text-blue-400/70 mt-1">Das ist euer Einkaufspreis - was ihr eurem Endkunden unten als "Preis pro Benutzer/Administrator" in Rechnung stellt, bestimmt ihr frei.</div>
+                    Business Solo: CHF ${planMonthlyPrice('solo', 1, req.session.discountPercent).toFixed(2)} / Mt. ·
+                    Business Advanced: CHF ${(PLANS.advanced.firstUser * (1 - req.session.discountPercent / 100)).toFixed(2)} + ${(PLANS.advanced.extraUser * (1 - req.session.discountPercent / 100)).toFixed(2)} je weiteren Benutzer / Mt.
+                    <div class="text-blue-400/70 mt-1">Das ist euer Einkaufspreis. Die Kundenübersicht rechnet mit den Richtpreisen (Endkundenpreis).</div>
                 </div>` : '';
 
             res.send(layout('Neue Lizenz erzeugen', `
@@ -704,10 +715,23 @@ app.get('/', (req, res) => {
                 ${resellerPricingBox}
                 ${resellerOptionsHtml || ''}
                 <div>
-                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Produkt</label>
-                    <select name="product" id="product-select" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
-                        ${AVAILABLE_PRODUCTS.map(p => `<option value="${p.id}">${p.label}</option>`).join('')}
+                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Lizenzmodell</label>
+                    <select name="plan" id="plan-select" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
+                        <option value="solo">Business Solo · 1 Benutzer · CHF 19.90 / Monat</option>
+                        <option value="advanced">Business Advanced · ab 2 Benutzern · CHF 19.90 + 9.90 je weiteren Benutzer / Monat</option>
                     </select>
+                    <p class="text-[11px] text-slate-500 mt-1">Free Plan (1 Benutzer, AuraChat-Grundfunktionen, AuraPlan, AuraTicket) braucht keinen Schlüssel. Hardware ist nicht Teil der Lizenz.</p>
+                </div>
+                <div id="plan-section" class="bg-blue-500/10 border border-blue-500/30 rounded-xl p-3 flex flex-col gap-2">
+                    <div class="text-xs text-blue-300">Es wird <b>ein</b> Suite-Schlüssel erzeugt. Er wird beim Kunden <b>einmal in AuraControl</b> eingetragen; AuraControl verteilt ihn an AuraChat (Vollversion), AuraPlan, AuraTicket, AuraMail und AuraCall. Alle Produkte sind gleich lizenziert, nur die Zahl der Mitarbeiter unterscheidet die Lizenzen.</div>
+                    <div id="plan-users-row">
+                        <label class="block text-[11px] text-slate-400 mb-1">Weitere Mitarbeiter (zusätzlich zum 1. Benutzer)</label>
+                        <div class="flex items-center gap-3">
+                            <input type="number" id="plan-extra" name="planExtra" min="1" max="9999" value="1" class="w-32 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
+                            <span class="text-xs text-slate-300">= <b id="plan-total">2</b> Benutzer insgesamt</span>
+                        </div>
+                    </div>
+                    <div class="text-sm text-white">Preis: <span id="plan-price" class="font-semibold"></span> <span class="text-xs text-slate-400">/ Monat (Richtpreis exkl. MwSt.)</span></div>
                 </div>
                 <div>
                     <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Kunde / Firma</label>
@@ -769,40 +793,12 @@ app.get('/', (req, res) => {
                     </div>
                 </div>
 
-                <div id="features-section">
-                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Features</label>
-                    <button type="button" id="select-all-features-btn" class="text-[11px] text-blue-400 hover:text-blue-300 mb-2 cursor-pointer">Alle auswählen</button>
-                    <div class="flex flex-col gap-2">${featureCheckboxes}</div>
-                </div>
-                <div id="auraplan-license-note" class="hidden bg-blue-500/10 border border-blue-500/30 rounded-xl p-3 text-xs text-blue-300">
-                    AuraPlan/AuraDirect kennen keine einzelnen Premium-Features - hier zählt nur, ob überhaupt eine gültige, nicht abgelaufene Lizenz vorliegt.
-                </div>
                 <div>
                     <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Gültig bis (optional, leer = unbegrenzt)</label>
                     <input type="date" name="expires" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
                 </div>
-                <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Max. Benutzer (leer = unbegrenzt)</label>
-                        <input type="number" min="0" name="maxUsers" placeholder="unbegrenzt" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Max. Administratoren (leer = unbegrenzt)</label>
-                        <input type="number" min="0" name="maxAdmins" placeholder="unbegrenzt" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
-                    </div>
-                </div>
                 <div class="border-t border-slate-800 pt-3 flex flex-col gap-3">
-                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider -mb-1">💰 Kosten (nur für die Kundenübersicht hier, nicht Teil der Lizenz selbst)</label>
-                    <div class="grid grid-cols-2 gap-3">
-                        <div>
-                            <label class="block text-[11px] text-slate-500 mb-1">Preis pro Benutzer / Monat (CHF)</label>
-                            <input type="number" min="0" step="0.01" name="pricePerUser" placeholder="z.B. 4.00" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
-                        </div>
-                        <div>
-                            <label class="block text-[11px] text-slate-500 mb-1">Preis pro Administrator / Monat (CHF)</label>
-                            <input type="number" min="0" step="0.01" name="pricePerAdmin" placeholder="z.B. 9.00" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
-                        </div>
-                    </div>
+                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider -mb-1">💰 Hosting (nur für die Kundenübersicht hier, nicht Teil der Lizenz selbst)</label>
                     <div>
                         <label class="block text-[11px] text-slate-500 mb-1">Hosting</label>
                         <div class="flex gap-3">
@@ -818,18 +814,22 @@ app.get('/', (req, res) => {
                 <button type="submit" class="bg-blue-600 hover:bg-blue-500 text-white font-medium py-2.5 rounded-xl text-sm transition">Lizenz erzeugen</button>
             </form>
             <script>
-                document.getElementById('select-all-features-btn').addEventListener('click', () => {
-                    document.querySelectorAll('input[name="features"]').forEach(cb => cb.checked = true);
-                });
-                const productSelect = document.getElementById('product-select');
-                const featuresSection = document.getElementById('features-section');
-                const auraplanNote = document.getElementById('auraplan-license-note');
-                function applyProductVisibility() {
-                    const isAurachat = productSelect.value === 'aurachat';
-                    featuresSection.classList.toggle('hidden', !isAurachat);
-                    auraplanNote.classList.toggle('hidden', isAurachat);
+                const planSelect = document.getElementById('plan-select');
+                const planExtra = document.getElementById('plan-extra');
+                const PLAN_PRICES = ${JSON.stringify(Object.fromEntries(Object.values(PLANS).map(p => [p.id, { first: p.firstUser, extra: p.extraUser, min: p.minUsers }])))};
+                function updatePlanPrice() {
+                    const p = PLAN_PRICES[planSelect.value]; if (!p) return;
+                    const n = planSelect.value === 'solo' ? 1 : 1 + Math.max(1, parseInt(planExtra.value, 10) || 1);
+                    document.getElementById('plan-total').textContent = n;
+                    const total = p.first + (n - 1) * p.extra;
+                    document.getElementById('plan-price').textContent = 'CHF ' + total.toFixed(2) + (n > 1 ? ' (' + p.first.toFixed(2) + ' + ' + (n - 1) + ' × ' + p.extra.toFixed(2) + ')' : '');
                 }
-                productSelect.addEventListener('change', applyProductVisibility);
+                function applyProductVisibility() {
+                    document.getElementById('plan-users-row').classList.toggle('hidden', planSelect.value !== 'advanced');
+                    updatePlanPrice();
+                }
+                planSelect.addEventListener('change', applyProductVisibility);
+                planExtra.addEventListener('input', updatePlanPrice);
                 applyProductVisibility();
                 const billingToggle = document.getElementById('billing-toggle');
                 const billingFields = document.getElementById('billing-fields');
@@ -899,11 +899,8 @@ app.post('/generate', (req, res) => {
     const billingZip = billingDifferent ? (req.body.billingZip || '').trim() : '';
     const billingCity = billingDifferent ? (req.body.billingCity || '').trim() : '';
     const billingCountry = billingDifferent ? (req.body.billingCountry || '').trim() : '';
-    // AuraPlan/AuraDirect kennen keine einzelnen Premium-Features - dort zählt nur "lizenziert
-    // ja/nein", daher hier ein fixer Marker statt der AuraChat-Feature-Checkboxen.
-    const features = product === 'aurachat'
-        ? (Array.isArray(req.body.features) ? req.body.features : (req.body.features ? [req.body.features] : []))
-        : ['licensed'];
+    // Jede Lizenz gilt für alle Funktionen: AuraChat bekommt die vollständige Liste, die übrigen Produkte den Marker "licensed".
+    const features = product === 'aurachat' ? [...ALL_FEATURES] : ['licensed'];
     const expiresAt = req.body.expires ? new Date(req.body.expires).toISOString() : null;
 
     function parseLimit(value) {
@@ -928,39 +925,158 @@ app.post('/generate', (req, res) => {
         ? req.session.resellerId
         : (req.body.resellerId ? parseInt(req.body.resellerId, 10) : null);
 
-    if (!customer || (product === 'aurachat' && features.length === 0)) {
-        return res.status(400).send(layout('Fehler', `<div class="bg-red-500/10 border border-red-500/30 text-red-300 rounded-xl p-4 text-sm">Kunde und mindestens ein Feature sind erforderlich. <a href="/" class="underline">Zurück</a></div>`, null, req.session));
-    }
-    if (!LICENSE_SECRET) {
-        return res.status(500).send(layout('Fehler', `<div class="bg-red-500/10 border border-red-500/30 text-red-300 rounded-xl p-4 text-sm">LICENSE_SECRET ist auf dem Lizenz-Server nicht konfiguriert. <a href="/" class="underline">Zurück</a></div>`, null, req.session));
+    const planId = PLANS[req.body.plan] ? req.body.plan : null;
+    // Es gibt nur noch die Suite-Lizenz (Business Solo / Advanced): sie wird beim Kunden in AuraControl eingetragen und an alle Produkte verteilt
+    if (!planId) return res.status(400).send(layout('Fehler', `<div class="bg-red-500/10 border border-red-500/30 text-red-300 rounded-xl p-4 text-sm">Bitte Business Solo oder Business Advanced wählen. <a href="/" class="underline">Zurück</a></div>`, null, req.session));
+    if (planId) {
+        if (!customer) return res.status(400).send(layout('Fehler', `<div class="bg-red-500/10 border border-red-500/30 text-red-300 rounded-xl p-4 text-sm">Kunde ist erforderlich. <a href="/" class="underline">Zurück</a></div>`, null, req.session));
+        if (!LICENSE_SECRET) return res.status(500).send(layout('Fehler', `<div class="bg-red-500/10 border border-red-500/30 text-red-300 rounded-xl p-4 text-sm">LICENSE_SECRET ist auf dem Lizenz-Server nicht konfiguriert. <a href="/" class="underline">Zurück</a></div>`, null, req.session));
+        const plan = PLANS[planId];
+        const extraUsers = parseInt(req.body.planExtra, 10);
+        if (planId === 'advanced' && !(extraUsers >= 1 && extraUsers + 1 <= plan.maxUsers)) {
+            return res.status(400).send(layout('Fehler', `<div class="bg-red-500/10 border border-red-500/30 text-red-300 rounded-xl p-4 text-sm">Business Advanced braucht mindestens 1 weiteren Mitarbeiter (ab 2 Benutzern). Für einen Benutzer bitte Business Solo wählen. <a href="/" class="underline">Zurück</a></div>`, null, req.session));
+        }
+        const users = planId === 'solo' ? 1 : 1 + extraUsers;
+        const planGroup = crypto.randomBytes(8).toString('hex');
+        return issueSuiteLicense({ planId, users, planGroup, expiresAt, customer, customerEmail, hostingType, cloudMonthlyFee, contactPerson, street, zip, city, country,
+            billingDifferent, billingStreet, billingZip, billingCity, billingCountry, resellerId }, req, res, 'erzeugt');
     }
 
-    const licenseKey = generateLicenseKey(customer, features, expiresAt, maxUsers, maxAdmins, product);
-    const monthlyCost = calcMonthlyCost({ maxUsers, maxAdmins, pricePerUser, pricePerAdmin, hostingType, cloudMonthlyFee });
+});
 
+// Erzeugt einen Suite-Schlüssel (ein Schlüssel für alle Produkte) und speichert ihn. Bei einer Änderung (mehr/weniger Mitarbeiter, neues Ablaufdatum)
+// bleibt planGroup gleich: AuraControl beim Kunden holt sich dann beim nächsten Abgleich die neue Fassung.
+function issueSuiteLicense(o, req, res, verb) {
+    const plan = PLANS[o.planId];
+    const issuedAt = new Date().toISOString();
+    const features = [...plan.features];
+    const key = generateLicenseKey(o.customer, features, o.expiresAt, o.users, o.users, SUITE_PRODUCT, { plan: o.planId, users: o.users, licenseId: o.planGroup, issuedAt });
+    const monthly = planMonthlyPrice(o.planId, o.users) + (o.hostingType === 'cloud' ? (o.cloudMonthlyFee || 0) : 0);
     db.run(
-        `INSERT INTO licenses (customer, customerEmail, features, issuedAt, expiresAt, licenseKey, maxUsers, maxAdmins, pricePerUser, pricePerAdmin, hostingType, cloudMonthlyFee, contactPerson, street, zip, city, country, billingDifferent, billingStreet, billingZip, billingCity, billingCountry, resellerId, product)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [customer, customerEmail, JSON.stringify(features), new Date().toISOString(), expiresAt, licenseKey, maxUsers, maxAdmins, pricePerUser, pricePerAdmin, hostingType, cloudMonthlyFee, contactPerson, street, zip, city, country, billingDifferent, billingStreet, billingZip, billingCity, billingCountry, resellerId, product],
+        `INSERT INTO licenses (customer, customerEmail, features, issuedAt, expiresAt, licenseKey, maxUsers, maxAdmins, pricePerUser, pricePerAdmin, hostingType, cloudMonthlyFee, contactPerson, street, zip, city, country, billingDifferent, billingStreet, billingZip, billingCity, billingCountry, resellerId, product, plan, planGroup, planUsers)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [o.customer, o.customerEmail, JSON.stringify(features), issuedAt, o.expiresAt, key, o.users, o.users, null, null, o.hostingType, o.cloudMonthlyFee, o.contactPerson, o.street, o.zip, o.city, o.country,
+         o.billingDifferent, o.billingStreet, o.billingZip, o.billingCity, o.billingCountry, o.resellerId, SUITE_PRODUCT, o.planId, o.planGroup, o.users],
         function (err) {
-            if (err) {
-                return res.status(500).send(layout('Fehler', `<div class="bg-red-500/10 border border-red-500/30 text-red-300 rounded-xl p-4 text-sm">Speichern fehlgeschlagen: ${err.message}</div>`, null, req.session));
-            }
-            const productLabel = AVAILABLE_PRODUCTS.find(p => p.id === product)?.label || product;
-            res.send(layout('Lizenz erzeugt', `
+            if (err) return res.status(500).send(layout('Fehler', `<div class="bg-red-500/10 border border-red-500/30 text-red-300 rounded-xl p-4 text-sm">Speichern fehlgeschlagen: ${escSuite(err.message)}</div>`, null, req.session));
+            const extra = o.users - 1;
+            res.send(layout('Lizenz ' + verb, `
                 <div class="bg-emerald-500/10 border border-emerald-500/30 rounded-2xl p-6 flex flex-col gap-3">
-                    <h2 class="text-sm font-bold text-emerald-300">✓ ${productLabel}-Lizenz erzeugt für "${customer}"</h2>
-                    <div class="text-xs text-slate-400">${product === 'aurachat' ? `Features: ${features.join(', ')} · ` : ''}Gültig bis: ${expiresAt ? new Date(expiresAt).toLocaleDateString('de-DE') : 'unbegrenzt'} · Max. Benutzer: ${maxUsers ?? 'unbegrenzt'} · Max. Admins: ${maxAdmins ?? 'unbegrenzt'}</div>
-                    <div class="text-xs text-slate-400">Geschätzte Kosten: <span class="text-white font-semibold">${formatChf(monthlyCost)}${monthlyCost !== null ? ' / Monat' : ''}</span> · Hosting: ${hostingType === 'cloud' ? 'Cloud' : 'Self-Hosted'}</div>
-                    <textarea readonly rows="4" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white font-mono resize-none" onclick="this.select()">${licenseKey}</textarea>
+                    <h2 class="text-sm font-bold text-emerald-300">✓ ${plan.label} ${verb} für "${escSuite(o.customer)}"</h2>
+                    <div class="text-xs text-slate-400">${o.users} Benutzer${extra > 0 ? ` (1 + ${extra} weitere)` : ''} · Gültig bis: ${o.expiresAt ? new Date(o.expiresAt).toLocaleDateString('de-DE') : 'unbegrenzt'} · Preis: <span class="text-white font-semibold">CHF ${monthly.toFixed(2)} / Monat</span> · Hosting: ${o.hostingType === 'cloud' ? 'Cloud' : 'Self-Hosted'}</div>
+                    <div class="text-[11px] text-slate-300 bg-slate-950/60 border border-slate-800 rounded-xl p-3">
+                        <b>So geht es beim Kunden weiter:</b> ${verb === 'erzeugt'
+                            ? 'Den Schlüssel <b>einmal in AuraControl</b> unter „Lizenz“ eintragen. AuraControl verteilt ihn automatisch an AuraChat, AuraPlan, AuraTicket, AuraMail und AuraCall (innert ca. 15 Minuten).'
+                            : 'Nichts zu tun: AuraControl holt sich die neue Fassung beim nächsten Abgleich (alle 12 Stunden, oder sofort mit „Mit Lizenzserver abgleichen“) und verteilt sie an alle Produkte.'}
+                        Gilt für: AuraChat, AuraPlan, AuraTicket, AuraMail, AuraCall, AuraControl. Hardware ist nicht Teil der Lizenz.
+                    </div>
+                    <textarea readonly rows="4" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white font-mono resize-none" onclick="this.select()">${key}</textarea>
                     <div class="flex gap-2">
                         <a href="/download/${this.lastID}" class="flex-1 text-center bg-blue-600 hover:bg-blue-500 text-white font-medium py-2 rounded-xl text-xs transition">⬇️ Als .lic-Datei herunterladen</a>
+                        <a href="/suite/${o.planGroup}/edit" class="flex-1 text-center bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white font-medium py-2 rounded-xl text-xs transition">✏️ Mitarbeiter ändern</a>
                         <a href="/" class="flex-1 text-center bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white font-medium py-2 rounded-xl text-xs transition">Weitere Lizenz erzeugen</a>
                     </div>
                 </div>
             `, 'home', req.session));
         }
     );
+}
+
+// Neueste Fassung einer Suite-Lizenz (gleiche planGroup)
+function latestSuiteRow(group, cb) {
+    db.get(`SELECT * FROM licenses WHERE planGroup = ? AND product = ? ORDER BY id DESC LIMIT 1`, [group, SUITE_PRODUCT], (err, row) => cb(err ? null : row));
+}
+
+// --- Suite-Lizenz ändern: Mitarbeiterzahl, Plan, Ablaufdatum. Gleiche Lizenz-Kennung; AuraControl übernimmt die neue Fassung beim Abgleich. ---
+app.get('/suite/:group/edit', (req, res) => {
+    const group = String(req.params.group || '');
+    if (!/^[0-9a-f]{16}$/.test(group)) return res.status(404).send('Lizenz nicht gefunden.');
+    latestSuiteRow(group, (row) => {
+        if (!row) return res.status(404).send('Lizenz nicht gefunden.');
+        if (req.session.role === 'reseller' && row.resellerId !== req.session.resellerId) return res.status(403).send('Kein Zugriff auf diese Lizenz.');
+        const extra = Math.max(1, (row.planUsers || 2) - 1);
+        res.send(layout('Suite-Lizenz ändern', `
+            <form method="POST" action="/suite/${group}/edit" class="bg-slate-900 border border-slate-800 rounded-2xl p-6 flex flex-col gap-4">
+                <h2 class="text-sm font-bold text-white">✏️ Suite-Lizenz ändern · ${escSuite(row.customer)}</h2>
+                <p class="text-xs text-slate-400">Aktuell: ${PLANS[row.plan] ? PLANS[row.plan].label : row.plan}, ${row.planUsers} Benutzer, gültig bis ${row.expiresAt ? new Date(row.expiresAt).toLocaleDateString('de-DE') : 'unbegrenzt'}. Die neue Fassung ersetzt die alte; AuraControl beim Kunden übernimmt sie beim nächsten Abgleich automatisch.</p>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Lizenzmodell</label>
+                    <select name="plan" id="plan-select" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white">
+                        <option value="solo" ${row.plan === 'solo' ? 'selected' : ''}>Business Solo · 1 Benutzer</option>
+                        <option value="advanced" ${row.plan === 'advanced' ? 'selected' : ''}>Business Advanced · ab 2 Benutzern</option>
+                    </select>
+                </div>
+                <div id="plan-users-row">
+                    <label class="block text-[11px] text-slate-400 mb-1">Weitere Mitarbeiter (zusätzlich zum 1. Benutzer)</label>
+                    <div class="flex items-center gap-3">
+                        <input type="number" id="plan-extra" name="planExtra" min="1" max="9999" value="${extra}" class="w-32 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white">
+                        <span class="text-xs text-slate-300">= <b id="plan-total"></b> Benutzer insgesamt</span>
+                    </div>
+                </div>
+                <div class="text-sm text-white">Neuer Preis: <span id="plan-price" class="font-semibold"></span> <span class="text-xs text-slate-400">/ Monat</span></div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Gültig bis (leer = unbegrenzt)</label>
+                    <input type="date" name="expires" value="${row.expiresAt ? String(row.expiresAt).slice(0, 10) : ''}" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white">
+                </div>
+                <button type="submit" class="bg-blue-600 hover:bg-blue-500 text-white font-medium py-2.5 rounded-xl text-sm transition">Neue Fassung ausstellen</button>
+            </form>
+            <script>
+                const planSelect = document.getElementById('plan-select'), planExtra = document.getElementById('plan-extra');
+                const P = ${JSON.stringify(Object.fromEntries(Object.values(PLANS).map(p => [p.id, { first: p.firstUser, extra: p.extraUser }])))};
+                function upd() {
+                    const adv = planSelect.value === 'advanced', n = adv ? 1 + Math.max(1, parseInt(planExtra.value, 10) || 1) : 1, p = P[planSelect.value];
+                    document.getElementById('plan-users-row').classList.toggle('hidden', !adv);
+                    document.getElementById('plan-total').textContent = n;
+                    document.getElementById('plan-price').textContent = 'CHF ' + (p.first + (n - 1) * p.extra).toFixed(2);
+                }
+                planSelect.addEventListener('change', upd); planExtra.addEventListener('input', upd); upd();
+            </script>
+        `, 'customers', req.session));
+    });
+});
+app.post('/suite/:group/edit', (req, res) => {
+    const group = String(req.params.group || '');
+    if (!/^[0-9a-f]{16}$/.test(group)) return res.status(404).send('Lizenz nicht gefunden.');
+    if (!LICENSE_SECRET) return res.status(500).send('LICENSE_SECRET fehlt.');
+    latestSuiteRow(group, (row) => {
+        if (!row) return res.status(404).send('Lizenz nicht gefunden.');
+        if (req.session.role === 'reseller' && row.resellerId !== req.session.resellerId) return res.status(403).send('Kein Zugriff auf diese Lizenz.');
+        const planId = PLANS[req.body.plan] ? req.body.plan : row.plan;
+        const extraUsers = parseInt(req.body.planExtra, 10);
+        if (planId === 'advanced' && !(extraUsers >= 1 && extraUsers + 1 <= PLANS.advanced.maxUsers)) {
+            return res.status(400).send(layout('Fehler', `<div class="bg-red-500/10 border border-red-500/30 text-red-300 rounded-xl p-4 text-sm">Business Advanced braucht mindestens 1 weiteren Mitarbeiter. <a href="/suite/${group}/edit" class="underline">Zurück</a></div>`, null, req.session));
+        }
+        const users = planId === 'solo' ? 1 : 1 + extraUsers;
+        const expiresAt = req.body.expires ? new Date(req.body.expires).toISOString() : null;
+        issueSuiteLicense({ planId, users, planGroup: group, expiresAt, customer: row.customer, customerEmail: row.customerEmail, hostingType: row.hostingType, cloudMonthlyFee: row.cloudMonthlyFee,
+            contactPerson: row.contactPerson, street: row.street, zip: row.zip, city: row.city, country: row.country, billingDifferent: row.billingDifferent, billingStreet: row.billingStreet,
+            billingZip: row.billingZip, billingCity: row.billingCity, billingCountry: row.billingCountry, resellerId: row.resellerId }, req, res, 'geändert');
+    });
+});
+
+// --- Lizenz löschen: eine Einzel-Lizenz, oder eine Suite-Lizenz mit ALLEN Fassungen (gleiche planGroup) ---
+// Hinweis: Ein Schlüssel wird offline geprüft. Beim Kunden bleibt er gültig, bis er abläuft; gelöscht wird er hier auf dem Lizenzserver
+// (Verlauf, Kundenübersicht, Einnahmen). Installationen, die sich mit ihm gemeldet hatten, bleiben auf der Weltkarte, nur ohne Lizenz.
+app.post('/licenses/:id/delete', (req, res) => {
+    const id = parseInt(req.params.id, 10);
+    const back = req.body && req.body.back === '/customers' ? '/customers' : '/';
+    if (!Number.isInteger(id) || id <= 0) return res.status(404).send('Lizenz nicht gefunden.');
+    db.get(`SELECT id, resellerId, planGroup FROM licenses WHERE id = ?`, [id], (err, row) => {
+        if (err || !row) return res.status(404).send(layout('Fehler', `<div class="bg-red-500/10 border border-red-500/30 text-red-300 rounded-xl p-4 text-sm">Lizenz nicht gefunden. <a href="${back}" class="underline">Zurück</a></div>`, null, req.session));
+        if (req.session.role === 'reseller' && row.resellerId !== req.session.resellerId) return res.status(403).send('Kein Zugriff auf diese Lizenz.');
+        const where = row.planGroup ? `planGroup = ?` : `id = ?`, param = row.planGroup || row.id;
+        // Reseller: nur löschen, wenn wirklich alle betroffenen Fassungen ihm gehören
+        db.get(`SELECT COUNT(*) AS n FROM licenses WHERE ${where} AND ${req.session.role === 'reseller' ? 'IFNULL(resellerId, -1) != ?' : '0 = ?'}`, [param, req.session.role === 'reseller' ? req.session.resellerId : 1], (e2, foreign) => {
+            if (e2 || (foreign && foreign.n > 0)) return res.status(403).send('Kein Zugriff auf diese Lizenz.');
+            db.run(`UPDATE installations SET licenseId = NULL WHERE licenseId IN (SELECT id FROM licenses WHERE ${where})`, [param], () => {
+                db.run(`DELETE FROM licenses WHERE ${where}`, [param], function (e3) {
+                    if (e3) return res.status(500).send(layout('Fehler', `<div class="bg-red-500/10 border border-red-500/30 text-red-300 rounded-xl p-4 text-sm">Löschen fehlgeschlagen: ${escSuite(e3.message)}</div>`, null, req.session));
+                    console.log(`Lizenz gelöscht (${this.changes} Eintrag/Einträge) durch ${req.session.role === 'reseller' ? 'Reseller ' + req.session.resellerId : 'Hauptadministrator'}.`);
+                    res.redirect(back);
+                });
+            });
+        });
+    });
 });
 
 // --- .lic-Datei herunterladen ---
@@ -971,10 +1087,25 @@ app.get('/download/:id', (req, res) => {
         if (req.session.role === 'reseller' && row.resellerId !== req.session.resellerId) {
             return res.status(403).send('Kein Zugriff auf diese Lizenz.');
         }
-        const filename = `${row.customer.replace(/[^a-z0-9]/gi, '_')}.lic`;
+        const filename = `${row.customer.replace(/[^a-z0-9]/gi, '_')}${row.plan ? '_' + String(row.product || '').replace(/[^a-z]/g, '') : ''}.lic`;   // Suite: Kunde_suite.lic
         res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
         res.setHeader('Content-Type', 'text/plain');
         res.send(row.licenseKey);
+    });
+});
+
+// --- Alle Schlüssel eines Lizenzmodells (Business Solo/Advanced) als .zip ---
+app.get('/download-group/:group', (req, res) => {
+    const group = String(req.params.group || '');
+    if (!/^[0-9a-f]{16}$/.test(group)) return res.status(404).send('Lizenz nicht gefunden.');
+    db.all(`SELECT * FROM licenses WHERE planGroup = ? ORDER BY id`, [group], (err, rows) => {
+        if (err || !rows || !rows.length) return res.status(404).send('Lizenz nicht gefunden.');
+        if (req.session.role === 'reseller' && rows.some(r => r.resellerId !== req.session.resellerId)) return res.status(403).send('Kein Zugriff auf diese Lizenz.');
+        const base = rows[0].customer.replace(/[^a-z0-9]/gi, '_');
+        const zip = new AdmZip();
+        rows.forEach(r => zip.addFile(`${base}_${String(r.product || '').replace(/[^a-z]/g, '')}.lic`, Buffer.from(r.licenseKey, 'utf8')));
+        res.set({ 'Content-Type': 'application/zip', 'Content-Disposition': `attachment; filename="${base}_lizenzen.zip"` });
+        res.send(zip.toBuffer());
     });
 });
 
@@ -1048,7 +1179,6 @@ app.get('/customers', (req, res) => {
         const hasIndividual = customers.some(c => calcMonthlyCost(c) === null);
 
         const rowsHtml = customers.map(c => {
-            const features = JSON.parse(c.features || '[]');
             const cost = calcMonthlyCost(c);
             const isActive = c.lastCheckin && (now - new Date(c.lastCheckin).getTime()) < CHECKIN_ACTIVE_WINDOW_MS;
             const isOutdated = isVersionOlder(c.lastVersion, latestVersion);
@@ -1069,9 +1199,10 @@ app.get('/customers', (req, res) => {
                             <div class="text-base font-bold text-white">${formatChf(cost)}${cost !== null ? '<span class="text-xs font-normal text-slate-500"> /Mt.</span>' : ''}</div>
                             <div class="text-[10px] text-slate-500 uppercase tracking-wider">${c.hostingType === 'cloud' ? 'Cloud' : 'Self-Hosted'}</div>
                             <a href="/customers/${c.id}/edit" class="text-[10px] text-blue-400 hover:text-blue-300">✏️ Bearbeiten</a>
+                            <div><form method="POST" action="/licenses/${c.id}/delete" class="inline" onsubmit="return confirm('Diese Lizenz wirklich löschen?' + (${!!c.planGroup} ? ' Alle Fassungen dieser Lizenz werden gelöscht.' : '') + ' Das kann nicht rückgängig gemacht werden.');"><input type="hidden" name="back" value="/customers"><button type="submit" class="text-[10px] text-red-400 hover:text-red-300 cursor-pointer">🗑️ Lizenz löschen</button></form></div>
                         </div>
                     </div>
-                    <div class="text-xs text-slate-400">${features.join(', ')}</div>
+                    ${c.plan && PLANS[c.plan] ? `<div class="text-xs text-blue-300">${PLANS[c.plan].label} · ${c.planUsers} Benutzer · AuraChat, AuraPlan, AuraTicket, AuraMail, AuraCall, AuraControl${c.product === SUITE_PRODUCT && c.planGroup ? ` · <a href="/suite/${c.planGroup}/edit" class="text-blue-400 hover:text-blue-300 underline">✏️ Mitarbeiter ändern</a>` : ''}</div>` : `<div class="text-xs text-slate-400">${escSuite(AVAILABLE_PRODUCTS.find(p => p.id === c.product)?.label || c.product || 'AuraChat')} · alle Funktionen</div>`}
                     <div class="text-xs text-slate-500">Max. ${c.maxUsers ?? 'unbegrenzt'} Nutzer, ${c.maxAdmins ?? 'unbegrenzt'} Admins · gültig bis ${c.expiresAt ? new Date(c.expiresAt).toLocaleDateString('de-DE') : 'unbegrenzt'}</div>
                     <div class="text-xs ${isActive ? 'text-emerald-400' : 'text-slate-500'} pt-1 border-t border-slate-800 mt-1">${checkinText}</div>
                 </div>`;
@@ -1387,14 +1518,19 @@ app.post('/api/checkin', checkinLimiter, async (req, res) => {
     const ping = cleanPing(req.body), { installationId, version, totalUsers, totalAdmins } = ping;
     if (!licenseKey && !installationId) return res.status(400).json({ error: 'licenseKey oder installationId ist erforderlich.' });
 
-    let licenseId = null;
+    let licenseId = null, newerSuiteKey = null;
     if (licenseKey) {
         const result = verifyLicenseKey(licenseKey);
         if (!result.valid) return res.status(401).json({ error: 'Ungültiger Lizenzschlüssel.' });
 
-        const row = await new Promise((resolve) => db.get(`SELECT id FROM licenses WHERE licenseKey = ?`, [licenseKey], (e, r) => resolve(r)));
+        const row = await new Promise((resolve) => db.get(`SELECT id, product, planGroup FROM licenses WHERE licenseKey = ?`, [licenseKey], (e, r) => resolve(r)));
         if (!row) return res.status(404).json({ error: 'Dieser Lizenzschlüssel ist auf diesem Server nicht bekannt.' });
         licenseId = row.id;
+        // Suite-Lizenz: gibt es eine neuere Fassung (z. B. mehr Mitarbeiter, verlängert)? Dann bekommt AuraControl sie mit der Antwort.
+        if (row.product === SUITE_PRODUCT && row.planGroup) {
+            const latest = await new Promise((resolve) => latestSuiteRow(row.planGroup, resolve));
+            if (latest && latest.id > row.id) newerSuiteKey = latest.licenseKey;
+        }
 
         db.run(
             `UPDATE licenses SET lastCheckin = ?, lastTotalUsers = ?, lastTotalAdmins = ?, lastVersion = ? WHERE id = ?`,
@@ -1423,7 +1559,9 @@ app.post('/api/checkin', checkinLimiter, async (req, res) => {
          new Date().toISOString(), version, totalUsers, totalAdmins, ping.product, ping.state, ping.suiteInstalled],
         (err) => {
             if (err) return res.status(500).json({ error: 'Datenbankfehler.' });
-            res.json(suite ? { ok: true, suite } : { ok: true });
+            const out = suite ? { ok: true, suite } : { ok: true };
+            if (newerSuiteKey) out.license = { key: newerSuiteKey };
+            res.json(out);
         }
     );
 });

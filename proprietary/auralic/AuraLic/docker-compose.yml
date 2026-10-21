@@ -23,6 +23,7 @@ services:
       - APALEO_CLIENT_ID=${APALEO_CLIENT_ID:-}
       - APALEO_CLIENT_SECRET=${APALEO_CLIENT_SECRET:-}
       - APALEO_REDIRECT_URI=${APALEO_REDIRECT_URI:-}
+      - APALEO_SCOPES=${APALEO_SCOPES:-}   # optional: Rechte, die beim Anmelden bei Apaleo angefragt werden (leer = offline_access openid profile)
       - AURA_SUITE_VERSION=${AURA_SUITE_VERSION:-}   # optional: Version der Aura-Suite, erscheint unter "Über Aura-Suite"
       - LICENSE_SERVER_PASSWORD=${LICENSE_SERVER_PASSWORD}
       - SESSION_SECRET=${SESSION_SECRET}

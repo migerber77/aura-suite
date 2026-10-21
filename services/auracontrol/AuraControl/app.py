@@ -1,4 +1,5 @@
 """AuraControl: Server-Übersicht (Hardware, Speicher, Strom) mit Anmeldung, Lizenz und Aura-Suite-Anbindung."""
+import asyncio
 from datetime import datetime, timedelta
 import json
 import os
@@ -14,7 +15,10 @@ import psutil
 
 from aura_auth import AdminStore, LoginLimiter, SESSION_TTL, SessionSigner, load_or_create_secret
 from aura_privacy import PrivacyStore
-from aura_suite import SuiteState
+from aura_suite import SuiteState, sync_token
+from aura_direct import Directory
+import hmac
+from cockpit import Cockpit
 
 VERSION = "4.0.0"
 app = FastAPI(title="AuraControl", version=VERSION)
@@ -34,6 +38,11 @@ store = AdminStore(DATA_DIR, env_password=os.environ.get("ADMIN_PASSWORD", ""), 
 signer = SessionSigner(load_or_create_secret(DATA_DIR))
 limiter = LoginLimiter()
 privacy = PrivacyStore(DATA_DIR)
+# Anmeldung über AuraDirect (zentrale Benutzer): Einstellungen im Admin Panel -> Sicherheit, ersatzweise AURADIRECT_URL / AURADIRECT_SERVICE_KEY
+directory = Directory(DATA_DIR, env_url=os.environ.get("AURADIRECT_URL", ""), env_key=os.environ.get("AURADIRECT_SERVICE_KEY", ""))
+DIRECT_PREFIX = "direct:"          # Anmeldungen über AuraDirect: Benutzername mit diesem Vorsatz (kann nie mit dem lokalen "admin" verwechselt werden)
+DIRECT_TTL = 8 * 3600              # Anmeldung über AuraDirect: 8 Stunden (danach neu bei AuraDirect prüfen)
+cockpit_svc = Cockpit(log=lambda m: print(m, flush=True))   # Gesundheit des Servers: fragt den kleinen Cockpit-Dienst (cockpit_agent.py), AuraControl selbst sieht Docker nie
 
 
 def user_count():
@@ -108,7 +117,28 @@ def _is_https(request):
 
 
 def _user(request):
-  return signer.verify(request.cookies.get(COOKIE), store.pv())
+  """Angemeldete Person: der lokale Administrator ("admin") oder eine Person aus AuraDirect ("direct:<name>")."""
+  token = request.cookies.get(COOKIE)
+  u = signer.verify(token, store.pv())
+  if u and u == store.username:
+    return u
+  if directory.enabled():
+    u = signer.verify(token, directory.epoch())   # ändert sich die Anbindung (z. B. ausgeschaltet), enden diese Anmeldungen
+    if u and u.startswith(DIRECT_PREFIX):
+      return u
+  return None
+
+
+def _is_local_admin(user):
+  return bool(user) and user == store.username
+
+
+def _require_local_admin(request):
+  """Nur der lokale Administrator (Notzugang) darf das eigene Passwort und die Anbindung an AuraDirect ändern."""
+  user = _require_user(request)
+  if not _is_local_admin(user):
+    raise HTTPException(status_code=403, detail="Nur für den lokalen Administrator (admin)")
+  return user
 
 
 def _require_user(request):
@@ -138,6 +168,8 @@ async def security_headers(request: Request, call_next):
 @app.on_event("startup")
 async def start_suite():
   suite.start()  # anonyme Rückmeldung beim Lizenzserver (siehe aura_suite.py)
+  if os.environ.get("COCKPIT_SAMPLER", "1") != "0":
+    cockpit_svc.start_sampler()  # jede Minute eine Messung für den Verlauf im Cockpit (erste nach 30 Sekunden)
 
 
 @app.get("/login", response_class=HTMLResponse)
@@ -145,30 +177,53 @@ async def login_page(request: Request, error: str = None, success: str = None):
   if _user(request):
     return RedirectResponse(url="/", status_code=303)
   cfg = load_settings()
-  return templates.TemplateResponse(request, "login.html", {"error": error, "success": success, "server_model": cfg["server_model"], "os_name": cfg["os_name"]})
+  return templates.TemplateResponse(request, "login.html", {"error": error, "success": success, "server_model": cfg["server_model"], "os_name": cfg["os_name"], "direct": directory.enabled()})
+
+
+def _login_page(request, cfg, error=None, status=200, username="", need_code=False):
+  return templates.TemplateResponse(request, "login.html", {"error": error, "server_model": cfg["server_model"], "os_name": cfg["os_name"], "direct": directory.enabled(),
+                                                            "username": username, "need_code": need_code}, status_code=status)
+
+
+def _signed_in(request, username, pv, ttl=SESSION_TTL):
+  resp = RedirectResponse(url="/", status_code=303)
+  resp.set_cookie(key=COOKIE, value=signer.issue(username, pv, ttl), httponly=True, samesite="lax", secure=_is_https(request), max_age=ttl, path="/")
+  return resp
 
 
 @app.post("/login")
-async def login_action(request: Request, username: str = Form(...), password: str = Form(...)):
+async def login_action(request: Request, username: str = Form(...), password: str = Form(...), twofa_code: str = Form(None)):
   ip = _client_ip(request)
   cfg = load_settings()
   wait = limiter.blocked(ip)
   if wait:
-    return templates.TemplateResponse(
-        request, "login.html",
-        {"error": "Zu viele Fehlversuche. Bitte in %d Minute(n) erneut versuchen." % ((wait + 59) // 60), "server_model": cfg["server_model"], "os_name": cfg["os_name"]},
-        status_code=429,
-    )
-  if store.verify(username, password):
-    limiter.success(ip)
-    resp = RedirectResponse(url="/", status_code=303)
-    resp.set_cookie(key=COOKIE, value=signer.issue(store.username, store.pv()), httponly=True, samesite="lax", secure=_is_https(request), max_age=SESSION_TTL, path="/")
-    return resp
+    return _login_page(request, cfg, "Zu viele Fehlversuche. Bitte in %d Minute(n) erneut versuchen." % ((wait + 59) // 60), 429)
+  name = (username or "").strip()[:200]
+  # 1) Lokaler Administrator ("admin"): immer nur lokal geprüft (Notzugang, auch wenn AuraDirect nicht erreichbar ist)
+  if name == store.username:
+    if store.verify(name, password):
+      limiter.success(ip)
+      return _signed_in(request, store.username, store.pv())
+    limiter.fail(ip)
+    return _login_page(request, cfg, "Ungültiger Benutzername oder Passwort", username=name)
+  # 2) Alle anderen: über AuraDirect (Freigabe für "AuraControl" nötig)
+  if directory.enabled():
+    r = directory.validate(name, password, twofa_code)
+    if r["kind"] == "valid":
+      limiter.success(ip)
+      print("AuraControl: Anmeldung über AuraDirect: %s" % name, flush=True)
+      return _signed_in(request, DIRECT_PREFIX + name, directory.epoch(), DIRECT_TTL)
+    if r["kind"] == "requires2fa":
+      if twofa_code:
+        limiter.fail(ip)
+      return _login_page(request, cfg, "Der Bestätigungscode ist falsch." if twofa_code else "Bitte Passwort und den 6-stelligen Code aus der Authenticator-App eingeben.", username=name, need_code=True)
+    if r["kind"] == "noaccess":
+      return _login_page(request, cfg, "Kein Zugriff auf AuraControl. Die Freigabe erteilt die Administration in AuraDirect.", username=name)
+    if r["kind"] == "problem":
+      print("AuraControl: AuraDirect: %s" % r["message"], flush=True)
+      return _login_page(request, cfg, r["message"] + " Der lokale Benutzer \"admin\" funktioniert weiterhin.", 502, username=name)
   limiter.fail(ip)
-  return templates.TemplateResponse(
-      request, "login.html",
-      {"error": "Ungültiger Benutzername oder Passwort", "server_model": cfg["server_model"], "os_name": cfg["os_name"]},
-  )
+  return _login_page(request, cfg, "Ungültiger Benutzername oder Passwort", username=name)
 
 
 @app.get("/logout")
@@ -183,12 +238,15 @@ async def dashboard(request: Request):
   if not _user(request):
     return RedirectResponse(url="/login", status_code=303)
   cfg = load_settings()
-  return templates.TemplateResponse(request, "index.html", {**cfg, "must_change": store.must_change(), "version": VERSION})
+  user = _user(request)
+  local = _is_local_admin(user)
+  return templates.TemplateResponse(request, "index.html", {**cfg, "must_change": local and store.must_change(), "version": VERSION, "local_admin": local,
+                                                            "user_label": user if local else user[len(DIRECT_PREFIX):] + " (AuraDirect)"})
 
 
 @app.post("/api/admin/change-password")
 async def change_password(request: Request, current_password: str = Form(...), new_password: str = Form(...)):
-  _require_user(request)
+  _require_local_admin(request)
   _require_csrf(request)
   ok, message = store.change(current_password, new_password)
   if not ok:
@@ -197,6 +255,43 @@ async def change_password(request: Request, current_password: str = Form(...), n
   # Die Sitzung dieser Person bleibt gültig: neues Token mit dem neuen Passwort-Kennzeichen
   resp.set_cookie(key=COOKIE, value=signer.issue(store.username, store.pv()), httponly=True, samesite="lax", secure=_is_https(request), max_age=SESSION_TTL, path="/")
   return resp
+
+
+# --- Anmeldung über AuraDirect: Einstellungen (ändern nur der lokale Administrator) ---
+@app.get("/api/admin/auradirect")
+async def get_auradirect(request: Request):
+  user = _require_user(request)
+  return {**directory.public(), "canEdit": _is_local_admin(user)}
+
+
+@app.post("/api/admin/auradirect")
+async def save_auradirect(request: Request):
+  _require_local_admin(request)
+  _require_csrf(request)
+  try:
+    body = await request.json()
+  except Exception:
+    body = None
+  body = body if isinstance(body, dict) else {}
+  ok, message = directory.update(body.get("enabled") is True, body.get("url") if isinstance(body.get("url"), str) else "", body.get("key") if isinstance(body.get("key"), str) else None)
+  if not ok:
+    return JSONResponse({"status": "error", "message": message}, status_code=400)
+  return {"status": "success", "message": message, **directory.public()}
+
+
+@app.post("/api/admin/auradirect/test")
+async def test_auradirect(request: Request):
+  _require_local_admin(request)
+  _require_csrf(request)
+  try:
+    body = await request.json()
+  except Exception:
+    body = None
+  body = body if isinstance(body, dict) else {}
+  url = body.get("url") if isinstance(body.get("url"), str) and body.get("url").strip() else None
+  key = body.get("key") if isinstance(body.get("key"), str) and body.get("key").strip() else None
+  ok, message = directory.test(url=url.strip().rstrip("/") if url else None, key=key)
+  return JSONResponse({"status": "success" if ok else "error", "message": message}, status_code=200 if ok else 502)
 
 
 @app.get("/api/version")
@@ -208,7 +303,33 @@ async def get_version(request: Request):
 @app.get("/api/license")
 async def get_license(request: Request):
   _require_user(request)
-  return {**suite.license_info(), "checkin": suite.checkin_status()}
+  return {**suite.license_info(), "checkin": suite.checkin_status(), "suite": suite.suite_summary()}
+
+
+# Die Produkte (AuraChat, AuraPlan, AuraTicket, AuraMail, AuraCall) holen hier die Suite-Lizenz ab. Kein Benutzerkonto: Zugang mit einem Schlüssel,
+# der aus LICENSE_SECRET abgeleitet ist (alle Produkte kennen ihn). Ohne Suite-Lizenz: {"key": null} (ein Produkt entfernt dann eine früher von hier übernommene Lizenz).
+@app.get("/api/license/suite-key")
+async def get_suite_key(request: Request):
+  expected = sync_token(os.environ.get("LICENSE_SECRET", ""))
+  auth = request.headers.get("authorization", "")
+  given = auth[7:].strip() if auth.lower().startswith("bearer ") else ""
+  if not expected or not given or not hmac.compare_digest(given.encode(), expected.encode()):
+    return JSONResponse({"error": "Nicht autorisiert"}, status_code=401)
+  suite.note_delivery(str(request.headers.get("x-aura-product", ""))[:20])
+  return {"key": suite.suite_key()}
+
+
+@app.post("/api/license/sync")
+async def sync_license(request: Request):
+  _require_user(request)
+  _require_csrf(request)
+  before = suite.stored_key()
+  r = suite.ping()   # Rückmeldung beim Lizenzserver; eine neuere Fassung der Suite-Lizenz wird dabei übernommen
+  info = suite.license_info()
+  if not r or not r.get("success"):
+    return JSONResponse({"status": "error", "message": "Der Lizenzserver war nicht erreichbar. Bitte später erneut versuchen."}, status_code=502)
+  changed = suite.stored_key() != before
+  return {"status": "success", "message": "Neue Fassung der Lizenz übernommen. Die Produkte holen sie innert 15 Minuten ab." if changed else "Abgeglichen: die Lizenz ist aktuell.", "state": info["state"]}
 
 
 @app.post("/api/license")
@@ -220,11 +341,21 @@ async def set_license(request: Request):
   except Exception:
     body = None
   key = body.get("key") if isinstance(body, dict) else None
+  previous = suite.stored_key()
   r = suite.set_key(key)
   if not r["ok"]:
     return JSONResponse({"status": "error", "message": r["error"]}, status_code=400)
-  suite.ping()  # gleich beim Lizenzserver melden
-  return {"status": "success", "message": "Die Lizenz wurde gespeichert.", "customer": r["customer"], "expiresAt": r["expiresAt"]}
+  # Online beim Lizenzserver (AuraLic) prüfen: kennt er den Schlüssel nicht (gelöscht, nie ausgestellt), wird er nicht übernommen.
+  # Ist der Lizenzserver nicht erreichbar, gilt die Prüfung der Signatur; der Abgleich folgt automatisch später.
+  res = suite.ping() or {}
+  if res.get("status") in (401, 404):
+    if previous:
+      suite._write("license.key", previous + "\n")
+    else:
+      suite.remove_key()
+    return JSONResponse({"status": "error", "message": "Der Lizenzserver kennt diesen Schlüssel nicht (gelöscht oder nicht von ihm ausgestellt). Die Lizenz wurde nicht übernommen."}, status_code=400)
+  online = "vom Lizenzserver bestätigt" if res.get("success") else "der Lizenzserver war nicht erreichbar, die Bestätigung folgt beim nächsten Abgleich"
+  return {"status": "success", "message": f"Die Lizenz wurde gespeichert ({online}). Die Produkte holen sie innert 15 Minuten ab.", "customer": r["customer"], "expiresAt": r["expiresAt"]}
 
 
 @app.delete("/api/license")
@@ -318,6 +449,13 @@ async def shutdown_system(request: Request):
     return {"status": "success", "message": "System wird heruntergefahren..."}
   except Exception as e:
     return {"status": "error", "message": str(e)}
+
+
+# --- Cockpit: Gesundheit des Servers (Docker-Container, Speicher, Prozessor, Schwachstellen, Updates); nur für Angemeldete ---
+@app.get("/api/cockpit")
+async def get_cockpit(request: Request):
+  _require_user(request)
+  return await asyncio.to_thread(cockpit_svc.payload)  # blockierende Abfrage des Cockpit-Dienstes nicht im Ereignisschleifen-Thread
 
 
 @app.get("/api/system/hardware")

@@ -73,9 +73,7 @@ COPY scripts/train.py scripts/convert_to_gguf.py ./scripts/
 # fertigen Image zu entfernen verkleinert die Angriffsfläche und die Zahl der Schwachstellen-Meldungen ohne Nutzen.
 RUN rm -rf /usr/local/lib/node_modules /usr/local/bin/npm /usr/local/bin/npx /usr/local/bin/corepack /opt/yarn-* /usr/local/bin/yarn /usr/local/bin/yarnpkg
 
-COPY server.js ./
-# Cockpit-Agent und Scanner-Skript (derselbe Image startet als eigener Dienst "cockpit", siehe docker-compose.yml)
-COPY cockpit/agent.js cockpit/scan.sh ./cockpit/
+COPY server.js apps.js aura-license-sync.js ./
 COPY html/images/logo.png ./assets/logo.png
 COPY html/images/logo-icon.png ./assets/logo-icon.png
 

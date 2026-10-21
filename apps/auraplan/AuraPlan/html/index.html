@@ -34,15 +34,7 @@
             <h3 class="text-sm font-bold text-white">AuraPlan ist nicht lizenziert</h3>
         </div>
         <p id="license-modal-text" class="text-xs text-slate-400">Für diese Installation ist keine gültige Lizenz hinterlegt. Bitte wendet euch an eure Administrator:innen.</p>
-        <div id="license-modal-admin-form" class="hidden flex flex-col gap-3">
-            <textarea id="license-key-input" rows="4" placeholder="Lizenzschlüssel hier einfügen" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white font-mono"></textarea>
-            <label class="text-center text-xs px-3 py-2 rounded-xl bg-slate-800 text-slate-300 hover:bg-slate-700 cursor-pointer transition">
-                📁 Oder .lic-Datei auswählen
-                <input type="file" id="license-key-file" accept=".lic,text/plain" class="hidden">
-            </label>
-            <div id="license-modal-error" class="hidden text-xs text-red-400"></div>
-            <button id="license-save-btn" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium py-2.5 rounded-xl text-sm transition">Lizenz aktivieren</button>
-        </div>
+        <button type="button" id="license-recheck-btn" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-medium py-2.5 rounded-xl text-sm transition">Erneut prüfen</button>
     </div>
 </div>
 
@@ -322,16 +314,7 @@
                 <div data-block="license" class="bg-slate-900 border border-slate-800 rounded-2xl p-5">
                     <h2 class="text-sm font-bold text-white mb-1">🔑 Lizenz</h2>
                     <div id="license-admin-status" class="text-xs text-slate-400 mb-3">Wird geladen…</div>
-                    <textarea id="license-admin-key-input" rows="4" placeholder="Neuen Lizenzschlüssel eintragen" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white font-mono mb-2"></textarea>
-                    <label class="inline-block text-xs px-3 py-2 rounded-xl bg-slate-800 text-slate-300 hover:bg-slate-700 cursor-pointer transition mb-2">
-                        📁 Oder .lic-Datei auswählen
-                        <input type="file" id="license-admin-key-file" accept=".lic,text/plain" class="hidden">
-                    </label>
-                    <div>
-                    <button id="license-admin-save-btn" class="bg-blue-600 hover:bg-blue-500 text-white font-medium px-4 py-2 rounded-xl text-sm transition">Speichern</button>
-                    <button id="license-admin-remove-btn" class="hidden bg-red-500/10 border border-red-500/30 text-red-300 hover:bg-red-500/20 font-medium px-4 py-2 rounded-xl text-sm transition ml-2">Lizenz entfernen</button>
-                    </div>
-                    <div id="license-admin-error" class="hidden text-xs text-red-400 mt-2"></div>
+                    <p class="text-xs text-slate-400">Die Lizenz der Aura-Suite wird zentral in AuraControl eingetragen (Admin Panel → Lizenz). AuraControl prüft sie beim Lizenzserver und überträgt sie automatisch hierher. Hier ist nichts einzutragen.</p>
                 </div>
                 <div data-block="security" class="bg-slate-900 border border-slate-800 rounded-2xl p-5">
                     <h2 class="text-sm font-bold text-white mb-1">🛡️ Zwei-Faktor-Authentifizierung</h2>
@@ -404,13 +387,6 @@
                     </div>
                 </div>
                 <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5">
-                    <h2 class="text-sm font-bold text-white mb-1">📥 Mitarbeiter importieren</h2>
-                    <p class="text-xs text-slate-500 mb-3">CSV-Datei mit den Spalten <code class="text-slate-300">username, name</code> (mindestens) sowie optional <code class="text-slate-300">role, vacationDaysPerYear, pensumPercent, weeklyHours, color</code>. Bestehende Benutzernamen werden aktualisiert, neue angelegt.</p>
-                    <input type="file" id="import-employees-file" accept=".csv" class="w-full text-xs text-slate-400 bg-slate-950 border border-slate-800 rounded-xl p-2 mb-2">
-                    <button id="import-employees-btn" class="bg-blue-600 hover:bg-blue-500 text-white font-medium px-4 py-2 rounded-xl text-sm transition">Importieren</button>
-                    <div id="import-employees-status" class="hidden text-xs mt-2"></div>
-                </div>
-                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5">
                     <h2 class="text-sm font-bold text-white mb-1">🔌 Externe API</h2>
                     <p class="text-xs text-slate-500 mb-3">Lesezugriff für Drittsysteme (z.B. Buchhaltungsprogramme) auf Mitarbeiter, Zeiterfassung und Absenzen als JSON. Anfragen brauchen den Header <code class="text-slate-300">X-API-Key</code>. Endpunkte: <code class="text-slate-300">/api/external/employees</code>, <code class="text-slate-300">/api/external/time-entries?from=&amp;to=</code>, <code class="text-slate-300">/api/external/absences?from=&amp;to=</code>.</p>
                     <div class="flex items-center gap-2 mb-2">
@@ -423,49 +399,10 @@
 
 
             <div id="admin-subview-mitarbeiter" class="admin-subview hidden flex flex-col gap-6">
-            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5">
-                <h2 class="text-sm font-bold text-white mb-3">Neue:n Mitarbeiter:in anlegen</h2>
-                <form id="user-form" class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label class="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Name</label>
-                        <input type="text" id="new-user-name" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white">
-                    </div>
-                    <div>
-                        <label class="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Benutzername</label>
-                        <input type="text" id="new-user-username" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white">
-                    </div>
-                    <div>
-                        <label class="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Passwort</label>
-                        <input type="password" id="new-user-password" required minlength="8" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white">
-                    </div>
-                    <div>
-                        <label class="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Ferientage/Jahr</label>
-                        <input type="number" id="new-user-vacation" value="25" step="0.5" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white">
-                    </div>
-                    <div>
-                        <label class="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Pensum (%)</label>
-                        <input type="number" id="new-user-pensum" value="100" min="1" max="100" step="1" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white">
-                    </div>
-                    <div>
-                        <label class="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Wochenstunden</label>
-                        <input type="number" id="new-user-weekly-hours" value="42" min="1" step="0.5" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white">
-                    </div>
-                    <div>
-                        <label class="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Rolle</label>
-                        <select id="new-user-role" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white">
-                            <option value="employee">Mitarbeiter:in</option>
-                            <option value="teamleiter">Teamleiter:in / Kader</option>
-                            <option value="admin">Administrator:in</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Farbe (Kalender)</label>
-                        <input type="color" id="new-user-color" value="#3270FD" class="w-full bg-slate-950 border border-slate-800 rounded-xl h-[38px]">
-                    </div>
-                    <button type="submit" class="col-span-2 bg-blue-600 hover:bg-blue-500 text-white font-medium py-2.5 rounded-xl text-sm transition">Anlegen</button>
-                    <div id="user-form-status" class="col-span-2 text-xs"></div>
-                </form>
-            </div>
+                        <div id="admin-users-direct-note" class="flex flex-col gap-1 text-[11px] text-slate-400 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2">
+                    <p>Neue Benutzer legst du zentral in AuraDirect an (kostenlos). Sie erscheinen hier nach ihrer ersten Anmeldung.</p>
+                    <p>Mit der kostenlosen Version genügt der Administrator. Für weitere Benutzer verbindest du AuraDirect.</p>
+                </div>
             <div>
                 <h2 class="text-sm font-bold text-white mb-3">Alle Mitarbeiter:innen</h2>
                 <div id="users-list" class="flex flex-col gap-2 text-sm"></div>

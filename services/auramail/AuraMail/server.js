@@ -225,8 +225,8 @@ function decryptCredential(value) {
 // --- LIZENZMANAGEMENT ---
 // Gleiches Verfahren wie bei den anderen Aura-Produkten: HMAC-signierter Schlüssel, offline
 // prüfbar.
-// Lizenzregel (einheitlich für alle Aura-Produkte): 14 Tage Testphase mit allem, danach eine gültige Lizenz oder die Gratis-Stufe
-// (höchstens 1 aktives Konto: der Admin). Mehr Konten brauchen eine Lizenz.
+// Lizenzregel: 14 Tage Testphase mit allem, danach braucht AuraMail eine gültige Lizenz (enthalten in Business Solo und Business Advanced).
+// Im Free Plan ist AuraMail nicht enthalten: ohne Lizenz gibt es nach der Testphase keine Gratis-Stufe mehr.
 const TRIAL_DAYS = 14;
 
 function verifyLicenseKey(licenseKey) {
@@ -249,7 +249,7 @@ function verifyLicenseKey(licenseKey) {
     } catch {
         return { valid: false, error: 'Lizenz-Daten sind beschädigt.' };
     }
-    if (payload.product !== 'auramail') return { valid: false, error: 'Diese Lizenz ist nicht für AuraMail ausgestellt.' };
+    if (payload.product !== 'auramail' && payload.product !== 'suite') return { valid: false, error: 'Diese Lizenz ist nicht für AuraMail ausgestellt.' };   // 'suite': Suite-Lizenz (Business Solo/Advanced), kommt meist automatisch von AuraControl
     if (payload.expiresAt && new Date(payload.expiresAt).getTime() < Date.now()) {
         return { valid: false, error: 'Lizenz ist abgelaufen.', payload };
     }
@@ -267,10 +267,6 @@ function getTrialInfo() {
     });
 }
 
-// Dauerhafte Gratis-Stufe nach der Testphase: EIN aktives Konto, und das ist der Admin. Jedes weitere Konto braucht eine Lizenz.
-function isWithinFreeTier() {
-    return new Promise((resolve) => db.get(`SELECT COUNT(*) as c FROM users WHERE active = 1`, [], (err, row) => resolve(!err && !!row && row.c <= 1)));
-}
 function recordProductConnection(product) {
     if (!['aurachat', 'auraplan', 'auradirect'].includes(product)) return;
     db.run(
@@ -278,6 +274,14 @@ function recordProductConnection(product) {
         [product, new Date().toISOString()], () => {}
     );
 }
+
+// Suite-Lizenz automatisch von AuraControl übernehmen (gemeinsamer Baustein, siehe aura-license-sync.js)
+const licenseSync = require('./aura-license-sync').startLicenseSync({
+    product: 'mail', verify: (k) => verifyLicenseKey(k),
+    getKey: () => getSetting('license_key'), setKey: (k) => setSetting('license_key', k),
+    getSource: () => getSetting('license_source'), setSource: (v) => setSetting('license_source', v),
+    log: (m) => console.log(m)
+});
 
 async function getStoredLicenseInfo() {
     const key = await getSetting('license_key');
@@ -291,22 +295,24 @@ async function getStoredLicenseInfo() {
             error: result.valid ? null : result.error
         };
     }
-    // Reihenfolge: erst die 14 Tage Testphase (alles erlaubt), dann eine gültige Lizenz, sonst die Gratis-Stufe (höchstens 1 aktives Konto: der Admin), sonst gesperrt.
+    // Suite-Lizenz (Business Solo/Advanced): Plan und Benutzerzahl anzeigen; managedBy: von AuraControl übernommen
+    if (base.valid && key) { const sp = verifyLicenseKey(key).payload || {}; if (sp.product === 'suite') { base.plan = sp.plan || 'suite'; base.users = sp.users || sp.maxUsers || null; } }
+    base.managedBy = (await getSetting('license_source')) === 'control' ? 'auracontrol' : null;
+    // Reihenfolge: erst die 14 Tage Testphase (alles erlaubt), dann eine gültige Lizenz, sonst gesperrt (keine Gratis-Stufe: AuraMail gehört nicht zum Free Plan).
     const trial = await getTrialInfo();
     if (trial.active) return { ...base, valid: true, licenseValid: base.valid, trial: true, trialDaysRemaining: trial.daysRemaining, freeTier: false };
     if (base.valid) return { ...base, licenseValid: true, trial: false, trialDaysRemaining: 0, freeTier: false };
-    if (await isWithinFreeTier()) return { ...base, valid: true, licenseValid: false, trial: false, trialDaysRemaining: 0, freeTier: true, freeTierReason: 'users' };
     return { ...base, licenseValid: false, trial: false, trialDaysRemaining: 0, freeTier: false };
 }
 
-// Blockiert die API ohne gültige Lizenz/Testphase/Gratis-Stufe - Login und die
+// Blockiert die API ohne gültige Lizenz/Testphase - Login und die
 // Lizenz-Prüfung/-Eingabe selbst bleiben ausgenommen.
 async function requireLicense(req, res, next) {
-    const exempt = ['/api/login', '/api/logout', '/api/me', '/api/license', '/api/admin/license', '/api/admin/license/remove'];
+    const exempt = ['/api/login', '/api/logout', '/api/me', '/api/license'];
     if (!req.path.startsWith('/api/') || exempt.includes(req.path)) return next();
     const info = await getStoredLicenseInfo();
     if (info.valid) return next();
-    res.status(402).json({ error: 'Keine gültige Lizenz für AuraMail hinterlegt.', licenseRequired: true });
+    res.status(402).json({ error: 'Keine gültige Lizenz für AuraMail hinterlegt. AuraMail ist in Business Solo und Business Advanced enthalten.', licenseRequired: true });
 }
 
 // --- 2FA ---
@@ -478,18 +484,7 @@ app.get('/api/me', requireAuth, (req, res) => {
 });
 
 app.get('/api/license', requireAuth, async (req, res) => res.json(await getStoredLicenseInfo()));
-app.post('/api/admin/license', requireAuth, requireAdmin, async (req, res) => {
-    const key = (req.body.key || '').trim();
-    if (!key) return res.status(400).json({ error: 'Bitte einen Lizenzschlüssel eintragen.' });
-    const result = verifyLicenseKey(key);
-    if (!result.valid) return res.status(400).json({ error: result.error });
-    await setSetting('license_key', key);
-    res.json({ success: true, customer: result.payload.customer, expiresAt: result.payload.expiresAt });
-});
-app.post('/api/admin/license/remove', requireAuth, requireAdmin, async (req, res) => {
-    await setSetting('license_key', '');
-    res.json({ success: true });
-});
+// Lizenz eintragen/entfernen gibt es hier nicht mehr: die Lizenz wird zentral in AuraControl eingetragen und von dort abgeholt (aura-license-sync.js).
 
 // --- Mail-Backend einbinden ---
 const mailBackend = require('./mailBackend.js')({ db, getConfig, decryptCredential });
@@ -1049,24 +1044,12 @@ setInterval(async () => {
 }, 3 * 60 * 1000);
 
 // --- Benutzerverwaltung (Admin) ---
+// Neue Benutzer werden nicht mehr hier angelegt (keine Route POST /api/admin/users): das geschieht zentral in AuraDirect (kostenlos).
 app.get('/api/admin/users', requireAuth, requireAdmin, (req, res) => {
     db.all(`SELECT id, username, firstname, lastname, role, source, active, twofa_enabled FROM users ORDER BY lastname, firstname`, [], (err, rows) => {
         if (err) return res.status(500).json({ error: err.message });
         res.json(rows);
     });
-});
-app.post('/api/admin/users', requireAuth, requireAdmin, async (req, res) => {
-    const { username, password, firstname, lastname, role } = req.body;
-    if (!username || !password) return res.status(400).json({ error: 'Benutzername und Passwort sind erforderlich.' });
-    const hash = await bcrypt.hash(password, 10);
-    db.run(
-        `INSERT INTO users (username, passwordHash, firstname, lastname, role) VALUES (?, ?, ?, ?, ?)`,
-        [username.trim(), hash, firstname || '', lastname || '', role === 'admin' ? 'admin' : 'user'],
-        function (err) {
-            if (err) return res.status(400).json({ error: err.message.includes('UNIQUE') ? 'Dieser Benutzername existiert bereits.' : err.message });
-            res.json({ success: true, id: this.lastID });
-        }
-    );
 });
 app.put('/api/admin/users/:id', requireAuth, requireAdmin, async (req, res) => {
     const { firstname, lastname, role, active, password } = req.body;

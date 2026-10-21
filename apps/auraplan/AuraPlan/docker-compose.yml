@@ -7,12 +7,15 @@ services:
       # Nur HTTP. https (Domain, Zertifikate) übernimmt der AuraProxy der Aura-Suite und leitet auf diesen Port weiter.
       # Host-Port wie bisher 8080 (so bleibt die Adresse http://<Server>:8080 gleich). Änderbar mit AURAPLAN_PORT in der .env.
       - "${AURAPLAN_PORT:-8080}:3002"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"   # AuraControl auf diesem Rechner (Lizenz abholen)
     environment:
       # Eigenen Zufallswert eintragen! Erzeugen z.B. mit: openssl rand -hex 32
       - SESSION_SECRET=${SESSION_SECRET}
       # Muss GENAU derselbe Wert wie auf dem Lizenz-Server (LICENSE_SECRET) sein -
       # ohne das kann keine Lizenz geprüft werden.
       - LICENSE_SECRET=${LICENSE_SECRET}
+      - LICENSE_SYNC_URL=${LICENSE_SYNC_URL:-}   # Suite-Lizenz automatisch von AuraControl holen. Leer = host.docker.internal:8000; '-' schaltet ab
       - AURA_SUITE_VERSION=${AURA_SUITE_VERSION:-}   # optional: Version der Aura-Suite, erscheint unter "Über Aura-Suite"
     volumes:
       - ./data:/app/data

@@ -21,7 +21,7 @@ const sha256hex = (s) => crypto.createHash('sha256').update(String(s)).digest('h
 const safeEq = (a, b) => { const x = Buffer.from(String(a)), y = Buffer.from(String(b)); return x.length === y.length && crypto.timingSafeEqual(x, y); };
 
 function createApaleoConnect(opts = {}) {
-  const o = { identityUrl: 'https://identity.apaleo.com', scopes: 'offline_access openid profile', confirmTtlMs: 15 * 60000, stateTtlMs: 10 * 60000, handoffTtlMs: 2 * 60000, returnPath: '/api/apaleo/return', maxEntries: 5000, timeoutMs: 15000, now: () => Date.now(), fetchImpl: globalThis.fetch, ...opts };
+  const o = { identityUrl: 'https://identity.apaleo.com', scopes: 'offline_access openid profile', confirmTtlMs: 15 * 60000, stateTtlMs: 10 * 60000, handoffTtlMs: 2 * 60000, returnPath: '/api/apaleo/return', maxEntries: 5000, timeoutMs: 15000, now: () => Date.now(), fetchImpl: globalThis.fetch, log: (m) => console.warn(m), ...opts };
   o.identityUrl = String(o.identityUrl).replace(/\/+$/, '');
   const configured = () => !!(o.clientId && o.clientSecret && o.redirectUri && /^https?:\/\//.test(o.redirectUri));
   const confirms = new Map(), states = new Map(), handoffs = new Map(), hits = new Map();
@@ -67,8 +67,33 @@ function createApaleoConnect(opts = {}) {
   async function identityPost(params) {
     try {
       const r = await o.fetchImpl(o.identityUrl + '/connect/token', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded', Accept: 'application/json' }, body: new URLSearchParams({ ...params, client_id: o.clientId, client_secret: o.clientSecret }).toString(), signal: AbortSignal.timeout(o.timeoutMs) });
-      const data = await r.json().catch(() => ({})); return { status: r.status, ok: r.ok, data };
+      let text = '', data = {};
+      if (typeof r.text === 'function') { text = String(await r.text().catch(() => '')).slice(0, 4000); try { data = JSON.parse(text); } catch (e) { data = {}; } if (!data || typeof data !== 'object') data = {}; }
+      else data = await r.json().catch(() => ({}));
+      return { status: r.status, ok: r.ok, data, text, ctype: (r.headers && typeof r.headers.get === 'function' && r.headers.get('content-type')) || '' };
     } catch (e) { return { status: 0, ok: false, data: {} }; }
+  }
+  // Warum das Eintauschen des Codes bei Apaleo scheiterte, steht NUR im Protokoll dieses Servers (docker compose logs lic): Status und der Fehlercode von Apaleo mit einem Hinweis.
+  // Nie ins Protokoll kommen der Code, der state, das Client-Secret, Adressen oder Beschreibungen von Apaleo (die können Namen enthalten). Der Browser sieht weiter nur die allgemeine Meldung.
+  // Auszug aus der Antwort von Apaleo für das Protokoll (nur bei Serverfehlern oder ohne Fehlercode): Code, state, Client-Secret und E-Mail-Adressen werden entfernt,
+  // Tags, Steuerzeichen und Mehrfach-Leerraum auch, und alles wird auf 200 Zeichen gekürzt.
+  function safeExcerpt(text, secrets) {
+    let t = String(text || '');
+    for (const sec of secrets) { if (sec && String(sec).length >= 3) t = t.split(String(sec)).join('[entfernt]'); }
+    return t.replace(/<[^>]*>/g, ' ').replace(/[\u0000-\u001f\u007f]+/g, ' ').replace(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g, '[E-Mail entfernt]').replace(/\s+/g, ' ').trim().slice(0, 200);
+  }
+  function logExchangeFailure(r, ctx) {
+    const code = /^[A-Za-z_]{1,40}$/.test(String(r.data && r.data.error)) ? r.data.error : '';
+    let hint;
+    if (!r.status) hint = 'AuraLic erreicht identity.apaleo.com nicht (Netz, DNS, Firewall oder Zeitlimit). Von diesem Server aus prüfen: docker compose exec license-server wget -qO- https://identity.apaleo.com/.well-known/openid-configuration';
+    else if (r.status === 401 || /^(invalid_client|unauthorized_client)$/.test(code)) hint = 'Apaleo lehnt die App ab: APALEO_CLIENT_ID oder APALEO_CLIENT_SECRET stimmen nicht mit der App in Apaleo überein (neu kopieren, keine Leerzeichen).';
+    else if (code === 'invalid_grant') hint = 'Der Code wurde abgelehnt (schon benutzt, abgelaufen oder die redirect_uri weicht ab). APALEO_REDIRECT_URI muss EXAKT der in Apaleo eingetragenen entsprechen; nach einer Änderung der .env den Container NEU ERSTELLEN (docker compose up -d --force-recreate).';
+    else if (r.status >= 500) hint = 'Apaleo meldet beim Abholen einen Serverfehler. Mögliche Ursachen: die redirect_uri weicht von der in der App bei Apaleo eingetragenen ab, die angefragten Scopes (APALEO_SCOPES) passen nicht zu den Scopes der App bei Apaleo, Client-ID oder Client-Secret sind falsch (vollständig neu kopieren), der Code war älter als 5 Minuten, die App ist bei Apaleo nicht (mehr) freigegeben, oder Apaleo hat gerade eine Störung.';
+    else hint = 'Unerwartete Antwort von Apaleo.';
+    // Die Einstellungen dieses Servers (keine Geheimnisse): so sieht der Betreiber sofort, was AuraLic zu Apaleo geschickt hat
+    const used = ` Verwendet: redirect_uri=${o.redirectUri}, client_id=${o.clientId}, scopes="${o.scopes}", Länge des Client-Secrets=${String(o.clientSecret || '').length}.`;
+    const ex = (r.status >= 500 || !code) && r.text ? ` Antwort von Apaleo (${(r.ctype || 'ohne Typ').split(';')[0]}, gekürzt): "${safeExcerpt(r.text, [ctx && ctx.code, ctx && ctx.state, o.clientSecret])}"` : '';
+    o.log(`Apaleo: Die Zugangsdaten konnten nicht abgeholt werden (${r.status ? 'Status ' + r.status : 'keine Antwort'}${code ? ', Fehler "' + code + '"' : ''}). ${hint}${used}${ex}`);
   }
   const tokensOnly = (d) => ({ access_token: d.access_token, refresh_token: d.refresh_token, expires_in: Number(d.expires_in) || 3600 });   // id_token und alles andere bleibt hier
 
@@ -99,7 +124,7 @@ function createApaleoConnect(opts = {}) {
       const st = String(q.get('state') || ''), s = states.get(st); if (!s) { errPage(req, res); return true; } states.delete(st);   // jeder state gilt nur einmal
       if (q.get('error') || !q.get('code')) { redirect(res, back(s.ret, { apaleo_error: 'denied' })); return true; }
       const r = await identityPost({ grant_type: 'authorization_code', code: String(q.get('code')), redirect_uri: o.redirectUri });
-      if (!r.ok || !r.data.access_token) { redirect(res, back(s.ret, { apaleo_error: 'exchange_failed' })); return true; }
+      if (!r.ok || !r.data.access_token) { logExchangeFailure(r, { code: String(q.get('code')), state: st }); redirect(res, back(s.ret, { apaleo_error: 'exchange_failed' })); return true; }
       const h = rnd(32); handoffs.set(h, { tokens: tokensOnly(r.data), challenge: s.challenge, at: o.now(), tries: 0 });
       redirect(res, back(s.ret, { apaleo_handoff: h })); return true;
     }

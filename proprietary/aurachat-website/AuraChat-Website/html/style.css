@@ -170,6 +170,30 @@ section { padding: 96px 24px; border-top: 1px solid rgba(255,255,255,0.05); posi
 .price-card ul { font-size: 14px; color: #94a3b8; display: flex; flex-direction: column; gap: 10px; flex: 1; }
 .price-note { margin-top: 24px; font-size: 12px; color: var(--muted); }
 
+/* --- Lizenzmodelle: Zielgruppe, Zusatzpreis, Rechenbeispiel, Vergleichstabelle, "Enthalten in" bei den Produkten --- */
+.price-card .price b { font-weight: 700; }
+.plan-audience { font-size: 13px; color: var(--cyan); margin-top: 4px; }
+.plan-extra { font-size: 14px; color: white; margin-top: 4px; }
+.price-card .price + .sub, .plan-extra + .sub { margin-top: 6px; }
+.plan-example { margin: 28px auto 0; max-width: 460px; background: rgba(50,112,253,0.08); border: 1px solid rgba(50,112,253,0.3); border-radius: 14px; padding: 16px 20px; }
+.plan-example h4 { font-size: 14px; font-weight: 600; color: white; margin-bottom: 10px; }
+.plan-example table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.plan-example td, .plan-example th { padding: 7px 0; text-align: left; color: var(--text); font-weight: 400; border-bottom: 1px solid rgba(255,255,255,0.08); }
+.plan-example .amount { text-align: right; white-space: nowrap; padding-left: 16px; font-variant-numeric: tabular-nums; }
+.plan-example tr.total th, .plan-example tr.total td { border-bottom: none; border-top: 1px solid rgba(255,255,255,0.25); color: white; font-weight: 700; padding-top: 10px; }
+.plan-table-title { margin-top: 48px; text-align: center; font-size: 1.3rem; color: white; }
+.plan-table-wrap { margin-top: 16px; overflow-x: auto; border: 1px solid var(--cardborder); border-radius: 16px; background: var(--card); }
+.plan-table { width: 100%; min-width: 640px; border-collapse: collapse; font-size: 14px; }
+.plan-table th, .plan-table td { padding: 11px 16px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--cardborder); }
+.plan-table thead th { color: white; font-weight: 600; background: rgba(255,255,255,0.03); }
+.plan-table tbody th { color: var(--text); font-weight: 500; white-space: nowrap; }
+.plan-table td { color: #94a3b8; }
+.plan-table tr.plan-group th { color: var(--cyan); font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; background: rgba(255,255,255,0.02); }
+.plan-table tbody tr:last-child th, .plan-table tbody tr:last-child td { border-bottom: none; }
+.plan-included { margin: 40px auto 0; max-width: 700px; text-align: center; }
+.plan-included .price-note { margin-top: 12px; }
+.plan-link { display: inline-block; margin-top: 12px; color: var(--cyan); font-size: 13px; font-weight: 600; text-decoration: none; }
+
 /* --- Betrieb (Self-Hosted / Cloud) --- */
 .grid2 { display: grid; grid-template-columns: 1fr; gap: 20px; }
 @media (min-width: 760px) { .grid2 { grid-template-columns: 1fr 1fr; } }

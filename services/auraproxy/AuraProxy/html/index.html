@@ -40,15 +40,6 @@
         </div>
     </div>
 
-    <!-- Lizenz fehlt -->
-    <div id="modal-license" class="hidden fixed inset-0 bg-slate-950/95 backdrop-blur-md z-[70] flex items-center justify-center p-4">
-        <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl w-full max-w-md shadow-2xl flex flex-col gap-4">
-            <div class="flex items-center gap-2 border-b border-slate-800 pb-3"><span class="text-lg">🔑</span><h3 class="text-sm font-bold text-white">AuraProxy ist nicht lizenziert</h3></div>
-            <textarea id="license-key-input" rows="4" placeholder="Lizenzschlüssel hier einfügen" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white font-mono"></textarea>
-            <div id="license-modal-error" class="hidden text-xs text-red-400"></div>
-            <button id="license-save-btn" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium py-2.5 rounded-xl text-sm transition">Lizenz aktivieren</button>
-        </div>
-    </div>
 
     <!-- App -->
     <div id="app" class="hidden h-screen flex flex-col">
@@ -191,14 +182,6 @@
                 <div id="password-status" class="hidden text-xs mt-2"></div>
             </div>
 
-            <div data-panel-section="license" class="bg-slate-950 border border-slate-800 rounded-xl p-4">
-                <h2 class="text-sm font-bold text-white mb-1">🔑 Lizenz</h2>
-                <div id="license-admin-status" class="text-xs text-slate-400 mb-3">Wird geladen…</div>
-                <textarea id="license-admin-key-input" rows="3" placeholder="Neuen Lizenzschlüssel eintragen" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white font-mono mb-2"></textarea>
-                <button id="license-admin-save-btn" class="bg-blue-600 hover:bg-blue-500 text-white font-medium px-4 py-2 rounded-xl text-sm transition">Speichern</button>
-                <button id="license-admin-remove-btn" class="hidden bg-red-500/10 border border-red-500/30 text-red-300 hover:bg-red-500/20 font-medium px-4 py-2 rounded-xl text-sm transition ml-2">Lizenz entfernen</button>
-                <div id="license-admin-error" class="hidden text-xs text-red-400 mt-2"></div>
-            </div>
 
             <div data-panel-section="appearance" class="bg-slate-950 border border-slate-800 rounded-xl p-4 flex flex-col gap-3">
                 <div id="admin-prefs-card"></div>

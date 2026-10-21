@@ -46,6 +46,7 @@ Die Seite zeigt AuraChat und die Produkte AuraPlan, AuraDirect, AuraMail, AuraTi
 
 - `build/content.js` – Texte der Produkte AuraMail, AuraTicket, AuraProxy und gemeinsame Texte
 - `build/content_new.js` – AuraCall und alle neueren Texte (Hotel/Apaleo, Telefon, Bildschirmformat, Gedächtnis, Cockpit)
+- `build/plans.js` – Lizenzmodelle (Free Plan, Business Solo, Business Advanced): Abschnitt „Preise“, „Enthalten in“ bei jedem Produkt und das Lizenzmodell in den Datenblättern. Preise nur hier ändern (und in AuraLic, `PLANS` in `server.js`)
 - `build/base/index.html` – Ausgangs-HTML (mit den Suchmaschinen-Angaben)
 
 Neu bauen (Node.js genügt):

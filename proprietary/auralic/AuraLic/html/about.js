@@ -7,7 +7,7 @@
   var btn = document.getElementById('about-btn'); if (!btn) return;
   var API = btn.getAttribute('data-about-api') || '/api/version';
   var VERSION_RE = /^\d{1,4}\.\d{1,4}(\.\d{1,4})?$/, overlay = null, opener = null;
-  var T = { title: 'Über Aura-Suite', close: 'Schließen', app: 'Anwendung', version: 'Version', suite: 'Aura-Suite', latest: 'Aktuelle Version', update: 'Update verfügbar', date: 'Stand', note: 'Hinweis', unavailable: 'Die Versionsangaben sind gerade nicht verfügbar.', platformLabel: 'Plattform', platform: 'Docker (selbst gehostet)', by: 'Programmiert von', firm: 'Firma', mail: 'E-Mail', home: 'Homepage' };
+  var T = { title: 'Über Aura-Suite', close: 'Schließen', app: 'Anwendung', version: 'Version', suite: 'Aura-Suite', latest: 'Version', pending: 'wird beim nächsten Abgleich mit dem Lizenzserver übernommen', update: 'Update verfügbar', date: 'Stand', note: 'Hinweis', unavailable: 'Die Versionsangaben sind gerade nicht verfügbar.', platformLabel: 'Plattform', platform: 'Docker (selbst gehostet)', by: 'Programmiert von', firm: 'Firma', mail: 'E-Mail', home: 'Homepage' };
 
   function el(tag, style, text) { var e = document.createElement(tag); if (style) Object.assign(e.style, style); if (text !== undefined && text !== null) e.textContent = String(text); return e; }
   function fmtDate(v) {   // JJJJ-MM-TT als TT.MM.JJJJ, ohne Datumsobjekt-Umweg (kein Weiterrollen unmöglicher Tage); unmöglich = ''
@@ -27,17 +27,18 @@
     if (!d || typeof d !== 'object') { box.appendChild(el('div', { color: '#94a3b8' }, T.unavailable)); return; }
     var product = typeof d.product === 'string' ? d.product.trim().slice(0, 40) : '';
     if (product) row(box, '🧩 ' + T.app, product);
-    var inst = ver(d.installed); if (inst) row(box, '📦 ' + T.version, inst, MONO);
     var suiteInst = ver(d.suiteInstalled); if (suiteInst) row(box, '🧱 ' + T.suite, suiteInst, MONO);
     var s = d.suite && typeof d.suite === 'object' ? d.suite : null, latest = s ? ver(s.version) : '';
+    // Version: der Wert, den der Lizenzserver (AuraLic, Kundenübersicht "Aura-Suite-Version") vorgibt; jede Installation übernimmt ihn beim Abgleich
+    if (!latest) row(box, '📦 ' + T.latest, T.pending, { color: '#94a3b8', fontSize: '11px' });
     if (latest) {
       var wrap = el('span', { display: 'inline-flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', justifyContent: 'flex-end' }); wrap.appendChild(el('span', MONO, latest));
       if (d.updateAvailable === true) wrap.appendChild(el('span', { fontSize: '10px', padding: '1px 8px', borderRadius: '6px', background: 'rgba(245,158,11,0.15)', border: '1px solid rgba(245,158,11,0.35)', color: '#fcd34d' }, T.update));
-      row(box, '⬆️ ' + T.latest, wrap);
+      row(box, '📦 ' + T.latest, wrap);
       var dt = fmtDate(s.date); if (dt) row(box, '🗓️ ' + T.date, dt);
       var note = typeof s.note === 'string' ? s.note.trim().slice(0, 120) : ''; if (note) row(box, '📝 ' + T.note, note);
     }
-    if (!product && !inst) box.appendChild(el('div', { color: '#94a3b8' }, T.unavailable));
+    if (!product && !latest) box.appendChild(el('div', { color: '#94a3b8' }, T.unavailable));
   }
 
   function close() { if (!overlay) return; overlay.remove(); overlay = null; document.removeEventListener('keydown', onKey, true); if (opener && typeof opener.focus === 'function') opener.focus(); }

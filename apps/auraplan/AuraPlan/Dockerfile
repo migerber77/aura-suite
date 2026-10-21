@@ -21,7 +21,7 @@ RUN npm install --omit=dev
 # mit dem Namen des Moduls ab, statt dass der Fehler erst im Betrieb auffällt.
 RUN node -e 'const d = Object.keys(require("./package.json").dependencies); for (const m of d) { try { require(m); } catch (e) { console.error("Modul " + m + " laesst sich unter Node " + process.version + " nicht laden: " + e.message); process.exit(1); } } console.log("Alle " + d.length + " Module laden unter Node " + process.version)'
 
-COPY server.js suite-ping.js ./
+COPY server.js suite-ping.js aura-license-sync.js ./
 COPY html ./html
 
 # Zur Laufzeit werden npm und Yarn nicht gebraucht (Start: "node server.js"). Sie samt ihren Bibliotheken (tar, glob, minimatch ...) aus dem

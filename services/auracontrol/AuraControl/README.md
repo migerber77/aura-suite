@@ -29,3 +29,25 @@ Alle 12 Stunden meldet sich AuraControl **anonym** beim Lizenzserver (zufällige
 
 ## Hinweis zum Test
 FastAPI selbst war in der Testumgebung nicht installiert und wurde durch einen Stellvertreter ersetzt. Bitte nach dem Bauen einmal anmelden, Lizenz öffnen und „Über“ öffnen.
+
+
+## Suite-Lizenz für alle Produkte
+
+Die Suite-Lizenz (Business Solo / Business Advanced) wird nur hier eingetragen (Admin Panel → 🔑 Lizenz).
+AuraChat, AuraPlan, AuraTicket, AuraMail und AuraCall holen sie alle 15 Minuten unter
+`GET /api/license/suite-key` ab (Zugang mit einem aus `LICENSE_SECRET` abgeleiteten Schlüssel, keine eigene
+Einstellung nötig). Beim Abgleich mit dem Lizenzserver (alle 12 Stunden oder „Mit Lizenzserver abgleichen“)
+übernimmt AuraControl eine neuere Fassung derselben Lizenz, z. B. mit mehr Mitarbeitern. Port 8000 muss von den
+Containern aus erreichbar sein (Standard: `host.docker.internal:8000`, anders mit `LICENSE_SYNC_URL`).
+
+
+## Anmeldung mit AuraDirect-Konten
+
+Personen aus AuraDirect können sich in AuraControl mit ihrem eigenen Konto anmelden, wenn sie in AuraDirect für
+**AuraControl** freigeschaltet sind (Benutzer bearbeiten → AuraControl). Die Zwei-Faktor-Anmeldung von AuraDirect gilt auch hier.
+Einrichten: Admin Panel → 🛡️ Sicherheit → „Anmeldung über AuraDirect“ (Adresse und Dienst-Schlüssel von AuraDirect, „Verbindung testen“).
+In der Suite-Datei ist das ab dem ersten Start vorbelegt (`http://direct:4000`, Dienst-Schlüssel `DIRECT_SERVICE_KEY`).
+
+- Der lokale Benutzer `admin` bleibt immer als Notzugang und wird nie an AuraDirect geschickt.
+- Nur `admin` darf sein Passwort und die Anbindung an AuraDirect ändern.
+- Anmeldungen über AuraDirect gelten 8 Stunden. Wird die Anbindung geändert oder ausgeschaltet, enden sie sofort.

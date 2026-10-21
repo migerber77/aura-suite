@@ -114,15 +114,10 @@ function createServer(cfg = {}) {
     // Datenschutzerklärung: öffentlich lesbar (auch für Personen, die uns anrufen), gebaut aus den echten Einstellungen
     app.page('/datenschutz', ({ query, req }) => renderPrivacy(mgr.settings(), { lang: pickLang(query, req), checkin: license.checkinEnabled() }));
     // ---- Lizenz ----
-    route('GET', '/api/license', () => ({ ...license.info(), checkin: license.checkinStatus() }), { license: false });
+    route('GET', '/api/license', () => ({ ...license.info(), checkin: license.checkinStatus(), sync: license.sync ? license.sync.status() : null }), { license: false });
     // "Über Aura-Suite": installierte Version, die Aura-Suite-Version des Betreibers und die aktuelle Version vom Lizenzserver (auch bei abgelaufener Lizenz erreichbar)
     route('GET', '/api/version', () => { const suite = license.suiteInfo(); return { product: 'AuraCall', installed: VERSION, suiteInstalled: AURA_SUITE_INSTALLED, suite, updateAvailable: !!(suite && versionOlder(VERSION, suite.version)) }; }, { license: false });
-    route('POST', '/api/license', (ctx) => {
-        const r = license.setKey(text(ctx.body.key, 4000)); if (!r.ok) throw new HttpError(400, r.error);
-        db.audit(ctx.user.username, 'lizenz-gesetzt', `${r.customer}${r.expiresAt ? ', bis ' + String(r.expiresAt).slice(0, 10) : ''}`, ctx.ip); license.run().catch(() => {});   // gleich beim Lizenzserver melden
-        return { ok: true, ...license.info() };
-    }, { license: false });
-    route('DELETE', '/api/license', (ctx) => { license.removeKey(); db.audit(ctx.user.username, 'lizenz-entfernt', '', ctx.ip); license.run().catch(() => {}); return { ok: true, ...license.info() }; }, { license: false });
+    // Lizenz eintragen/entfernen gibt es hier nicht mehr: die Lizenz wird zentral in AuraControl eingetragen und von dort abgeholt (lib/aura-license-sync.js)
     route('GET', '/api/health', () => ({ ok: true }), { auth: 'none' });
 
     // ---- Übersicht und Einstellungen ----
@@ -182,7 +177,7 @@ function createServer(cfg = {}) {
     }
     async function start() {
         // Beginn der Probezeit festhalten und die Rückmeldung beim Lizenzserver planen
-        license.installDate(); license.start();
+        license.installDate(); license.start(); if (!c.noLicenseSync) license.startSync();
         await ensureAdmin(); resetTwofaFromEnv(); await audio.listen(); mgr.audioPort = audio.port; mgr.start(); ami.start();   // der tatsächliche Port kommt in den Dialplan
         const port = await app.listen(c.port, c.bind); c.log(`AuraCall ${VERSION} läuft: Verwaltung auf Port ${port}, AudioSocket auf ${c.audioHost}:${audio.port}.`);
         return { port, audioPort: audio.port };

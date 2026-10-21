@@ -3,6 +3,7 @@
 services:
   auracontrol:
     build: .
+    image: auracontrol:latest        # fester Name: der Cockpit-Dienst unten startet dasselbe Image
     container_name: auracontrol
     restart: unless-stopped
     ports:
@@ -10,12 +11,94 @@ services:
     environment:
       - TZ=Europe/Zurich
       - LICENSE_SECRET=${LICENSE_SECRET:?LICENSE_SECRET fehlt (derselbe Wert wie beim Lizenzserver)}
+      - AURADIRECT_URL=${AURADIRECT_URL:-}                 # optional: Anmeldung mit AuraDirect-Konten, z. B. http://10.0.55.160:4000 (sonst im Admin Panel -> Sicherheit)
+      - AURADIRECT_SERVICE_KEY=${AURADIRECT_SERVICE_KEY:-} # Dienst-Schlüssel von AuraDirect
       - ADMIN_PASSWORD=${CONTROL_ADMIN_PASSWORD:-}
       - AURA_SUITE_VERSION=${AURA_SUITE_VERSION:-}
       - LICENSE_CHECKIN_HOST=${LICENSE_CHECKIN_HOST:-}
+      - COCKPIT_URL=http://control-cockpit:3600   # Cockpit (Ansicht "Cockpit"): Adresse des Cockpit-Dienstes, das Passwort legt der Dienst selbst an
     volumes:
       # Bindet die 1-TB-Platte ein, damit /srv/backup/rear den echten Speicherplatz vom Host sieht
       - /srv/backup/rear:/srv/backup/rear
       # Passwort, Sitzungsschlüssel, Testphase, Lizenz und Einstellungen
       - ./data:/app/data
+      - cockpit_shared:/shared:ro   # Passwort für den Cockpit-Dienst (nur lesen)
     user: "0:0"
+    networks:
+      - default
+      - cockpit
+
+  # ---------------------------------------------------------------- Cockpit (Ansicht "Cockpit" in AuraControl): Gesundheit des Servers
+  # Der Cockpit-Dienst ist ein EIGENER kleiner Container (selbes Image wie AuraControl, Befehl "python cockpit_agent.py"), der als Einziger auf Docker schaut,
+  # und zwar nur lesend und nur mit ein paar festen Abfragen (keine Umgebungsvariablen anderer Container, keine Protokolle, keine Dateien). AuraControl
+  # (von aussen erreichbar) bekommt KEINEN Zugriff auf Docker. Er hat keinen Port nach aussen, liegt in einem eigenen internen Netz und erzeugt sein
+  # Zugangs-Passwort beim ersten Start selbst. Wer den Docker-Socket einbindet (auch nur lesend), gibt diesem Dienst mehr Möglichkeiten als ein normaler
+  # Container hat: deshalb ist er klein, nicht von aussen erreichbar und ganz abschaltbar (Block hier löschen, in auracontrol "cockpit_shared" und COCKPIT_URL streichen).
+  control-cockpit:
+    image: auracontrol:latest
+    pull_policy: never               # lokal gebautes Image (siehe auracontrol), nie aus dem Internet holen
+    container_name: control-cockpit
+    command: ["python", "cockpit_agent.py"]
+    restart: unless-stopped
+    depends_on:
+      - auracontrol
+    user: "0:0"                      # nötig, um den Docker-Socket (Besitzer root, Modus 660) zu lesen; sonst ohne Sonderrechte (cap_drop ALL)
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 256m
+    environment:
+      PYTHONDONTWRITEBYTECODE: "1"
+    tmpfs:
+      - /tmp
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:3600/health', timeout=4).status == 200 else 1)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro   # nur dieser Dienst, nur lesende Abfragen
+      - cockpit_shared:/shared                          # hier legt er sein Passwort ab
+      - cockpit_reports:/reports:ro                     # Berichte des Schwachstellen-Scanners
+      - /var/lib/aura-cockpit:/hostcheck:ro             # Ergebnis der Host-Prüfung (siehe cockpit/README.md, optional)
+    networks:
+      - cockpit
+
+  # Schwachstellen-Scanner "Trivy" (OPTIONAL, startet nur mit:  docker compose --profile scan up -d ). Prüft einmal täglich alle Docker-Images dieses Servers
+  # und legt die Berichte für das Cockpit ab. Beim ersten Lauf lädt er seine Datenbank herunter (Internet nötig). Das Skript holt er sich vom Cockpit-Dienst.
+  control-trivy:
+    image: aquasec/trivy:latest
+    container_name: control-trivy
+    profiles: ["scan"]
+    restart: unless-stopped
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        until wget -q -O /tmp/scan.sh --header "Authorization: Bearer $$(cat /shared/token 2>/dev/null)" http://control-cockpit:3600/scan.sh; do
+          echo "Warte auf den Cockpit-Dienst ..."; sleep 5
+        done
+        exec sh /tmp/scan.sh
+    environment:
+      SCAN_INTERVAL_HOURS: ${SCAN_INTERVAL_HOURS:-24}
+    mem_limit: 3g
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - trivy_cache:/root/.cache/trivy
+      - cockpit_reports:/reports
+      - cockpit_shared:/shared:ro
+    networks:
+      - default      # Internet für die Datenbank
+      - cockpit
+
+networks:
+  # internes Netz nur für AuraControl, Cockpit-Dienst und Scanner (kein Zugang nach aussen)
+  cockpit:
+    name: aura-cockpit
+    internal: true
+
+volumes:
+  cockpit_shared:
+  cockpit_reports:
+  trivy_cache:

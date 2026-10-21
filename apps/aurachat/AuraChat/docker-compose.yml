@@ -17,10 +17,12 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.backend
-    image: aurachat-backend:latest   # fester Name: der Dienst "cockpit" unten startet dasselbe Image
+    image: aurachat-backend:latest   # fester Name
     pull_policy: never               # wird selbst gebaut, existiert nicht im Internet: "docker compose pull" überspringt es
     container_name: aurachat-backend
     restart: unless-stopped
+    extra_hosts:
+      - "host.docker.internal:host-gateway"   # AuraControl auf diesem Rechner (Lizenz abholen)
     environment:
       - NODE_ENV=production
       # WICHTIG: eigenen Zufallswert eintragen! Erzeugen z.B. mit: openssl rand -hex 32
@@ -28,6 +30,7 @@ services:
       # Geheimer Schlüssel fürs Lizenzsystem (Premium-Features). NIEMALS weitergeben -
       # wer diesen Wert kennt, kann eigene gültige Lizenzen erzeugen!
       - LICENSE_SECRET=${LICENSE_SECRET}
+      - LICENSE_SYNC_URL=${LICENSE_SYNC_URL:-}   # Suite-Lizenz automatisch von AuraControl holen. Leer = host.docker.internal:8000; '-' schaltet ab
       # Grenzen für Antworten der KI (Ollama), nur bei Bedarf in der .env ändern: maximale Wartezeit in Minuten und
       # maximale Länge einer Antwort (Einheiten ~ Wortteile). Verhindert, dass ein Modell endlos weiterschreibt.
       - OLLAMA_TIMEOUT_MINUTES=${OLLAMA_TIMEOUT_MINUTES:-20}
@@ -35,8 +38,6 @@ services:
       # Apaleo (Hotel-PMS): Verbinden per Knopf (OAuth) über den Vermittler des Herstellers. Leer lassen = Standard des Herstellers.
       - APALEO_CONNECT_URL=${APALEO_CONNECT_URL:-}
       - APALEO_RETURN_BASE=${APALEO_RETURN_BASE:-}   # nur hinter einem Proxy nötig: öffentliche Adresse dieser AuraChat, z. B. https://chat.meinhotel.ch
-      # Cockpit (Admin Panel -> Cockpit): Adresse des Cockpit-Dienstes. Das Passwort legt der Dienst selbst an (siehe unten).
-      - COCKPIT_URL=http://cockpit:3600
       - AURA_SUITE_VERSION=${AURA_SUITE_VERSION:-}   # optional: Version der Aura-Suite, erscheint unter "Über Aura-Suite"
     volumes:
       - ./data:/app/data
@@ -44,10 +45,8 @@ services:
       - ./server.js:/app/server.js  # beschreibbar, damit Selbst-Updates dauerhaft greifen (siehe Backup-Tab -> Update)
       - ./html:/app/frontend        # gleicher Ordner wie beim nginx-Container - Updates landen so an der richtigen Stelle
       - hf_cache:/root/.cache/huggingface   # Basis-Modell nur einmal herunterladen, nicht bei jedem Rebuild neu
-      - cockpit_shared:/shared:ro   # Passwort für den Cockpit-Dienst (nur lesen)
     networks:
       - aurachat
-      - cockpit
 
   # 3. SearXNG - Meta-Suchmaschine für die Web-Suche im Chat. Läuft NUR intern
   #    im Docker-Netz (kein Host-Port gemappt) - das Backend proxied Anfragen,
@@ -105,80 +104,12 @@ services:
     networks:
       - aurachat
 
-  # 7) Cockpit - Gesundheit des Servers im Admin Panel (Tab "Cockpit"): Docker-Container, Arbeitsspeicher, Prozessor,
-  #    Speicherplatz, Schwachstellen. Das ist ein EIGENER kleiner Dienst (selbes Image wie das Backend), der als Einziger
-  #    auf Docker schaut, und zwar nur lesend und nur mit ein paar festen Abfragen (keine Umgebungsvariablen anderer
-  #    Container, keine Protokolle, keine Dateien). Das von aussen erreichbare Backend bekommt KEINEN Zugriff auf Docker.
-  #    Er hat keinen Port nach aussen, liegt in einem eigenen internen Netz (nur das Backend kommt heran) und erzeugt
-  #    sein Zugangs-Passwort beim ersten Start selbst. Entfernen: diesen Block und im Backend "cockpit_shared" streichen.
-  cockpit:
-    image: aurachat-backend:latest
-    pull_policy: never               # lokal gebautes Image (siehe backend), nie aus dem Internet holen
-    container_name: aurachat-cockpit
-    command: ["node", "cockpit/agent.js"]
-    restart: unless-stopped
-    depends_on:
-      - backend
-    read_only: true
-    cap_drop:
-      - ALL
-    security_opt:
-      - no-new-privileges:true
-    mem_limit: 256m
-    healthcheck:
-      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3600/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro   # nur dieser Dienst, nur lesende Abfragen
-      - cockpit_shared:/shared                          # hier legt er sein Passwort ab
-      - cockpit_reports:/reports:ro                     # Berichte des Schwachstellen-Scanners
-      - /var/lib/aura-cockpit:/hostcheck:ro             # Ergebnis der Host-Prüfung (siehe cockpit/README.md, optional)
-    networks:
-      - cockpit
-
-  # 8) Schwachstellen-Scanner "Trivy" (OPTIONAL, startet nur mit:  docker compose --profile scan up -d ).
-  #    Prüft einmal täglich alle Docker-Images dieses Servers und legt die Berichte für das Cockpit ab. Beim ersten Lauf lädt
-  #    er seine Datenbank herunter (Internet nötig) und der Scan des grossen Backend-Images dauert einige Minuten.
-  #    Das Skript holt er sich vom Cockpit-Dienst (kein Ordner auf dem Host nötig).
-  trivy:
-    image: aquasec/trivy:latest
-    container_name: aurachat-trivy
-    profiles: ["scan"]
-    restart: unless-stopped
-    entrypoint: ["/bin/sh", "-c"]
-    command:
-      - |
-        until wget -q -O /tmp/scan.sh --header "Authorization: Bearer $$(cat /shared/token 2>/dev/null)" http://cockpit:3600/scan.sh; do
-          echo "Warte auf den Cockpit-Dienst ..."; sleep 5
-        done
-        exec sh /tmp/scan.sh
-    environment:
-      - SCAN_INTERVAL_HOURS=${SCAN_INTERVAL_HOURS:-24}
-    mem_limit: 3g
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-      - trivy_cache:/root/.cache/trivy
-      - cockpit_reports:/reports
-      - cockpit_shared:/shared:ro
-    networks:
-      - aurachat   # Internet für die Datenbank
-      - cockpit
-
 networks:
   aurachat:
     name: aurachat
     external: false
-  # internes Netz nur für Backend, Cockpit-Dienst und Scanner (kein Zugang nach aussen)
-  cockpit:
-    name: aurachat-cockpit
-    internal: true
 
 volumes:
   tts_stt_cache:
   hf_cache:
   piper_data:
-  cockpit_shared:
-  cockpit_reports:
-  trivy_cache:

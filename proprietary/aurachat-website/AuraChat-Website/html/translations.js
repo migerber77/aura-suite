@@ -89,46 +89,87 @@ const translations = {
     },
     "academy": {
       "title": "Aura-Academy: ein Modell, das wirklich euch gehört.",
-      "text": "In der höchsten Lizenzstufe trainiert AuraChat jede Nacht automatisch ein eigenes, kleines KI-Modell mit den gesammelten Erkenntnissen eures Teams weiter. Kein Umweg über fremde Server, kein geteiltes Wissen mit anderen Kunden — nur euer eigenes, mit der Zeit wachsendes Modell, das versteht, wie bei euch gearbeitet wird."
+      "text": "In Business Advanced trainiert AuraChat jede Nacht automatisch ein eigenes, kleines KI-Modell mit den gesammelten Erkenntnissen eures Teams weiter. Kein Umweg über fremde Server, kein geteiltes Wissen mit anderen Kunden — nur euer eigenes, mit der Zeit wachsendes Modell, das versteht, wie bei euch gearbeitet wird."
     },
     "pricing": {
-      "heading": "Ein Lizenzmodell, das mit euch mitwächst.",
-      "sub": "Kostenlos starten, pro Sitz erweitern — mit eigenen Preisen für Benutzer- und Administratorkonten.",
-      "basic": {
-        "title": "Basis",
-        "price": "kostenlos",
-        "sub": "bis 3 Benutzer / 1 Administrator",
-        "li1": "· Chat, Standard-Avatare, Gedächtnis",
-        "li2": "· Persönlichkeit, Workspace",
-        "li3": "· Quiz, Chat-Export, Erinnerungen",
-        "li4": "· Basis-Integrationen"
-      },
+      "heading": "Drei Pläne. Klar und fair.",
+      "sub": "Kostenlos für die private Nutzung, mit voller Ausstattung für Firmen und Teams.",
       "popular": "Beliebt",
-      "perUser": " / Nutzer / Mt.",
-      "perUser2": " / Nutzer / Mt.",
-      "pro": {
-        "title": "Pro",
-        "sub": "CHF 9.– pro Administrator / Mt.",
-        "li1": "· Eigene Domain mit SSL",
-        "li2": "· Sprachein- und -ausgabe",
-        "li3": "· Eigene Avatare, Bildgenerierung",
-        "li4": "· Coding-Modell, Zweitmodell",
-        "li5": "· E-Mail-Integration, API-Zugriff"
+      "perMonth": "/ Monat",
+      "free": {
+        "title": "Free Plan",
+        "audience": "Privatpersonen & Hobby",
+        "price": "CHF 0",
+        "period": "für immer",
+        "users": "Exakt 1 Benutzer (private Nutzung)",
+        "li1": "✓ AuraChat: Grundfunktionen (Standard-KI-Assistenz)",
+        "li2": "✓ AuraPlan: Zeiterfassung, Schicht- & Ferienplanung",
+        "li3": "✓ AuraTicket: Ticketsystem",
+        "li4": "– AuraMail und AuraCall nicht enthalten"
       },
-      "academy": {
-        "title": "Academy",
-        "sub": "CHF 15.– pro Administrator / Mt.",
-        "li1": "· Alles aus Pro",
-        "li2": "· Aura-Academy: eigenes trainiertes Modell",
-        "li3": "· Eigenes Logo &amp; Icon (White-Label)"
+      "solo": {
+        "title": "Business Solo",
+        "audience": "Einzelfirmen & Selbstständige",
+        "price": "CHF 19.90",
+        "period": "/ Monat",
+        "users": "1 Business-Benutzer mit kommerzieller Nutzungslizenz",
+        "li1": "✓ Alle Apps in der Vollversion",
+        "li2": "✓ AuraChat mit allen erweiterten Funktionen",
+        "li3": "✓ AuraPlan und AuraTicket",
+        "li4": "✓ AuraMail: Mailserver-Integration",
+        "li5": "✓ AuraCall: Anbindung für KI-Telefonie"
       },
-      "note": "Alle Preise sind Richtwerte exkl. MwSt. Nutzer- und Administrator-Obergrenzen werden pro Lizenzschlüssel festgelegt."
+      "advanced": {
+        "title": "Business Advanced",
+        "audience": "Unternehmen & Teams",
+        "price": "CHF 19.90",
+        "period": "/ Monat für den 1. Benutzer",
+        "extra": "+ CHF 9.90 / Monat für jeden weiteren Benutzer",
+        "users": "Ab 2 Benutzern",
+        "li1": "✓ Voller Funktionsumfang aller Apps",
+        "li2": "✓ AuraMail und AuraCall inklusive",
+        "li3": "✓ Erweiterte Rechteverwaltung",
+        "li4": "✓ Team-Kollaboration",
+        "li5": "✓ Aura-Academy: eigenes, trainiertes Modell"
+      },
+      "example": {
+        "title": "Rechenbeispiel Business Advanced mit 3 Benutzern",
+        "first": "1. Benutzer",
+        "extra": "2 weitere Benutzer (2 × CHF 9.90)",
+        "total": "Total pro Monat"
+      },
+      "table": {
+        "title": "Übersicht der Lizenzmodelle",
+        "feature": "Feature / Umfang",
+        "audience": "Zielgruppe",
+        "users": "Benutzer",
+        "price": "Preis",
+        "apps": "Enthaltene Apps",
+        "services": "Enthaltene Dienste",
+        "freeUsers": "1 Benutzer",
+        "soloUsers": "1 Benutzer",
+        "advUsers": "Ab 2 Benutzern",
+        "freePrice": "0 CHF / für immer",
+        "soloPrice": "19.90 CHF / Monat",
+        "advPrice": "19.90 CHF (1. User) + 9.90 CHF / weiteren User / Monat",
+        "basic": "Grundfunktionen",
+        "full": "Vollversion",
+        "yes": "Ja",
+        "included": "Inklusive",
+        "no": "–"
+      },
+      "services": "AuraDirect (zentrale Benutzerverwaltung) und AuraProxy (Reverse-Proxy mit SSL) sind in jedem Plan kostenlos dabei.",
+      "hardware": {
+        "title": "Hardware",
+        "text": "Die Hardware ist nicht Bestandteil der Lizenz. Sie wird durch den Kunden beschafft oder kann auch durch Gerber Backoffice Solutions beschafft werden."
+      },
+      "note": "Alle Preise exkl. MwSt. AuraMail und AuraCall lassen sich 14 Tage kostenlos testen."
     },
     "hosting": {
       "heading": "Bei euch betrieben oder von uns.",
       "self": {
         "title": "Self-Hosted",
-        "sub": "Keine Zusatzkosten, nur die Lizenz",
+        "sub": "Keine Zusatzkosten, nur der gewählte Plan",
         "li1": "Läuft auf eurer eigenen Hardware oder NAS",
         "li2": "Daten bleiben zu 100% bei euch",
         "li3": "Installation &amp; Updates in Eigenregie, Dokumentation liegt bei",
@@ -137,7 +178,7 @@ const translations = {
       "cloud": {
         "title": "Cloud",
         "badge": "★ Noch nicht verfügbar",
-        "sub": "ab CHF 29.– / Monat Infrastruktur-Pauschale",
+        "sub": "Preis auf Anfrage",
         "li1": "Vollständig durch uns betrieben",
         "li2": "Gehostet in unserer Cloud-Infrastruktur (EU/CH)",
         "li3": "Installation &amp; laufende Updates inklusive",
@@ -229,24 +270,10 @@ const translations = {
         }
       },
       "pricing": {
-        "heading": "Ein faires Lizenzmodell.",
-        "basic": {
-          "title": "Basis",
-          "price": "kostenlos",
-          "sub": "einfache Zeiterfassung",
-          "li1": "· Ein-/Ausstempeln",
-          "li2": "· Manuelle Erfassung",
-          "li3": "· Grundlegende Zeitarten"
-        },
-        "pro": {
-          "title": "Pro",
-          "sub": "CHF 3.50 pro Nutzer / CHF 7.50 pro Admin / Mt.",
-          "li1": "· Schichtplan &amp; offene Schichten",
-          "li2": "· Ferien mit Farbzeitleiste",
-          "li3": "· Übersicht &amp; Benachrichtigungen",
-          "li4": "· AuraChat-Widget &amp; Sprachbefehle"
-        },
-        "note": "Alle Preise sind Richtwerte exkl. MwSt."
+        "heading": "Enthalten in",
+        "text": "Free Plan, Business Solo und Business Advanced. Im Free Plan für 1 Benutzer (private Nutzung).",
+        "link": "Alle Pläne und Preise ansehen →",
+        "note": "Alle Preise exkl. MwSt. Hardware ist nicht Bestandteil der Lizenz."
       },
       "downloads": {
         "heading": "Anleitung herunterladen",
@@ -289,22 +316,10 @@ const translations = {
         }
       },
       "pricing": {
-        "heading": "Kostenlos in Kombination.",
-        "included": {
-          "title": "Inklusive",
-          "price": "kostenlos",
-          "sub": "bis 4 Benutzer, oder sobald mindestens zwei Aura-Anwendungen verbunden sind",
-          "li1": "· Zentrale Anmeldung",
-          "li2": "· Active-Directory-Anbindung",
-          "li3": "· Zentrale 2FA"
-        },
-        "standalone": {
-          "title": "Eigenständig",
-          "sub": "CHF 15.– pro Installation / Mt.",
-          "li1": "· Alle Funktionen",
-          "li2": "· Ohne weitere Aura-Anwendung"
-        },
-        "note": "Alle Preise sind Richtwerte exkl. MwSt."
+        "heading": "Enthalten in",
+        "text": "Immer kostenlos und in jedem Plan dabei, auch im Free Plan. Ohne Testphase und ohne Sperre.",
+        "link": "Alle Pläne und Preise ansehen →",
+        "note": "Alle Preise exkl. MwSt. Hardware ist nicht Bestandteil der Lizenz."
       },
       "downloads": {
         "heading": "Anleitung herunterladen",
@@ -324,11 +339,11 @@ const translations = {
       "lead": "AuraChat ist der Mittelpunkt — dazu kommen eigenständige Produkte für Zeiterfassung, Tickets, Mail, Telefon, Benutzerverwaltung und den sicheren Zugang von aussen. Einzeln nutzbar, gemeinsam am stärksten.",
       "apps": {
         "title": "Anwendungen",
-        "sub": "AuraChat, AuraPlan, AuraTicket, AuraCall — mit Testphase; die ersten drei zusätzlich mit kostenloser Basisstufe."
+        "sub": "AuraChat, AuraPlan, AuraTicket im Free Plan (1 Benutzer); mit Business Solo oder Advanced in der Vollversion, dazu AuraMail und AuraCall."
       },
       "services": {
         "title": "Dienste",
-        "sub": "AuraDirect, AuraMail, AuraProxy — kostenlos bis 4 Konten oder sobald mindestens zwei Anwendungen verbunden sind, sonst CHF 15.– pro Installation / Mt."
+        "sub": "AuraDirect und AuraProxy — immer kostenlos und in jedem Plan dabei."
       },
       "more": "Mehr erfahren →",
       "auraplan": "Zeiterfassung, Schichtplan und Ferien — per Klick oder Zuruf.",
@@ -372,23 +387,10 @@ const translations = {
         }
       },
       "pricing": {
-        "heading": "Kostenlos in Kombination.",
-        "a": {
-          "title": "Inklusive",
-          "price": "kostenlos",
-          "sub": "bis 4 Benutzer, oder sobald mindestens zwei Aura-Anwendungen verbunden sind",
-          "li1": "· Alle Funktionen",
-          "li2": "· Eigener Server, Microsoft 365 oder IMAP/SMTP",
-          "li3": "· Zentrale Anmeldung &amp; 2FA"
-        },
-        "b": {
-          "title": "Eigenständig",
-          "price": "CHF 15.–",
-          "sub": "pro Installation / Mt.",
-          "li1": "· Alle Funktionen",
-          "li2": "· Ohne weitere Aura-Anwendung"
-        },
-        "note": "Alle Preise sind Richtwerte exkl. MwSt."
+        "heading": "Enthalten in",
+        "text": "Business Solo (CHF 19.90 / Monat) und Business Advanced (ab 2 Benutzern). Nicht im Free Plan. 14 Tage kostenlos testen.",
+        "link": "Alle Pläne und Preise ansehen →",
+        "note": "Alle Preise exkl. MwSt. Hardware ist nicht Bestandteil der Lizenz."
       },
       "downloads": {
         "heading": "Anleitung herunterladen",
@@ -442,23 +444,10 @@ const translations = {
         }
       },
       "pricing": {
-        "heading": "Klein starten, mit dem Team wachsen.",
-        "a": {
-          "title": "Basis",
-          "price": "kostenlos",
-          "sub": "bis 3 Agent:innen / 1 Administrator:in",
-          "li1": "· Tickets aus E-Mails",
-          "li2": "· Antworten &amp; interne Notizen",
-          "li3": "· Steuerung per AuraChat"
-        },
-        "b": {
-          "title": "Erweitert",
-          "price": "auf Anfrage",
-          "sub": "mehr Agent:innen und Administrator:innen",
-          "li1": "· Alle Funktionen",
-          "li2": "· Obergrenzen pro Lizenzschlüssel"
-        },
-        "note": "14 Tage Testphase. Preise auf Anfrage — wir erstellen gern ein Angebot."
+        "heading": "Enthalten in",
+        "text": "Free Plan, Business Solo und Business Advanced. Im Free Plan für 1 Benutzer (private Nutzung).",
+        "link": "Alle Pläne und Preise ansehen →",
+        "note": "Alle Preise exkl. MwSt. Hardware ist nicht Bestandteil der Lizenz."
       },
       "downloads": {
         "heading": "Anleitung herunterladen",
@@ -512,23 +501,10 @@ const translations = {
         }
       },
       "pricing": {
-        "heading": "Kostenlos in Kombination.",
-        "a": {
-          "title": "Inklusive",
-          "price": "kostenlos",
-          "sub": "bis 4 Benutzer, oder sobald mindestens zwei Aura-Anwendungen verbunden sind",
-          "li1": "· Alle Funktionen",
-          "li2": "· Domains, Ports und Zertifikate",
-          "li3": "· Zentrale Anmeldung &amp; 2FA"
-        },
-        "b": {
-          "title": "Eigenständig",
-          "price": "CHF 15.–",
-          "sub": "pro Installation / Mt.",
-          "li1": "· Alle Funktionen",
-          "li2": "· Ohne weitere Aura-Anwendung"
-        },
-        "note": "Alle Preise sind Richtwerte exkl. MwSt."
+        "heading": "Enthalten in",
+        "text": "Immer kostenlos und in jedem Plan dabei, auch im Free Plan. Ohne Testphase und ohne Sperre.",
+        "link": "Alle Pläne und Preise ansehen →",
+        "note": "Alle Preise exkl. MwSt. Hardware ist nicht Bestandteil der Lizenz."
       },
       "downloads": {
         "heading": "Anleitung herunterladen",
@@ -582,23 +558,10 @@ const translations = {
         }
       },
       "pricing": {
-        "heading": "Erst testen, dann lizenzieren.",
-        "a": {
-          "title": "Testphase",
-          "price": "kostenlos",
-          "sub": "14 Tage, alle Funktionen",
-          "li1": "· Eingehende und ausgehende Anrufe",
-          "li2": "· Alle Sicherheitsfunktionen",
-          "li3": "· Danach mit Lizenz weiter"
-        },
-        "b": {
-          "title": "Lizenz",
-          "price": "auf Anfrage",
-          "sub": "pro Installation",
-          "li1": "· Alle Funktionen",
-          "li2": "· Voraussetzung: AuraChat mit Telefonie-Lizenz"
-        },
-        "note": "Nach der Testphase nimmt Aura ohne gültige Lizenz keine Anrufe mehr an. Telefonkosten des SIP-Anbieters kommen hinzu. Preise auf Anfrage — wir erstellen gern ein Angebot."
+        "heading": "Enthalten in",
+        "text": "Business Solo (CHF 19.90 / Monat) und Business Advanced (ab 2 Benutzern). Nicht im Free Plan. 14 Tage kostenlos testen. Telefonkosten des SIP-Anbieters kommen hinzu.",
+        "link": "Alle Pläne und Preise ansehen →",
+        "note": "Alle Preise exkl. MwSt. Hardware ist nicht Bestandteil der Lizenz."
       },
       "downloads": {
         "heading": "Anleitung herunterladen",
@@ -732,46 +695,87 @@ const translations = {
     },
     "academy": {
       "title": "Aura Academy: a model that's truly yours.",
-      "text": "At the top license tier, AuraChat automatically fine-tunes its own small AI model every night using your team's accumulated knowledge. No detour through third-party servers, no knowledge shared with other customers — just your own model, growing over time, that understands how your team works."
+      "text": "In Business Advanced, AuraChat automatically continues training its own small AI model every night with the insights your team has gathered. No detour via third-party servers, no knowledge shared with other customers — just your own model that grows over time and understands how you work."
     },
     "pricing": {
-      "heading": "A licensing model that grows with you.",
-      "sub": "Start for free, scale per seat — with separate prices for user and administrator accounts.",
-      "basic": {
-        "title": "Basic",
-        "price": "free",
-        "sub": "up to 3 users / 1 administrator",
-        "li1": "· Chat, default avatars, memory",
-        "li2": "· Personality, workspace",
-        "li3": "· Quizzes, chat export, reminders",
-        "li4": "· Basic integrations"
-      },
+      "heading": "Three plans. Clear and fair.",
+      "sub": "Free for personal use, fully equipped for businesses and teams.",
       "popular": "Popular",
-      "perUser": " / user / mo.",
-      "perUser2": " / user / mo.",
-      "pro": {
-        "title": "Pro",
-        "sub": "CHF 9.– per administrator / mo.",
-        "li1": "· Custom domain with SSL",
-        "li2": "· Speech input and output",
-        "li3": "· Custom avatars, image generation",
-        "li4": "· Coding model, second model",
-        "li5": "· Email integration, API access"
+      "perMonth": "/ month",
+      "free": {
+        "title": "Free Plan",
+        "audience": "Private individuals & hobby",
+        "price": "CHF 0",
+        "period": "forever",
+        "users": "Exactly 1 user (private use)",
+        "li1": "✓ AuraChat: basic features (standard AI assistance)",
+        "li2": "✓ AuraPlan: time tracking, shift & holiday planning",
+        "li3": "✓ AuraTicket: ticket system",
+        "li4": "– AuraMail and AuraCall not included"
       },
-      "academy": {
-        "title": "Academy",
-        "sub": "CHF 15.– per administrator / mo.",
-        "li1": "· Everything in Pro",
-        "li2": "· Aura Academy: your own trained model",
-        "li3": "· Custom logo &amp; icon (white label)"
+      "solo": {
+        "title": "Business Solo",
+        "audience": "Sole proprietors & freelancers",
+        "price": "CHF 19.90",
+        "period": "/ month",
+        "users": "1 business user with a commercial use licence",
+        "li1": "✓ All apps in the full version",
+        "li2": "✓ AuraChat with all advanced features",
+        "li3": "✓ AuraPlan and AuraTicket",
+        "li4": "✓ AuraMail: mail server integration",
+        "li5": "✓ AuraCall: connection for AI telephony"
       },
-      "note": "All prices are indicative, excl. VAT. User and administrator limits are set per license key."
+      "advanced": {
+        "title": "Business Advanced",
+        "audience": "Companies & teams",
+        "price": "CHF 19.90",
+        "period": "/ month for the 1st user",
+        "extra": "+ CHF 9.90 / month for each additional user",
+        "users": "From 2 users",
+        "li1": "✓ Full feature set of all apps",
+        "li2": "✓ AuraMail and AuraCall included",
+        "li3": "✓ Advanced permission management",
+        "li4": "✓ Team collaboration",
+        "li5": "✓ Aura Academy: your own trained model"
+      },
+      "example": {
+        "title": "Example: Business Advanced with 3 users",
+        "first": "1st user",
+        "extra": "2 additional users (2 × CHF 9.90)",
+        "total": "Total per month"
+      },
+      "table": {
+        "title": "Licence models at a glance",
+        "feature": "Feature / scope",
+        "audience": "Target group",
+        "users": "Users",
+        "price": "Price",
+        "apps": "Included apps",
+        "services": "Included services",
+        "freeUsers": "1 user",
+        "soloUsers": "1 user",
+        "advUsers": "From 2 users",
+        "freePrice": "CHF 0 / forever",
+        "soloPrice": "CHF 19.90 / month",
+        "advPrice": "CHF 19.90 (1st user) + CHF 9.90 / additional user / month",
+        "basic": "Basic features",
+        "full": "Full version",
+        "yes": "Yes",
+        "included": "Included",
+        "no": "–"
+      },
+      "services": "AuraDirect (central user management) and AuraProxy (reverse proxy with SSL) are included free of charge in every plan.",
+      "hardware": {
+        "title": "Hardware",
+        "text": "Hardware is not part of the licence. It is procured by the customer or can also be procured through Gerber Backoffice Solutions."
+      },
+      "note": "All prices excl. VAT. AuraMail and AuraCall can be tested free of charge for 14 days."
     },
     "hosting": {
       "heading": "Operated by you, or by us.",
       "self": {
         "title": "Self-Hosted",
-        "sub": "No additional costs, just the license",
+        "sub": "No extra costs, just your chosen plan",
         "li1": "Runs on your own hardware or NAS",
         "li2": "Data stays 100% with you",
         "li3": "Self-managed installation &amp; updates, documentation included",
@@ -780,7 +784,7 @@ const translations = {
       "cloud": {
         "title": "Cloud",
         "badge": "★ Not yet available",
-        "sub": "from CHF 29.– / month infrastructure fee",
+        "sub": "Price on request",
         "li1": "Fully operated by us",
         "li2": "Hosted on our cloud infrastructure (EU/CH)",
         "li3": "Installation &amp; ongoing updates included",
@@ -872,24 +876,10 @@ const translations = {
         }
       },
       "pricing": {
-        "heading": "A fair licensing model.",
-        "basic": {
-          "title": "Basic",
-          "price": "free",
-          "sub": "simple time tracking",
-          "li1": "· Clock in/out",
-          "li2": "· Manual entry",
-          "li3": "· Basic activity types"
-        },
-        "pro": {
-          "title": "Pro",
-          "sub": "CHF 3.50 per user / CHF 7.50 per admin / mo.",
-          "li1": "· Shift planning &amp; open shifts",
-          "li2": "· Vacation with colour timeline",
-          "li3": "· Overview &amp; notifications",
-          "li4": "· AuraChat widget &amp; voice commands"
-        },
-        "note": "All prices are indicative, excl. VAT."
+        "heading": "Included in",
+        "text": "Free Plan, Business Solo and Business Advanced. In the Free Plan for 1 user (private use).",
+        "link": "See all plans and prices →",
+        "note": "All prices excl. VAT. Hardware is not part of the licence."
       },
       "downloads": {
         "heading": "Download the guide",
@@ -932,22 +922,10 @@ const translations = {
         }
       },
       "pricing": {
-        "heading": "Free when combined.",
-        "included": {
-          "title": "Included",
-          "price": "free",
-          "sub": "up to 4 users, or as soon as at least two Aura applications are connected",
-          "li1": "· Central login",
-          "li2": "· Active Directory integration",
-          "li3": "· Central 2FA"
-        },
-        "standalone": {
-          "title": "Standalone",
-          "sub": "CHF 15.– per installation / mo.",
-          "li1": "· All features",
-          "li2": "· Without another Aura application"
-        },
-        "note": "All prices are indicative, excl. VAT."
+        "heading": "Included in",
+        "text": "Always free and part of every plan, including the Free Plan. No trial period, no lock.",
+        "link": "See all plans and prices →",
+        "note": "All prices excl. VAT. Hardware is not part of the licence."
       },
       "downloads": {
         "heading": "Download the guide",
@@ -967,11 +945,11 @@ const translations = {
       "lead": "AuraChat is the centre — alongside it come standalone products for time tracking, tickets, mail, telephone, user management and secure access from outside. Usable on their own, strongest together.",
       "apps": {
         "title": "Applications",
-        "sub": "AuraChat, AuraPlan, AuraTicket, AuraCall — with a trial period; the first three also with a free basic tier."
+        "sub": "AuraChat, AuraPlan, AuraTicket in the Free Plan (1 user); full versions with Business Solo or Advanced, plus AuraMail and AuraCall."
       },
       "services": {
         "title": "Services",
-        "sub": "AuraDirect, AuraMail, AuraProxy — free for up to 4 accounts or as soon as at least two applications are connected, otherwise CHF 15.– per installation / mo."
+        "sub": "AuraDirect and AuraProxy — always free and part of every plan."
       },
       "more": "Learn more →",
       "auraplan": "Time tracking, shift plan and vacation — by click or voice.",
@@ -1015,23 +993,10 @@ const translations = {
         }
       },
       "pricing": {
-        "heading": "Free when combined.",
-        "a": {
-          "title": "Included",
-          "price": "free",
-          "sub": "up to 4 users, or as soon as at least two Aura applications are connected",
-          "li1": "· All features",
-          "li2": "· Own server, Microsoft 365 or IMAP/SMTP",
-          "li3": "· Central login &amp; 2FA"
-        },
-        "b": {
-          "title": "Standalone",
-          "price": "CHF 15.–",
-          "sub": "per installation / mo.",
-          "li1": "· All features",
-          "li2": "· Without another Aura application"
-        },
-        "note": "All prices are indicative, excl. VAT."
+        "heading": "Included in",
+        "text": "Business Solo (CHF 19.90 / month) and Business Advanced (from 2 users). Not in the Free Plan. Try it free for 14 days.",
+        "link": "See all plans and prices →",
+        "note": "All prices excl. VAT. Hardware is not part of the licence."
       },
       "downloads": {
         "heading": "Download the guide",
@@ -1085,23 +1050,10 @@ const translations = {
         }
       },
       "pricing": {
-        "heading": "Start small, grow with your team.",
-        "a": {
-          "title": "Basic",
-          "price": "free",
-          "sub": "up to 3 agents / 1 administrator",
-          "li1": "· Tickets from email",
-          "li2": "· Replies &amp; internal notes",
-          "li3": "· Control via AuraChat"
-        },
-        "b": {
-          "title": "Extended",
-          "price": "on request",
-          "sub": "more agents and administrators",
-          "li1": "· All features",
-          "li2": "· Limits set per license key"
-        },
-        "note": "14-day trial. Prices on request — we are happy to prepare a quote."
+        "heading": "Included in",
+        "text": "Free Plan, Business Solo and Business Advanced. In the Free Plan for 1 user (private use).",
+        "link": "See all plans and prices →",
+        "note": "All prices excl. VAT. Hardware is not part of the licence."
       },
       "downloads": {
         "heading": "Download the guide",
@@ -1155,23 +1107,10 @@ const translations = {
         }
       },
       "pricing": {
-        "heading": "Free when combined.",
-        "a": {
-          "title": "Included",
-          "price": "free",
-          "sub": "up to 4 users, or as soon as at least two Aura applications are connected",
-          "li1": "· All features",
-          "li2": "· Domains, ports and certificates",
-          "li3": "· Central login &amp; 2FA"
-        },
-        "b": {
-          "title": "Standalone",
-          "price": "CHF 15.–",
-          "sub": "per installation / mo.",
-          "li1": "· All features",
-          "li2": "· Without another Aura application"
-        },
-        "note": "All prices are indicative, excl. VAT."
+        "heading": "Included in",
+        "text": "Always free and part of every plan, including the Free Plan. No trial period, no lock.",
+        "link": "See all plans and prices →",
+        "note": "All prices excl. VAT. Hardware is not part of the licence."
       },
       "downloads": {
         "heading": "Download the guide",
@@ -1225,23 +1164,10 @@ const translations = {
         }
       },
       "pricing": {
-        "heading": "Try first, then license.",
-        "a": {
-          "title": "Trial",
-          "price": "free",
-          "sub": "14 days, all features",
-          "li1": "· Incoming and outgoing calls",
-          "li2": "· All security features",
-          "li3": "· Continue afterwards with a licence"
-        },
-        "b": {
-          "title": "Licence",
-          "price": "on request",
-          "sub": "per installation",
-          "li1": "· All features",
-          "li2": "· Requires AuraChat with the telephony licence"
-        },
-        "note": "After the trial, Aura no longer answers calls without a valid licence. Phone charges from the SIP provider are extra. Prices on request — we are happy to prepare a quote."
+        "heading": "Included in",
+        "text": "Business Solo (CHF 19.90 / month) and Business Advanced (from 2 users). Not in the Free Plan. Try it free for 14 days. Call charges of the SIP provider are extra.",
+        "link": "See all plans and prices →",
+        "note": "All prices excl. VAT. Hardware is not part of the licence."
       },
       "downloads": {
         "heading": "Download the guide",
@@ -1375,46 +1301,87 @@ const translations = {
     },
     "academy": {
       "title": "Aura Academy : un modèle qui vous appartient vraiment.",
-      "text": "Au niveau de licence le plus élevé, AuraChat réentraîne automatiquement chaque nuit son propre petit modèle IA avec les connaissances accumulées par votre équipe. Aucun détour par des serveurs tiers, aucune connaissance partagée avec d'autres clients — juste votre propre modèle, qui grandit avec le temps et comprend comment votre équipe travaille."
+      "text": "Avec Business Advanced, AuraChat continue chaque nuit d’entraîner automatiquement son propre petit modèle d’IA avec les connaissances rassemblées par votre équipe. Aucun détour par des serveurs tiers, aucun savoir partagé avec d’autres clients — seulement votre propre modèle, qui grandit avec le temps et comprend votre façon de travailler."
     },
     "pricing": {
-      "heading": "Un modèle de licence qui grandit avec vous.",
-      "sub": "Démarrez gratuitement, évoluez par siège — avec des prix distincts pour les comptes utilisateurs et administrateurs.",
-      "basic": {
-        "title": "Basique",
-        "price": "gratuit",
-        "sub": "jusqu'à 3 utilisateurs / 1 administrateur",
-        "li1": "· Chat, avatars par défaut, mémoire",
-        "li2": "· Personnalité, espace de travail",
-        "li3": "· Quiz, export de chat, rappels",
-        "li4": "· Intégrations de base"
-      },
+      "heading": "Trois formules. Claires et équitables.",
+      "sub": "Gratuit pour un usage privé, entièrement équipé pour les entreprises et les équipes.",
       "popular": "Populaire",
-      "perUser": " / utilisateur / mois",
-      "perUser2": " / utilisateur / mois",
-      "pro": {
-        "title": "Pro",
-        "sub": "CHF 9.– par administrateur / mois",
-        "li1": "· Domaine personnalisé avec SSL",
-        "li2": "· Entrée et sortie vocale",
-        "li3": "· Avatars personnalisés, génération d'images",
-        "li4": "· Modèle de codage, second modèle",
-        "li5": "· Intégration e-mail, accès API"
+      "perMonth": "/ mois",
+      "free": {
+        "title": "Free Plan",
+        "audience": "Particuliers & loisirs",
+        "price": "CHF 0",
+        "period": "pour toujours",
+        "users": "Exactement 1 utilisateur (usage privé)",
+        "li1": "✓ AuraChat : fonctions de base (assistance IA standard)",
+        "li2": "✓ AuraPlan : saisie du temps, planification des équipes et des vacances",
+        "li3": "✓ AuraTicket : système de tickets",
+        "li4": "– AuraMail et AuraCall non inclus"
       },
-      "academy": {
-        "title": "Academy",
-        "sub": "CHF 15.– par administrateur / mois",
-        "li1": "· Tout ce qui est dans Pro",
-        "li2": "· Aura Academy : votre propre modèle entraîné",
-        "li3": "· Logo &amp; icône personnalisés (marque blanche)"
+      "solo": {
+        "title": "Business Solo",
+        "audience": "Entreprises individuelles & indépendants",
+        "price": "CHF 19.90",
+        "period": "/ mois",
+        "users": "1 utilisateur professionnel avec licence d’utilisation commerciale",
+        "li1": "✓ Toutes les applications en version complète",
+        "li2": "✓ AuraChat avec toutes les fonctions avancées",
+        "li3": "✓ AuraPlan et AuraTicket",
+        "li4": "✓ AuraMail : intégration du serveur de messagerie",
+        "li5": "✓ AuraCall : raccordement pour la téléphonie IA"
       },
-      "note": "Tous les prix sont indicatifs, hors TVA. Les limites d'utilisateurs et d'administrateurs sont définies par clé de licence."
+      "advanced": {
+        "title": "Business Advanced",
+        "audience": "Entreprises & équipes",
+        "price": "CHF 19.90",
+        "period": "/ mois pour le 1er utilisateur",
+        "extra": "+ CHF 9.90 / mois par utilisateur supplémentaire",
+        "users": "À partir de 2 utilisateurs",
+        "li1": "✓ Toutes les fonctions de toutes les applications",
+        "li2": "✓ AuraMail et AuraCall inclus",
+        "li3": "✓ Gestion avancée des droits",
+        "li4": "✓ Collaboration en équipe",
+        "li5": "✓ Aura Academy : votre propre modèle entraîné"
+      },
+      "example": {
+        "title": "Exemple : Business Advanced avec 3 utilisateurs",
+        "first": "1er utilisateur",
+        "extra": "2 utilisateurs supplémentaires (2 × CHF 9.90)",
+        "total": "Total par mois"
+      },
+      "table": {
+        "title": "Aperçu des modèles de licence",
+        "feature": "Fonction / étendue",
+        "audience": "Public cible",
+        "users": "Utilisateurs",
+        "price": "Prix",
+        "apps": "Applications incluses",
+        "services": "Services inclus",
+        "freeUsers": "1 utilisateur",
+        "soloUsers": "1 utilisateur",
+        "advUsers": "À partir de 2 utilisateurs",
+        "freePrice": "CHF 0 / pour toujours",
+        "soloPrice": "CHF 19.90 / mois",
+        "advPrice": "CHF 19.90 (1er utilisateur) + CHF 9.90 / utilisateur supplémentaire / mois",
+        "basic": "Fonctions de base",
+        "full": "Version complète",
+        "yes": "Oui",
+        "included": "Inclus",
+        "no": "–"
+      },
+      "services": "AuraDirect (gestion centrale des utilisateurs) et AuraProxy (reverse proxy avec SSL) sont inclus gratuitement dans chaque formule.",
+      "hardware": {
+        "title": "Matériel",
+        "text": "Le matériel ne fait pas partie de la licence. Il est acquis par le client ou peut aussi être fourni par Gerber Backoffice Solutions."
+      },
+      "note": "Tous les prix hors TVA. AuraMail et AuraCall peuvent être testés gratuitement pendant 14 jours."
     },
     "hosting": {
       "heading": "Géré par vous, ou par nous.",
       "self": {
         "title": "Auto-hébergé",
-        "sub": "Aucun coût supplémentaire, juste la licence",
+        "sub": "Aucun coût supplémentaire, seulement la formule choisie",
         "li1": "Fonctionne sur votre propre matériel ou NAS",
         "li2": "Les données restent à 100% chez vous",
         "li3": "Installation &amp; mises à jour en autonomie, documentation incluse",
@@ -1423,7 +1390,7 @@ const translations = {
       "cloud": {
         "title": "Cloud",
         "badge": "★ Pas encore disponible",
-        "sub": "à partir de CHF 29.– / mois frais d'infrastructure",
+        "sub": "Prix sur demande",
         "li1": "Entièrement géré par nous",
         "li2": "Hébergé dans notre infrastructure cloud (UE/CH)",
         "li3": "Installation &amp; mises à jour continues incluses",
@@ -1515,24 +1482,10 @@ const translations = {
         }
       },
       "pricing": {
-        "heading": "Un modèle de licence équitable.",
-        "basic": {
-          "title": "Basique",
-          "price": "gratuit",
-          "sub": "suivi du temps simple",
-          "li1": "· Pointage",
-          "li2": "· Saisie manuelle",
-          "li3": "· Types d'activité de base"
-        },
-        "pro": {
-          "title": "Pro",
-          "sub": "CHF 3.50 par utilisateur / CHF 7.50 par administrateur / mois",
-          "li1": "· Planification des équipes &amp; équipes ouvertes",
-          "li2": "· Vacances avec chronologie colorée",
-          "li3": "· Vue d'ensemble &amp; notifications",
-          "li4": "· Widget AuraChat &amp; commandes vocales"
-        },
-        "note": "Tous les prix sont indicatifs, hors TVA."
+        "heading": "Inclus dans",
+        "text": "Free Plan, Business Solo et Business Advanced. Dans le Free Plan pour 1 utilisateur (usage privé).",
+        "link": "Voir toutes les formules et tous les prix →",
+        "note": "Tous les prix hors TVA. Le matériel ne fait pas partie de la licence."
       },
       "downloads": {
         "heading": "Télécharger le guide",
@@ -1575,22 +1528,10 @@ const translations = {
         }
       },
       "pricing": {
-        "heading": "Gratuit en combinaison.",
-        "included": {
-          "title": "Inclus",
-          "price": "gratuit",
-          "sub": "jusqu'à 4 utilisateurs, ou dès que deux applications Aura au moins sont connectées",
-          "li1": "· Connexion centrale",
-          "li2": "· Intégration Active Directory",
-          "li3": "· 2FA centralisée"
-        },
-        "standalone": {
-          "title": "Autonome",
-          "sub": "CHF 15.– par installation / mois",
-          "li1": "· Toutes les fonctionnalités",
-          "li2": "· Sans autre application Aura"
-        },
-        "note": "Tous les prix sont indicatifs, hors TVA."
+        "heading": "Inclus dans",
+        "text": "Toujours gratuit et inclus dans chaque formule, y compris le Free Plan. Sans période d’essai ni blocage.",
+        "link": "Voir toutes les formules et tous les prix →",
+        "note": "Tous les prix hors TVA. Le matériel ne fait pas partie de la licence."
       },
       "downloads": {
         "heading": "Télécharger le guide",
@@ -1610,11 +1551,11 @@ const translations = {
       "lead": "AuraChat est le centre — viennent s'y ajouter des produits autonomes pour la saisie du temps, les tickets, la messagerie, le téléphone, la gestion des utilisateurs et l'accès sécurisé depuis l'extérieur. Utilisables seuls, plus forts ensemble.",
       "apps": {
         "title": "Applications",
-        "sub": "AuraChat, AuraPlan, AuraTicket, AuraCall — avec une période d'essai ; les trois premiers aussi avec un niveau de base gratuit."
+        "sub": "AuraChat, AuraPlan, AuraTicket dans le Free Plan (1 utilisateur) ; en version complète avec Business Solo ou Advanced, avec AuraMail et AuraCall en plus."
       },
       "services": {
         "title": "Services",
-        "sub": "AuraDirect, AuraMail, AuraProxy — gratuits jusqu'à 4 comptes ou dès que deux applications au moins sont connectées, sinon CHF 15.– par installation / mois."
+        "sub": "AuraDirect et AuraProxy — toujours gratuits et inclus dans chaque formule."
       },
       "more": "En savoir plus →",
       "auraplan": "Saisie du temps, planning et vacances — par clic ou à la voix.",
@@ -1658,23 +1599,10 @@ const translations = {
         }
       },
       "pricing": {
-        "heading": "Gratuit en combinaison.",
-        "a": {
-          "title": "Inclus",
-          "price": "gratuit",
-          "sub": "jusqu'à 4 utilisateurs, ou dès que deux applications Aura au moins sont connectées",
-          "li1": "· Toutes les fonctionnalités",
-          "li2": "· Serveur propre, Microsoft 365 ou IMAP/SMTP",
-          "li3": "· Connexion centrale et 2FA"
-        },
-        "b": {
-          "title": "Autonome",
-          "price": "CHF 15.–",
-          "sub": "par installation / mois",
-          "li1": "· Toutes les fonctionnalités",
-          "li2": "· Sans autre application Aura"
-        },
-        "note": "Tous les prix sont indicatifs, hors TVA."
+        "heading": "Inclus dans",
+        "text": "Business Solo (CHF 19.90 / mois) et Business Advanced (à partir de 2 utilisateurs). Pas dans le Free Plan. Essai gratuit de 14 jours.",
+        "link": "Voir toutes les formules et tous les prix →",
+        "note": "Tous les prix hors TVA. Le matériel ne fait pas partie de la licence."
       },
       "downloads": {
         "heading": "Télécharger le guide",
@@ -1728,23 +1656,10 @@ const translations = {
         }
       },
       "pricing": {
-        "heading": "Démarrer petit, grandir avec l'équipe.",
-        "a": {
-          "title": "Base",
-          "price": "gratuit",
-          "sub": "jusqu'à 3 agents / 1 administrateur",
-          "li1": "· Tickets à partir d'e-mails",
-          "li2": "· Réponses et notes internes",
-          "li3": "· Pilotage via AuraChat"
-        },
-        "b": {
-          "title": "Étendu",
-          "price": "sur demande",
-          "sub": "plus d'agents et d'administrateurs",
-          "li1": "· Toutes les fonctionnalités",
-          "li2": "· Limites définies par clé de licence"
-        },
-        "note": "14 jours d'essai. Prix sur demande — nous établissons volontiers une offre."
+        "heading": "Inclus dans",
+        "text": "Free Plan, Business Solo et Business Advanced. Dans le Free Plan pour 1 utilisateur (usage privé).",
+        "link": "Voir toutes les formules et tous les prix →",
+        "note": "Tous les prix hors TVA. Le matériel ne fait pas partie de la licence."
       },
       "downloads": {
         "heading": "Télécharger le guide",
@@ -1798,23 +1713,10 @@ const translations = {
         }
       },
       "pricing": {
-        "heading": "Gratuit en combinaison.",
-        "a": {
-          "title": "Inclus",
-          "price": "gratuit",
-          "sub": "jusqu'à 4 utilisateurs, ou dès que deux applications Aura au moins sont connectées",
-          "li1": "· Toutes les fonctionnalités",
-          "li2": "· Domaines, ports et certificats",
-          "li3": "· Connexion centrale et 2FA"
-        },
-        "b": {
-          "title": "Autonome",
-          "price": "CHF 15.–",
-          "sub": "par installation / mois",
-          "li1": "· Toutes les fonctionnalités",
-          "li2": "· Sans autre application Aura"
-        },
-        "note": "Tous les prix sont indicatifs, hors TVA."
+        "heading": "Inclus dans",
+        "text": "Toujours gratuit et inclus dans chaque formule, y compris le Free Plan. Sans période d’essai ni blocage.",
+        "link": "Voir toutes les formules et tous les prix →",
+        "note": "Tous les prix hors TVA. Le matériel ne fait pas partie de la licence."
       },
       "downloads": {
         "heading": "Télécharger le guide",
@@ -1868,23 +1770,10 @@ const translations = {
         }
       },
       "pricing": {
-        "heading": "D'abord tester, ensuite licencier.",
-        "a": {
-          "title": "Essai",
-          "price": "gratuit",
-          "sub": "14 jours, toutes les fonctions",
-          "li1": "· Appels entrants et sortants",
-          "li2": "· Toutes les fonctions de sécurité",
-          "li3": "· Ensuite, poursuite avec une licence"
-        },
-        "b": {
-          "title": "Licence",
-          "price": "sur demande",
-          "sub": "par installation",
-          "li1": "· Toutes les fonctions",
-          "li2": "· Prérequis : AuraChat avec la licence Téléphonie"
-        },
-        "note": "Après la période d'essai, Aura ne répond plus aux appels sans licence valide. Les frais téléphoniques de l'opérateur SIP s'y ajoutent. Prix sur demande — nous établissons volontiers une offre."
+        "heading": "Inclus dans",
+        "text": "Business Solo (CHF 19.90 / mois) et Business Advanced (à partir de 2 utilisateurs). Pas dans le Free Plan. Essai gratuit de 14 jours. Les frais téléphoniques du fournisseur SIP s’ajoutent.",
+        "link": "Voir toutes les formules et tous les prix →",
+        "note": "Tous les prix hors TVA. Le matériel ne fait pas partie de la licence."
       },
       "downloads": {
         "heading": "Télécharger le guide",
@@ -2018,46 +1907,87 @@ const translations = {
     },
     "academy": {
       "title": "Aura Academy: un modello che è davvero vostro.",
-      "text": "Al livello di licenza più alto, AuraChat riaddestra automaticamente ogni notte un proprio piccolo modello IA con le conoscenze accumulate dal vostro team. Nessuna deviazione verso server terzi, nessuna conoscenza condivisa con altri clienti — solo il vostro modello, che cresce nel tempo e capisce come lavora il vostro team."
+      "text": "Con Business Advanced, AuraChat continua ad addestrare automaticamente ogni notte un proprio piccolo modello di IA con le conoscenze raccolte dal vostro team. Nessuna deviazione su server di terzi, nessuna conoscenza condivisa con altri clienti — solo il vostro modello, che cresce nel tempo e capisce come lavorate."
     },
     "pricing": {
-      "heading": "Un modello di licenza che cresce con voi.",
-      "sub": "Iniziate gratis, ampliate per postazione — con prezzi distinti per account utente e amministratore.",
-      "basic": {
-        "title": "Base",
-        "price": "gratuito",
-        "sub": "fino a 3 utenti / 1 amministratore",
-        "li1": "· Chat, avatar predefiniti, memoria",
-        "li2": "· Personalità, workspace",
-        "li3": "· Quiz, esportazione chat, promemoria",
-        "li4": "· Integrazioni di base"
-      },
+      "heading": "Tre piani. Chiari ed equi.",
+      "sub": "Gratuito per l’uso privato, completo per aziende e team.",
       "popular": "Popolare",
-      "perUser": " / utente / mese",
-      "perUser2": " / utente / mese",
-      "pro": {
-        "title": "Pro",
-        "sub": "CHF 9.– per amministratore / mese",
-        "li1": "· Dominio personalizzato con SSL",
-        "li2": "· Input e output vocale",
-        "li3": "· Avatar personalizzati, generazione immagini",
-        "li4": "· Modello di coding, secondo modello",
-        "li5": "· Integrazione e-mail, accesso API"
+      "perMonth": "/ mese",
+      "free": {
+        "title": "Free Plan",
+        "audience": "Privati & hobby",
+        "price": "CHF 0",
+        "period": "per sempre",
+        "users": "Esattamente 1 utente (uso privato)",
+        "li1": "✓ AuraChat: funzioni di base (assistenza IA standard)",
+        "li2": "✓ AuraPlan: rilevazione presenze, pianificazione turni e ferie",
+        "li3": "✓ AuraTicket: sistema di ticket",
+        "li4": "– AuraMail e AuraCall non inclusi"
       },
-      "academy": {
-        "title": "Academy",
-        "sub": "CHF 15.– per amministratore / mese",
-        "li1": "· Tutto quanto in Pro",
-        "li2": "· Aura Academy: proprio modello addestrato",
-        "li3": "· Logo &amp; icona propri (white label)"
+      "solo": {
+        "title": "Business Solo",
+        "audience": "Ditte individuali & lavoratori autonomi",
+        "price": "CHF 19.90",
+        "period": "/ mese",
+        "users": "1 utente business con licenza d’uso commerciale",
+        "li1": "✓ Tutte le app nella versione completa",
+        "li2": "✓ AuraChat con tutte le funzioni avanzate",
+        "li3": "✓ AuraPlan e AuraTicket",
+        "li4": "✓ AuraMail: integrazione del server di posta",
+        "li5": "✓ AuraCall: collegamento per la telefonia IA"
       },
-      "note": "Tutti i prezzi sono indicativi, IVA esclusa. I limiti di utenti e amministratori sono impostati per chiave di licenza."
+      "advanced": {
+        "title": "Business Advanced",
+        "audience": "Aziende & team",
+        "price": "CHF 19.90",
+        "period": "/ mese per il 1° utente",
+        "extra": "+ CHF 9.90 / mese per ogni utente aggiuntivo",
+        "users": "Da 2 utenti",
+        "li1": "✓ Funzionalità complete di tutte le app",
+        "li2": "✓ AuraMail e AuraCall inclusi",
+        "li3": "✓ Gestione avanzata dei permessi",
+        "li4": "✓ Collaborazione nel team",
+        "li5": "✓ Aura Academy: il vostro modello addestrato"
+      },
+      "example": {
+        "title": "Esempio: Business Advanced con 3 utenti",
+        "first": "1° utente",
+        "extra": "2 utenti aggiuntivi (2 × CHF 9.90)",
+        "total": "Totale al mese"
+      },
+      "table": {
+        "title": "Panoramica dei modelli di licenza",
+        "feature": "Funzione / ambito",
+        "audience": "Destinatari",
+        "users": "Utenti",
+        "price": "Prezzo",
+        "apps": "App incluse",
+        "services": "Servizi inclusi",
+        "freeUsers": "1 utente",
+        "soloUsers": "1 utente",
+        "advUsers": "Da 2 utenti",
+        "freePrice": "CHF 0 / per sempre",
+        "soloPrice": "CHF 19.90 / mese",
+        "advPrice": "CHF 19.90 (1° utente) + CHF 9.90 / utente aggiuntivo / mese",
+        "basic": "Funzioni di base",
+        "full": "Versione completa",
+        "yes": "Sì",
+        "included": "Incluso",
+        "no": "–"
+      },
+      "services": "AuraDirect (gestione centrale degli utenti) e AuraProxy (reverse proxy con SSL) sono inclusi gratuitamente in ogni piano.",
+      "hardware": {
+        "title": "Hardware",
+        "text": "L’hardware non fa parte della licenza. Viene acquistato dal cliente oppure può essere fornito da Gerber Backoffice Solutions."
+      },
+      "note": "Tutti i prezzi IVA esclusa. AuraMail e AuraCall si possono provare gratuitamente per 14 giorni."
     },
     "hosting": {
       "heading": "Gestito da voi, o da noi.",
       "self": {
         "title": "Self-Hosted",
-        "sub": "Nessun costo aggiuntivo, solo la licenza",
+        "sub": "Nessun costo aggiuntivo, solo il piano scelto",
         "li1": "Funziona sul proprio hardware o NAS",
         "li2": "I dati restano al 100% presso di voi",
         "li3": "Installazione &amp; aggiornamenti in autonomia, documentazione inclusa",
@@ -2066,7 +1996,7 @@ const translations = {
       "cloud": {
         "title": "Cloud",
         "badge": "★ Non ancora disponibile",
-        "sub": "da CHF 29.– / mese canone infrastruttura",
+        "sub": "Prezzo su richiesta",
         "li1": "Gestito interamente da noi",
         "li2": "Ospitato nella nostra infrastruttura cloud (UE/CH)",
         "li3": "Installazione &amp; aggiornamenti continui inclusi",
@@ -2158,24 +2088,10 @@ const translations = {
         }
       },
       "pricing": {
-        "heading": "Un modello di licenza equo.",
-        "basic": {
-          "title": "Base",
-          "price": "gratuito",
-          "sub": "rilevazione orari semplice",
-          "li1": "· Timbratura",
-          "li2": "· Inserimento manuale",
-          "li3": "· Tipi di attività di base"
-        },
-        "pro": {
-          "title": "Pro",
-          "sub": "CHF 3.50 per utente / CHF 7.50 per amministratore / mese",
-          "li1": "· Pianificazione turni e turni aperti",
-          "li2": "· Ferie con cronologia colorata",
-          "li3": "· Panoramica e notifiche",
-          "li4": "· Widget AuraChat e comandi vocali"
-        },
-        "note": "Tutti i prezzi sono indicativi, IVA esclusa."
+        "heading": "Incluso in",
+        "text": "Free Plan, Business Solo e Business Advanced. Nel Free Plan per 1 utente (uso privato).",
+        "link": "Vedi tutti i piani e i prezzi →",
+        "note": "Tutti i prezzi IVA esclusa. L’hardware non fa parte della licenza."
       },
       "downloads": {
         "heading": "Scarica la guida",
@@ -2218,22 +2134,10 @@ const translations = {
         }
       },
       "pricing": {
-        "heading": "Gratuito in combinazione.",
-        "included": {
-          "title": "Incluso",
-          "price": "gratuito",
-          "sub": "fino a 4 utenti, oppure non appena sono collegate almeno due applicazioni Aura",
-          "li1": "· Accesso centrale",
-          "li2": "· Integrazione Active Directory",
-          "li3": "· 2FA centralizzata"
-        },
-        "standalone": {
-          "title": "Indipendente",
-          "sub": "CHF 15.– per installazione / mese",
-          "li1": "· Tutte le funzionalità",
-          "li2": "· Senza altra applicazione Aura"
-        },
-        "note": "Tutti i prezzi sono indicativi, IVA esclusa."
+        "heading": "Incluso in",
+        "text": "Sempre gratuito e incluso in ogni piano, anche nel Free Plan. Senza periodo di prova e senza blocco.",
+        "link": "Vedi tutti i piani e i prezzi →",
+        "note": "Tutti i prezzi IVA esclusa. L’hardware non fa parte della licenza."
       },
       "downloads": {
         "heading": "Scarica la guida",
@@ -2253,11 +2157,11 @@ const translations = {
       "lead": "AuraChat è il centro — a esso si aggiungono prodotti autonomi per la rilevazione delle ore, i ticket, la posta, il telefono, la gestione utenti e l'accesso sicuro dall'esterno. Utilizzabili da soli, più forti insieme.",
       "apps": {
         "title": "Applicazioni",
-        "sub": "AuraChat, AuraPlan, AuraTicket, AuraCall — con un periodo di prova; i primi tre anche con un livello base gratuito."
+        "sub": "AuraChat, AuraPlan, AuraTicket nel Free Plan (1 utente); in versione completa con Business Solo o Advanced, in più AuraMail e AuraCall."
       },
       "services": {
         "title": "Servizi",
-        "sub": "AuraDirect, AuraMail, AuraProxy — gratuiti fino a 4 account o non appena sono collegate almeno due applicazioni, altrimenti CHF 15.– per installazione / mese."
+        "sub": "AuraDirect e AuraProxy — sempre gratuiti e inclusi in ogni piano."
       },
       "more": "Scopri di più →",
       "auraplan": "Rilevazione ore, piano turni e ferie — con un clic o a voce.",
@@ -2301,23 +2205,10 @@ const translations = {
         }
       },
       "pricing": {
-        "heading": "Gratuito in combinazione.",
-        "a": {
-          "title": "Incluso",
-          "price": "gratuito",
-          "sub": "fino a 4 utenti, oppure non appena sono collegate almeno due applicazioni Aura",
-          "li1": "· Tutte le funzionalità",
-          "li2": "· Server proprio, Microsoft 365 o IMAP/SMTP",
-          "li3": "· Accesso centrale e 2FA"
-        },
-        "b": {
-          "title": "Indipendente",
-          "price": "CHF 15.–",
-          "sub": "per installazione / mese",
-          "li1": "· Tutte le funzionalità",
-          "li2": "· Senza altra applicazione Aura"
-        },
-        "note": "Tutti i prezzi sono indicativi, IVA esclusa."
+        "heading": "Incluso in",
+        "text": "Business Solo (CHF 19.90 / mese) e Business Advanced (da 2 utenti). Non nel Free Plan. Prova gratuita di 14 giorni.",
+        "link": "Vedi tutti i piani e i prezzi →",
+        "note": "Tutti i prezzi IVA esclusa. L’hardware non fa parte della licenza."
       },
       "downloads": {
         "heading": "Scarica la guida",
@@ -2371,23 +2262,10 @@ const translations = {
         }
       },
       "pricing": {
-        "heading": "Partire in piccolo, crescere con il team.",
-        "a": {
-          "title": "Base",
-          "price": "gratuito",
-          "sub": "fino a 3 agenti / 1 amministratore",
-          "li1": "· Ticket dalle e-mail",
-          "li2": "· Risposte e note interne",
-          "li3": "· Controllo tramite AuraChat"
-        },
-        "b": {
-          "title": "Esteso",
-          "price": "su richiesta",
-          "sub": "più agenti e amministratori",
-          "li1": "· Tutte le funzionalità",
-          "li2": "· Limiti definiti per chiave di licenza"
-        },
-        "note": "14 giorni di prova. Prezzi su richiesta — prepariamo volentieri un'offerta."
+        "heading": "Incluso in",
+        "text": "Free Plan, Business Solo e Business Advanced. Nel Free Plan per 1 utente (uso privato).",
+        "link": "Vedi tutti i piani e i prezzi →",
+        "note": "Tutti i prezzi IVA esclusa. L’hardware non fa parte della licenza."
       },
       "downloads": {
         "heading": "Scarica la guida",
@@ -2441,23 +2319,10 @@ const translations = {
         }
       },
       "pricing": {
-        "heading": "Gratuito in combinazione.",
-        "a": {
-          "title": "Incluso",
-          "price": "gratuito",
-          "sub": "fino a 4 utenti, oppure non appena sono collegate almeno due applicazioni Aura",
-          "li1": "· Tutte le funzionalità",
-          "li2": "· Domini, porte e certificati",
-          "li3": "· Accesso centrale e 2FA"
-        },
-        "b": {
-          "title": "Indipendente",
-          "price": "CHF 15.–",
-          "sub": "per installazione / mese",
-          "li1": "· Tutte le funzionalità",
-          "li2": "· Senza altra applicazione Aura"
-        },
-        "note": "Tutti i prezzi sono indicativi, IVA esclusa."
+        "heading": "Incluso in",
+        "text": "Sempre gratuito e incluso in ogni piano, anche nel Free Plan. Senza periodo di prova e senza blocco.",
+        "link": "Vedi tutti i piani e i prezzi →",
+        "note": "Tutti i prezzi IVA esclusa. L’hardware non fa parte della licenza."
       },
       "downloads": {
         "heading": "Scarica la guida",
@@ -2511,23 +2376,10 @@ const translations = {
         }
       },
       "pricing": {
-        "heading": "Prima provare, poi acquistare la licenza.",
-        "a": {
-          "title": "Prova",
-          "price": "gratuita",
-          "sub": "14 giorni, tutte le funzioni",
-          "li1": "· Chiamate in entrata e in uscita",
-          "li2": "· Tutte le funzioni di sicurezza",
-          "li3": "· Poi si prosegue con una licenza"
-        },
-        "b": {
-          "title": "Licenza",
-          "price": "su richiesta",
-          "sub": "per installazione",
-          "li1": "· Tutte le funzioni",
-          "li2": "· Requisito: AuraChat con la licenza Telefonia"
-        },
-        "note": "Terminata la prova, senza licenza valida Aura non risponde più alle chiamate. I costi telefonici del provider SIP sono a parte. Prezzi su richiesta — prepariamo volentieri un'offerta."
+        "heading": "Incluso in",
+        "text": "Business Solo (CHF 19.90 / mese) e Business Advanced (da 2 utenti). Non nel Free Plan. Prova gratuita di 14 giorni. I costi telefonici del provider SIP sono a parte.",
+        "link": "Vedi tutti i piani e i prezzi →",
+        "note": "Tutti i prezzi IVA esclusa. L’hardware non fa parte della licenza."
       },
       "downloads": {
         "heading": "Scarica la guida",
@@ -2661,46 +2513,87 @@ const translations = {
     },
     "academy": {
       "title": "Aura Academy: un modelo que de verdad es tuyo.",
-      "text": "En el nivel de licencia más alto, AuraChat reentrena automáticamente cada noche su propio modelo de IA pequeño con el conocimiento acumulado de tu equipo. Sin desvíos por servidores de terceros, sin conocimiento compartido con otros clientes — solo tu propio modelo, que crece con el tiempo y entiende cómo trabaja tu equipo."
+      "text": "Con Business Advanced, AuraChat sigue entrenando automáticamente cada noche su propio pequeño modelo de IA con los conocimientos reunidos por vuestro equipo. Sin pasar por servidores ajenos, sin compartir conocimiento con otros clientes — solo vuestro propio modelo, que crece con el tiempo y entiende cómo trabajáis."
     },
     "pricing": {
-      "heading": "Un modelo de licencias que crece contigo.",
-      "sub": "Empieza gratis, amplía por puesto — con precios independientes para cuentas de usuario y administrador.",
-      "basic": {
-        "title": "Básico",
-        "price": "gratis",
-        "sub": "hasta 3 usuarios / 1 administrador",
-        "li1": "· Chat, avatares predeterminados, memoria",
-        "li2": "· Personalidad, espacio de trabajo",
-        "li3": "· Cuestionarios, exportación de chat, recordatorios",
-        "li4": "· Integraciones básicas"
-      },
+      "heading": "Tres planes. Claros y justos.",
+      "sub": "Gratis para uso personal, completo para empresas y equipos.",
       "popular": "Popular",
-      "perUser": " / usuario / mes",
-      "perUser2": " / usuario / mes",
-      "pro": {
-        "title": "Pro",
-        "sub": "CHF 9.– por administrador / mes",
-        "li1": "· Dominio propio con SSL",
-        "li2": "· Entrada y salida de voz",
-        "li3": "· Avatares propios, generación de imágenes",
-        "li4": "· Modelo de programación, segundo modelo",
-        "li5": "· Integración de correo, acceso API"
+      "perMonth": "/ mes",
+      "free": {
+        "title": "Free Plan",
+        "audience": "Particulares & hobby",
+        "price": "CHF 0",
+        "period": "para siempre",
+        "users": "Exactamente 1 usuario (uso privado)",
+        "li1": "✓ AuraChat: funciones básicas (asistencia IA estándar)",
+        "li2": "✓ AuraPlan: control horario, planificación de turnos y vacaciones",
+        "li3": "✓ AuraTicket: sistema de tickets",
+        "li4": "– AuraMail y AuraCall no incluidos"
       },
-      "academy": {
-        "title": "Academy",
-        "sub": "CHF 15.– por administrador / mes",
-        "li1": "· Todo lo de Pro",
-        "li2": "· Aura Academy: tu propio modelo entrenado",
-        "li3": "· Logotipo &amp; icono propios (marca blanca)"
+      "solo": {
+        "title": "Business Solo",
+        "audience": "Empresas unipersonales & autónomos",
+        "price": "CHF 19.90",
+        "period": "/ mes",
+        "users": "1 usuario profesional con licencia de uso comercial",
+        "li1": "✓ Todas las apps en versión completa",
+        "li2": "✓ AuraChat con todas las funciones avanzadas",
+        "li3": "✓ AuraPlan y AuraTicket",
+        "li4": "✓ AuraMail: integración del servidor de correo",
+        "li5": "✓ AuraCall: conexión para telefonía con IA"
       },
-      "note": "Todos los precios son orientativos, sin IVA. Los límites de usuarios y administradores se establecen por clave de licencia."
+      "advanced": {
+        "title": "Business Advanced",
+        "audience": "Empresas & equipos",
+        "price": "CHF 19.90",
+        "period": "/ mes por el 1.er usuario",
+        "extra": "+ CHF 9.90 / mes por cada usuario adicional",
+        "users": "Desde 2 usuarios",
+        "li1": "✓ Todas las funciones de todas las apps",
+        "li2": "✓ AuraMail y AuraCall incluidos",
+        "li3": "✓ Gestión avanzada de permisos",
+        "li4": "✓ Colaboración en equipo",
+        "li5": "✓ Aura Academy: vuestro propio modelo entrenado"
+      },
+      "example": {
+        "title": "Ejemplo: Business Advanced con 3 usuarios",
+        "first": "1.er usuario",
+        "extra": "2 usuarios adicionales (2 × CHF 9.90)",
+        "total": "Total al mes"
+      },
+      "table": {
+        "title": "Resumen de los modelos de licencia",
+        "feature": "Función / alcance",
+        "audience": "Público",
+        "users": "Usuarios",
+        "price": "Precio",
+        "apps": "Apps incluidas",
+        "services": "Servicios incluidos",
+        "freeUsers": "1 usuario",
+        "soloUsers": "1 usuario",
+        "advUsers": "Desde 2 usuarios",
+        "freePrice": "CHF 0 / para siempre",
+        "soloPrice": "CHF 19.90 / mes",
+        "advPrice": "CHF 19.90 (1.er usuario) + CHF 9.90 / usuario adicional / mes",
+        "basic": "Funciones básicas",
+        "full": "Versión completa",
+        "yes": "Sí",
+        "included": "Incluido",
+        "no": "–"
+      },
+      "services": "AuraDirect (gestión central de usuarios) y AuraProxy (proxy inverso con SSL) están incluidos gratis en todos los planes.",
+      "hardware": {
+        "title": "Hardware",
+        "text": "El hardware no forma parte de la licencia. Lo adquiere el cliente o también puede suministrarlo Gerber Backoffice Solutions."
+      },
+      "note": "Todos los precios sin IVA. AuraMail y AuraCall se pueden probar gratis durante 14 días."
     },
     "hosting": {
       "heading": "Operado por ti, o por nosotros.",
       "self": {
         "title": "Autoalojado",
-        "sub": "Sin costes adicionales, solo la licencia",
+        "sub": "Sin costes adicionales, solo el plan elegido",
         "li1": "Funciona en tu propio hardware o NAS",
         "li2": "Los datos se quedan 100% contigo",
         "li3": "Instalación y actualizaciones autónomas, documentación incluida",
@@ -2709,7 +2602,7 @@ const translations = {
       "cloud": {
         "title": "Nube",
         "badge": "★ Aún no disponible",
-        "sub": "desde CHF 29.– / mes cuota de infraestructura",
+        "sub": "Precio a consultar",
         "li1": "Operado íntegramente por nosotros",
         "li2": "Alojado en nuestra infraestructura en la nube (UE/CH)",
         "li3": "Instalación y actualizaciones continuas incluidas",
@@ -2801,24 +2694,10 @@ const translations = {
         }
       },
       "pricing": {
-        "heading": "Un modelo de licencias justo.",
-        "basic": {
-          "title": "Básico",
-          "price": "gratis",
-          "sub": "registro de horas simple",
-          "li1": "· Fichar",
-          "li2": "· Registro manual",
-          "li3": "· Tipos de actividad básicos"
-        },
-        "pro": {
-          "title": "Pro",
-          "sub": "CHF 3.50 por usuario / CHF 7.50 por administrador / mes",
-          "li1": "· Planificación de turnos y turnos abiertos",
-          "li2": "· Vacaciones con cronología de colores",
-          "li3": "· Resumen y notificaciones",
-          "li4": "· Widget de AuraChat y comandos de voz"
-        },
-        "note": "Todos los precios son orientativos, sin IVA."
+        "heading": "Incluido en",
+        "text": "Free Plan, Business Solo y Business Advanced. En el Free Plan para 1 usuario (uso privado).",
+        "link": "Ver todos los planes y precios →",
+        "note": "Todos los precios sin IVA. El hardware no forma parte de la licencia."
       },
       "downloads": {
         "heading": "Descargar la guía",
@@ -2861,22 +2740,10 @@ const translations = {
         }
       },
       "pricing": {
-        "heading": "Gratis en combinación.",
-        "included": {
-          "title": "Incluido",
-          "price": "gratis",
-          "sub": "hasta 4 usuarios, o en cuanto haya al menos dos aplicaciones Aura conectadas",
-          "li1": "· Inicio de sesión central",
-          "li2": "· Integración con Active Directory",
-          "li3": "· 2FA centralizada"
-        },
-        "standalone": {
-          "title": "Independiente",
-          "sub": "CHF 15.– por instalación / mes",
-          "li1": "· Todas las funciones",
-          "li2": "· Sin otra aplicación Aura"
-        },
-        "note": "Todos los precios son orientativos, sin IVA."
+        "heading": "Incluido en",
+        "text": "Siempre gratis e incluido en todos los planes, también en el Free Plan. Sin periodo de prueba ni bloqueo.",
+        "link": "Ver todos los planes y precios →",
+        "note": "Todos los precios sin IVA. El hardware no forma parte de la licencia."
       },
       "downloads": {
         "heading": "Descargar la guía",
@@ -2896,11 +2763,11 @@ const translations = {
       "lead": "AuraChat es el centro — a su lado hay productos independientes para el control horario, tickets, correo, teléfono, gestión de usuarios y acceso seguro desde fuera. Utilizables por separado, más fuertes juntos.",
       "apps": {
         "title": "Aplicaciones",
-        "sub": "AuraChat, AuraPlan, AuraTicket, AuraCall — con un periodo de prueba; los tres primeros también con un nivel básico gratuito."
+        "sub": "AuraChat, AuraPlan, AuraTicket en el Free Plan (1 usuario); en versión completa con Business Solo o Advanced, además de AuraMail y AuraCall."
       },
       "services": {
         "title": "Servicios",
-        "sub": "AuraDirect, AuraMail, AuraProxy — gratis hasta 4 cuentas o en cuanto haya al menos dos aplicaciones conectadas; si no, CHF 15.– por instalación / mes."
+        "sub": "AuraDirect y AuraProxy — siempre gratis e incluidos en todos los planes."
       },
       "more": "Saber más →",
       "auraplan": "Control horario, turnos y vacaciones — con un clic o por voz.",
@@ -2944,23 +2811,10 @@ const translations = {
         }
       },
       "pricing": {
-        "heading": "Gratis en combinación.",
-        "a": {
-          "title": "Incluido",
-          "price": "gratis",
-          "sub": "hasta 4 usuarios, o en cuanto haya al menos dos aplicaciones Aura conectadas",
-          "li1": "· Todas las funciones",
-          "li2": "· Servidor propio, Microsoft 365 o IMAP/SMTP",
-          "li3": "· Acceso central y 2FA"
-        },
-        "b": {
-          "title": "Independiente",
-          "price": "CHF 15.–",
-          "sub": "por instalación / mes",
-          "li1": "· Todas las funciones",
-          "li2": "· Sin otra aplicación Aura"
-        },
-        "note": "Todos los precios son orientativos, sin IVA."
+        "heading": "Incluido en",
+        "text": "Business Solo (CHF 19.90 / mes) y Business Advanced (desde 2 usuarios). No incluido en el Free Plan. Prueba gratis de 14 días.",
+        "link": "Ver todos los planes y precios →",
+        "note": "Todos los precios sin IVA. El hardware no forma parte de la licencia."
       },
       "downloads": {
         "heading": "Descargar la guía",
@@ -3014,23 +2868,10 @@ const translations = {
         }
       },
       "pricing": {
-        "heading": "Empezar en pequeño, crecer con el equipo.",
-        "a": {
-          "title": "Básico",
-          "price": "gratis",
-          "sub": "hasta 3 agentes / 1 administrador",
-          "li1": "· Tickets a partir de correos",
-          "li2": "· Respuestas y notas internas",
-          "li3": "· Control mediante AuraChat"
-        },
-        "b": {
-          "title": "Ampliado",
-          "price": "bajo consulta",
-          "sub": "más agentes y administradores",
-          "li1": "· Todas las funciones",
-          "li2": "· Límites definidos por clave de licencia"
-        },
-        "note": "14 días de prueba. Precios bajo consulta — con gusto preparamos una oferta."
+        "heading": "Incluido en",
+        "text": "Free Plan, Business Solo y Business Advanced. En el Free Plan para 1 usuario (uso privado).",
+        "link": "Ver todos los planes y precios →",
+        "note": "Todos los precios sin IVA. El hardware no forma parte de la licencia."
       },
       "downloads": {
         "heading": "Descargar la guía",
@@ -3084,23 +2925,10 @@ const translations = {
         }
       },
       "pricing": {
-        "heading": "Gratis en combinación.",
-        "a": {
-          "title": "Incluido",
-          "price": "gratis",
-          "sub": "hasta 4 usuarios, o en cuanto haya al menos dos aplicaciones Aura conectadas",
-          "li1": "· Todas las funciones",
-          "li2": "· Dominios, puertos y certificados",
-          "li3": "· Acceso central y 2FA"
-        },
-        "b": {
-          "title": "Independiente",
-          "price": "CHF 15.–",
-          "sub": "por instalación / mes",
-          "li1": "· Todas las funciones",
-          "li2": "· Sin otra aplicación Aura"
-        },
-        "note": "Todos los precios son orientativos, sin IVA."
+        "heading": "Incluido en",
+        "text": "Siempre gratis e incluido en todos los planes, también en el Free Plan. Sin periodo de prueba ni bloqueo.",
+        "link": "Ver todos los planes y precios →",
+        "note": "Todos los precios sin IVA. El hardware no forma parte de la licencia."
       },
       "downloads": {
         "heading": "Descargar la guía",
@@ -3154,23 +2982,10 @@ const translations = {
         }
       },
       "pricing": {
-        "heading": "Primero probar, después licenciar.",
-        "a": {
-          "title": "Prueba",
-          "price": "gratis",
-          "sub": "14 días, todas las funciones",
-          "li1": "· Llamadas entrantes y salientes",
-          "li2": "· Todas las funciones de seguridad",
-          "li3": "· Después se continúa con una licencia"
-        },
-        "b": {
-          "title": "Licencia",
-          "price": "bajo consulta",
-          "sub": "por instalación",
-          "li1": "· Todas las funciones",
-          "li2": "· Requisito: AuraChat con la licencia de telefonía"
-        },
-        "note": "Terminada la prueba, sin licencia válida Aura ya no atiende llamadas. Los costes telefónicos del proveedor SIP se suman. Precios bajo consulta — con gusto preparamos una oferta."
+        "heading": "Incluido en",
+        "text": "Business Solo (CHF 19.90 / mes) y Business Advanced (desde 2 usuarios). No incluido en el Free Plan. Prueba gratis de 14 días. Los costes de llamadas del proveedor SIP se cobran aparte.",
+        "link": "Ver todos los planes y precios →",
+        "note": "Todos los precios sin IVA. El hardware no forma parte de la licencia."
       },
       "downloads": {
         "heading": "Descargar la guía",

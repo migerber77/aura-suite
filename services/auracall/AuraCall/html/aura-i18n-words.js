@@ -143,6 +143,12 @@
   "fr": "Dernière version",
   "es": "Última versión"
  },
+ "wird beim nächsten Abgleich mit dem Lizenzserver übernommen": {
+  "en": "will be taken over at the next sync with the licence server",
+  "it": "verrà ripresa alla prossima sincronizzazione con il server delle licenze",
+  "fr": "sera reprise lors de la prochaine synchronisation avec le serveur de licences",
+  "es": "se aplicará en la próxima sincronización con el servidor de licencias"
+ },
  "Update verfügbar": {
   "en": "Update available",
   "it": "Aggiornamento disponibile",

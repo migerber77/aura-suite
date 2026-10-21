@@ -1,7 +1,7 @@
 'use strict';
 /* Lizenz von AuraCall: gleiches Verfahren wie bei den anderen Aura-Produkten.
  *  - Der Lizenzschlüssel ("<Daten>.<Signatur>") wird OFFLINE geprüft: Signatur mit LICENSE_SECRET (derselbe Wert wie beim Lizenzserver), Produkt "auracall", Ablaufdatum.
- *  - 14 Tage Probezeit ab dem ersten Start; danach braucht es eine gültige Lizenz. (AuraCall zählt als "Anwendung": keine Gratis-Regel wie bei den Diensten AuraDirect/AuraMail.)
+ *  - 14 Tage Probezeit ab dem ersten Start; danach braucht es eine gültige Lizenz (enthalten in Business Solo und Business Advanced). Im Free Plan ist AuraCall nicht enthalten: keine Gratis-Stufe.
  *  - Rückmeldung (Check-in) beim Lizenzserver wie bei AuraChat: alle 12 Stunden, nach jeder Änderung des Schlüssels, bei Netzproblemen mit Wiederholungen.
  *    Gesendet werden NUR: Lizenzschlüssel (oder leer), zufällige Installationskennung, Programmversion, Zahl der Konten. Nie Anrufe, Rufnummern oder Gesprächsinhalte. */
 const crypto = require('crypto');
@@ -18,7 +18,7 @@ function verifyKey(key, secret, now = Date.now()) {
     if (got.length !== expected.length || !crypto.timingSafeEqual(got, expected)) return { valid: false, error: 'Die Lizenzsignatur ist ungültig (falscher Schlüssel oder LICENSE_SECRET stimmt nicht mit dem Lizenzserver überein).' };
     let payload; try { payload = JSON.parse(Buffer.from(parts[0], 'base64url').toString('utf8')); } catch { return { valid: false, error: 'Die Lizenzdaten sind beschädigt.' }; }
     if (!payload || typeof payload !== 'object' || Array.isArray(payload)) return { valid: false, error: 'Die Lizenzdaten sind beschädigt.' };
-    if (payload.product !== PRODUCT) return { valid: false, error: 'Diese Lizenz ist nicht für AuraCall ausgestellt.' };
+    if (payload.product !== PRODUCT && payload.product !== 'suite') return { valid: false, error: 'Diese Lizenz ist nicht für AuraCall ausgestellt.' };   // 'suite': Suite-Lizenz (Business Solo/Advanced), kommt meist von AuraControl
     if (payload.expiresAt) { const t = new Date(payload.expiresAt).getTime(); if (!Number.isFinite(t)) return { valid: false, error: 'Die Lizenzdaten sind beschädigt.' }; if (t < now) return { valid: false, error: 'Die Lizenz ist abgelaufen.', payload }; }
     return { valid: true, payload };
 }
@@ -50,24 +50,34 @@ class License {
     installDate() { let t = this.db.getSetting('installDate', null); if (!Number.isFinite(t)) { t = this.now(); this.db.setSetting('installDate', t); } return t; }
     installationId() { let id = this.db.getSetting('installationId', null); if (typeof id !== 'string' || !/^[0-9a-f-]{36}$/.test(id)) { id = crypto.randomUUID(); this.db.setSetting('installationId', id); } return id; }
     storedKey() { const k = this.db.getSetting('licenseKey', ''); return typeof k === 'string' ? k : ''; }
-    // Zustand: licensed (gültiger Schlüssel) | trial (14 Tage Probezeit, alles erlaubt) | free (Probezeit vorbei, höchstens 1 Benutzer: der Admin) | expired (Probezeit vorbei,
-    // mehrere Benutzer, keine gültige Lizenz). valid = darf telefonieren.
+    // Zustand: licensed (gültiger Schlüssel) | trial (14 Tage Probezeit, alles erlaubt) | expired (Probezeit vorbei, keine gültige Lizenz). valid = darf telefonieren.
+    // Eine Gratis-Stufe gibt es nicht mehr (AuraCall gehört nicht zum Free Plan).
     info() {
         const now = this.now(), key = this.storedKey(), r = key ? verifyKey(key, this.secret, now) : null, p = r && r.payload || null;
-        const out = { state: 'expired', valid: false, customer: p ? str(p.customer, 120) || null : null, expiresAt: p && p.expiresAt || null, daysLeft: null, expiresSoon: false, trialDaysRemaining: 0, keyError: key && !r.valid ? r.error : null, hasKey: !!key };
+        const out = { state: 'expired', valid: false, plan: p && p.product === 'suite' ? str(p.plan, 20) || 'suite' : null, managedBy: this.db.getSetting('licenseSource', '') === 'control' ? 'auracontrol' : null, customer: p ? str(p.customer, 120) || null : null, expiresAt: p && p.expiresAt || null, daysLeft: null, expiresSoon: false, trialDaysRemaining: 0, keyError: key && !r.valid ? r.error : null, hasKey: !!key };
         if (r && r.valid) { out.state = 'licensed'; out.valid = true; if (p.expiresAt) { out.daysLeft = Math.max(0, Math.ceil((new Date(p.expiresAt).getTime() - now) / DAY)); out.expiresSoon = out.daysLeft <= WARN_DAYS; } return out; }
         const left = TRIAL_DAYS - (now - this.installDate()) / DAY;
         if (left > 0) { out.state = 'trial'; out.valid = true; out.trialDaysRemaining = Math.ceil(left); return out; }
-        const n = this.counts().totalUsers; if (Number.isInteger(n) && n <= 1) { out.state = 'free'; out.valid = true; return out; }   // Gratis-Stufe: 1 Benutzer (der Admin). Ist die Zahl unbekannt, gilt sie nicht (sicher gesperrt).
-        out.message = out.keyError ? `Keine gültige Lizenz: ${out.keyError}` : 'Die Testzeit ist abgelaufen, und es gibt mehr als einen Benutzer. Kostenlos ist ein Benutzer (der Admin); für mehr wird eine Lizenz benötigt.'; return out;
+        out.message = out.keyError ? `Keine gültige Lizenz: ${out.keyError}` : 'Die Testzeit ist abgelaufen. AuraCall braucht jetzt eine Lizenz (enthalten in Business Solo und Business Advanced).'; return out;
     }
     allows() { return this.info().valid; }
-    message() { const i = this.info(); return i.valid ? '' : `Keine gültige Lizenz für AuraCall. ${i.message || ''} Bitte unter "Lizenz" einen Schlüssel eintragen.`.replace(/\s+/g, ' ').trim(); }
+    message() { const i = this.info(); return i.valid ? '' : `Keine gültige Lizenz für AuraCall. ${i.message || ''} Die Lizenz wird zentral in AuraControl eingetragen und kommt automatisch hierher.`.replace(/\s+/g, ' ').trim(); }
     setKey(key) {
         const k = str(key, 4000).replace(/\s+/g, ''), r = verifyKey(k, this.secret, this.now()); if (!k) return { ok: false, error: 'Bitte einen Lizenzschlüssel eintragen.' }; if (!r.valid) return { ok: false, error: r.error };
-        this.db.setSetting('licenseKey', k); return { ok: true, customer: str(r.payload.customer, 120), expiresAt: r.payload.expiresAt || null };
+        this.db.setSetting('licenseKey', k); this.db.setSetting('licenseSource', 'manual'); return { ok: true, customer: str(r.payload.customer, 120), expiresAt: r.payload.expiresAt || null };
     }
-    removeKey() { this.db.setSetting('licenseKey', ''); }
+    removeKey() { this.db.setSetting('licenseKey', ''); this.db.setSetting('licenseSource', ''); }
+    // Suite-Lizenz von AuraControl übernehmen (gemeinsamer Baustein aura-license-sync.js). AuraCall läuft im Host-Netzwerk: AuraControl ist unter 127.0.0.1:8000 erreichbar.
+    startSync(opts = {}) {
+        if (this.sync) return this.sync;
+        this.sync = require('./aura-license-sync').startLicenseSync({
+            product: 'call', secret: this.secret, defaultUrl: 'http://127.0.0.1:8000', verify: (k) => verifyKey(k, this.secret, this.now()),
+            getKey: () => this.storedKey(), setKey: (k) => { this.db.setSetting('licenseKey', k || ''); if (k) this.run().catch(() => {}); },
+            getSource: () => this.db.getSetting('licenseSource', ''), setSource: (v) => this.db.setSetting('licenseSource', v || ''),
+            log: this.log, fetchImpl: this.fetch, ...opts
+        });
+        return this.sync;
+    }
     // ---- Aura-Suite-Version vom Lizenzserver (Anzeige) ----
     suiteInfo() { const raw = this.db.getSetting('suiteInfo', ''); if (typeof raw !== 'string' || !raw) return null; try { return parseSuiteInfo(JSON.parse(raw)); } catch { return null; } }
     setSuite(info) { this.db.setSetting('suiteInfo', info ? JSON.stringify(info) : ''); }
@@ -100,6 +110,6 @@ class License {
         const first = setTimeout(() => { this.timers.delete(first); this.run().catch(() => {}); }, this.firstDelayMs); first.unref(); this.timers.add(first);
         this.interval = setInterval(() => this.run().catch(() => {}), this.everyMs); this.interval.unref();
     }
-    stop() { for (const t of this.timers) clearTimeout(t); this.timers.clear(); if (this.interval) clearInterval(this.interval); this.interval = null; this.retry = null; }
+    stop() { if (this.sync) { this.sync.stop(); this.sync = null; } for (const t of this.timers) clearTimeout(t); this.timers.clear(); if (this.interval) clearInterval(this.interval); this.interval = null; this.retry = null; }
 }
 module.exports = { License, parseSuiteInfo, versionOlder, verifyKey, buildCheckinBaseUrl, PRODUCT, TRIAL_DAYS, WARN_DAYS, CHECKIN_PORT, DEFAULT_CHECKIN_HOST };

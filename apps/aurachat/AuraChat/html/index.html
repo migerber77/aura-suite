@@ -12,11 +12,13 @@
     <!-- Bildschirmformat (Quer-/Hochformat): gemeinsam mit der Kiosk-Ansicht, wirkt schon beim Laden -->
     <script src="js/aura-i18n.js"></script>
     <script src="js/aura-i18n-words.js"></script>
+    <script src="js/aura-i18n-chat.js"></script>
     <script src="js/aura-intro.js" data-video="images/intro/aurasuite-intro"></script>
     <script src="js/aura-prefs.js"></script>
     <script src="js/screenformat.js"></script>
     <!-- Aura-Fenster (Seitenleiste) mit der Maus in der Grösse ändern -->
     <script src="js/panelresize.js"></script>
+    <script src="js/avatarresize.js"></script>
     <link rel="stylesheet" href="css/style.css">
 <style>.guest-hidden { display: none !important; }</style>
 </head>
@@ -68,6 +70,7 @@
                 <div class="flex-1 h-px bg-slate-800"></div>
             </div>
             <button type="button" id="guest-continue-btn" class="w-full bg-slate-800/60 hover:bg-slate-800 text-slate-300 hover:text-white font-medium py-2.5 rounded-xl transition border border-slate-700 text-xs cursor-pointer">Als Gast fortfahren</button>
+            <button type="button" id="guest-stay-btn" class="hidden w-full mt-2 bg-blue-600/15 hover:bg-blue-600/25 text-blue-200 hover:text-white font-medium py-2.5 rounded-xl transition border border-blue-500/40 text-xs cursor-pointer">🏨 Hotelgast: mit Buchungsnummer anmelden</button>
 
             <!-- 2FA Schritt: Code eingeben (bereits eingerichtet) -->
             <div id="auth-2fa-verify" class="hidden flex flex-col gap-4">
@@ -219,18 +222,15 @@
                     <a href="http://gerber-backoffice-solutions.com" target="_blank" rel="noopener" class="font-medium text-blue-400 hover:underline">gerber-backoffice-solutions.com</a>
                 </div>
                 <div class="h-px bg-slate-800/50"></div>
-                <div class="flex items-center justify-between">
-                    <span class="text-slate-400 flex items-center gap-1.5">📦 Version</span>
-                    <span id="about-version" class="font-mono text-[11px] bg-blue-500/10 border border-blue-500/20 px-2 py-0.5 rounded text-blue-300">v1.00</span>
-                </div>
                 <div id="about-suite-row" class="hidden flex items-center justify-between">
                     <span class="text-slate-400 flex items-center gap-1.5">🧱 Aura-Suite</span>
                     <span id="about-suite" class="font-mono text-[11px] bg-blue-500/10 border border-blue-500/20 px-2 py-0.5 rounded text-blue-300"></span>
                 </div>
-                <div id="about-latest-row" class="hidden flex items-center justify-between">
-                    <span class="text-slate-400 flex items-center gap-1.5">⬆️ Aktuelle Version</span>
+                <div id="about-latest-row" class="flex items-center justify-between">
+                    <span class="text-slate-400 flex items-center gap-1.5">📦 Version</span>
                     <span class="flex items-center gap-2">
-                        <span id="about-latest" class="font-mono text-[11px] bg-blue-500/10 border border-blue-500/20 px-2 py-0.5 rounded text-blue-300"></span>
+                        <span id="about-latest" class="font-mono text-[11px] bg-blue-500/10 border border-blue-500/20 px-2 py-0.5 rounded text-blue-300 hidden"></span>
+                        <span id="about-latest-pending" class="text-[11px] text-slate-400">wird beim nächsten Abgleich mit dem Lizenzserver übernommen</span>
                         <span id="about-update-badge" class="hidden text-[10px] px-2 py-0.5 rounded bg-amber-500/15 border border-amber-500/30 text-amber-300">Update verfügbar</span>
                     </span>
                 </div>
@@ -320,7 +320,7 @@
                     <p class="text-[10px] text-slate-500 mt-1 mb-2">Standardmässig deaktiviert. Aktiviert, greift Aura bei Coding-Fragen automatisch auf dieses (statt des normalen) Modell zurück - kann auf einem eigenen Server laufen.</p>
                 </div>
                 <div id="coding-model-premium-banner" class="hidden bg-amber-500/10 border border-amber-500/30 rounded-xl px-4 py-3 text-[11px] text-amber-300">
-                    🔒 Ein separates Coding-Modell ist ein Premium-Feature. Lizenz aktivieren im Admin Panel → 🔑 Lizenz.
+                    🔒 Ein separates Coding-Modell ist ein Premium-Feature. Die Lizenz wird in AuraControl eingetragen (Admin Panel → Lizenz) und kommt automatisch hierher.
                 </div>
                 <div id="coding-model-fields" class="hidden flex-col gap-2">
                     <label class="flex items-start gap-2 cursor-pointer bg-slate-950 border border-slate-800 rounded-xl px-3 py-2">
@@ -354,7 +354,7 @@
                     <p class="text-[10px] text-slate-500 mt-1 mb-2">Standardmässig deaktiviert. Aktiviert, prüft/vergleicht ein zweites Modell die Antwort des Hauptmodells für höhere Genauigkeit - kann ein ganz anderer Dienst sein (z.B. Hauptmodell = lokales Ollama, Zweitmodell = ChatGPT Cloud).</p>
                 </div>
                 <div id="secondary-model-premium-banner" class="hidden bg-amber-500/10 border border-amber-500/30 rounded-xl px-4 py-3 text-[11px] text-amber-300">
-                    🔒 Ein Zweitmodell ist ein Premium-Feature. Lizenz aktivieren im Admin Panel → 🔑 Lizenz.
+                    🔒 Ein Zweitmodell ist ein Premium-Feature. Die Lizenz wird in AuraControl eingetragen (Admin Panel → Lizenz) und kommt automatisch hierher.
                 </div>
                 <div id="secondary-model-fields" class="hidden flex-col gap-2">
                     <div class="flex gap-2 bg-slate-950 border border-slate-800 rounded-xl p-1">
@@ -394,7 +394,7 @@
                     <p class="text-[10px] text-slate-500 mt-1 mb-2">Eigener Server oder Cloud-Dienst - genauso konfiguriert wie die KI-Anbindung oben.</p>
                 </div>
                 <div id="image-gen-premium-banner" class="hidden bg-amber-500/10 border border-amber-500/30 rounded-xl px-4 py-3 text-[11px] text-amber-300">
-                    🔒 Bildgenerierung ist ein Premium-Feature. Lizenz aktivieren im Admin Panel → 🔑 Lizenz.
+                    🔒 Bildgenerierung ist ein Premium-Feature. Die Lizenz wird in AuraControl eingetragen (Admin Panel → Lizenz) und kommt automatisch hierher.
                 </div>
                 <div>
                     <label class="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Plattform</label>
@@ -599,7 +599,7 @@
                         <div class="flex-1 h-px bg-slate-800"></div>
                     </div>
                     <div id="video-avatar-premium-banner" class="hidden bg-amber-500/10 border border-amber-500/30 rounded-xl px-4 py-3 text-[11px] text-amber-300">
-                        🔒 Eigene Avatare hochladen ist ein Premium-Feature. Lizenz aktivieren im Admin Panel → 🔑 Lizenz.
+                        🔒 Eigene Avatare hochladen ist ein Premium-Feature. Die Lizenz wird in AuraControl eingetragen (Admin Panel → Lizenz) und kommt automatisch hierher.
                     </div>
 
                     <input type="text" id="video-avatar-name-input" placeholder="Name, z.B. 'Business'" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white">
@@ -685,32 +685,19 @@
                 <button id="admin-tab-btn-2fa" class="admin-tab-btn flex-1 min-w-[30%] text-xs font-medium py-2 rounded-xl transition cursor-pointer bg-slate-800 text-slate-300 hover:bg-slate-700">🛡️ Sicherheit (2FA)</button>
                 <button id="admin-tab-btn-backup" class="admin-tab-btn flex-1 min-w-[30%] text-xs font-medium py-2 rounded-xl transition cursor-pointer bg-slate-800 text-slate-300 hover:bg-slate-700">🖥️ System: Backup &amp; Update</button>
                 <span class="w-full text-[10px] text-slate-500 uppercase tracking-wider px-1 pt-1">Anpassungen des Produkts</span>
+                <button id="admin-tab-btn-appstore" class="admin-tab-btn flex-1 min-w-[30%] text-xs font-medium py-2 rounded-xl transition cursor-pointer bg-slate-800 text-slate-300 hover:bg-slate-700">🧩 App Store</button>
                 <button id="admin-tab-btn-branding" class="admin-tab-btn flex-1 min-w-[30%] text-xs font-medium py-2 rounded-xl transition cursor-pointer bg-slate-800 text-slate-300 hover:bg-slate-700">🎨 Branding</button>
                 <button id="admin-tab-btn-mail" class="admin-tab-btn flex-1 min-w-[30%] text-xs font-medium py-2 rounded-xl transition cursor-pointer bg-slate-800 text-slate-300 hover:bg-slate-700">📧 Mail</button>
                 <button id="admin-tab-btn-ttsstt" class="admin-tab-btn flex-1 min-w-[30%] text-xs font-medium py-2 rounded-xl transition cursor-pointer bg-slate-800 text-slate-300 hover:bg-slate-700">🎙️ TTS/STT</button>
                 <button id="admin-tab-btn-privacy" class="admin-tab-btn flex-1 min-w-[30%] text-xs font-medium py-2 rounded-xl transition cursor-pointer bg-slate-800 text-slate-300 hover:bg-slate-700">🔒 Datenschutz</button>
                 <button id="admin-tab-btn-academy" class="admin-tab-btn flex-1 min-w-[30%] text-xs font-medium py-2 rounded-xl transition cursor-pointer bg-slate-800 text-slate-300 hover:bg-slate-700">🎓 Aura-Academy</button>
-                    <button id="admin-tab-btn-cockpit" class="admin-tab-btn flex-1 min-w-[30%] text-xs font-medium py-2 rounded-xl transition cursor-pointer bg-slate-800 text-slate-300 hover:bg-slate-700">🖥️ Cockpit</button>
             </div>
 
             <!-- Tab: Benutzerverwaltung -->
             <div id="admin-tab-users" class="flex flex-col gap-3 min-h-0 overflow-y-auto pr-1">
-                <button id="admin-new-user-toggle-btn" class="text-xs font-medium text-blue-400 hover:text-blue-300 text-left cursor-pointer">➕ Neuen Benutzer anlegen</button>
-
-                <div id="admin-new-user-form" class="hidden flex flex-col gap-2 bg-slate-950 border border-slate-800 rounded-xl p-3">
-                    <div class="grid grid-cols-2 gap-2">
-                        <input type="text" id="admin-new-username" placeholder="Benutzername" class="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500">
-                        <input type="password" id="admin-new-password" placeholder="Passwort (min. 8 Zeichen)" class="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500">
-                        <input type="text" id="admin-new-firstname" placeholder="Vorname" class="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500">
-                        <input type="text" id="admin-new-lastname" placeholder="Nachname" class="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500">
-                        <input type="email" id="admin-new-email" placeholder="E-Mail" class="col-span-2 bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500">
-                    </div>
-                    <label class="flex items-center justify-between bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 cursor-pointer">
-                        <span class="text-xs text-slate-300">🛡️ Soll Administrator werden (technischer Vollzugriff)</span>
-                        <input type="checkbox" id="admin-new-is-admin" class="w-4 h-4 accent-amber-500 cursor-pointer">
-                    </label>
-                    <button id="admin-new-user-save-btn" class="bg-blue-600 hover:bg-blue-500 text-white font-medium py-2 rounded-xl text-xs transition cursor-pointer">Benutzer anlegen</button>
-                    <div id="admin-new-user-status" class="text-[11px] hidden"></div>
+                <div id="admin-users-direct-note" class="flex flex-col gap-1 text-[11px] text-slate-400 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2">
+                    <p>Neue Benutzer legst du zentral in AuraDirect an (kostenlos). Sie erscheinen hier nach ihrer ersten Anmeldung.</p>
+                    <p>Mit der kostenlosen Version genügt der Administrator. Für weitere Benutzer verbindest du AuraDirect.</p>
                 </div>
 
                 <div id="admin-user-limit-display" class="text-[11px] text-slate-400 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2"></div>
@@ -730,11 +717,163 @@
             </div>
 
             <!-- Tab: Branding (Logo und Icon) -->
+            <div id="admin-tab-appstore" class="hidden flex flex-col gap-4 min-h-0 overflow-y-auto pr-1">
+                <div id="appstore-home" class="flex flex-col gap-3">
+                    <p class="text-[11px] text-slate-400">Apps erweitern AuraChat. Eine App wird erst nach dem Aktivieren und Einrichten wirksam: Ihre Befehle und Funktionen stehen vorher nicht zur Verfügung.</p>
+                    <div id="appstore-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
+                    <div id="appstore-error" class="hidden text-[11px] text-red-400" role="alert"></div>
+                </div>
+                <div id="appstore-detail" class="hidden flex flex-col gap-3">
+                    <button id="appstore-back-btn" type="button" class="self-start bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white font-medium px-3 py-1.5 rounded-lg text-[11px] transition cursor-pointer">← Zurück zum App Store</button>
+                    <div class="flex items-center gap-3">
+                        <div id="appstore-detail-logo" class="shrink-0"></div>
+                        <div class="flex-1 min-w-0">
+                            <div id="appstore-detail-title" class="text-sm font-bold text-white"></div>
+                            <div id="appstore-detail-category" class="text-[10px] text-slate-500"></div>
+                        </div>
+                        <span id="appstore-detail-badge" class="shrink-0 text-[10px] font-semibold px-2 py-1 rounded-full"></span>
+                    </div>
+                    <p id="appstore-detail-desc" class="text-[11px] text-slate-300"></p>
+                    <div class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 flex flex-col gap-1.5">
+                        <span class="text-[11px] font-semibold text-slate-300">Das gibt es mit dieser App</span>
+                        <ul id="appstore-detail-unlocks" class="list-disc ml-4 flex flex-col gap-0.5 text-[11px] text-slate-400"></ul>
+                    </div>
+                    <div id="appstore-detail-premium" class="hidden bg-amber-500/10 border border-amber-500/30 rounded-xl px-4 py-3 text-[11px] text-amber-300">🔒 Diese App erfordert eine Lizenz. Sie wird in AuraControl eingetragen (Admin Panel → Lizenz) und kommt automatisch hierher.</div>
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <button id="appstore-detail-toggle" type="button" class="bg-blue-600 hover:bg-blue-500 text-white font-medium px-4 py-2 rounded-lg text-xs transition cursor-pointer"></button>
+                        <div id="appstore-detail-status" class="text-[11px] hidden" role="status"></div>
+                    </div>
+                    <div id="appstore-detail-inactive" class="hidden bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-[11px] text-slate-400">Diese App ist nicht aktiviert. Solange sie nicht aktiviert und eingerichtet ist, stehen ihre Befehle und Funktionen nicht zur Verfügung.</div>
+                    <div id="appstore-detail-needs-setup" class="hidden bg-sky-500/10 border border-sky-500/30 rounded-xl px-3 py-2.5 text-[11px] text-sky-300">Die App ist aktiviert, aber noch nicht eingerichtet. Richte sie unten ein, damit ihre Befehle verfügbar werden.</div>
+                <div id="appstore-setup-apaleo" class="hidden flex flex-col gap-3">
+<div class="bg-slate-950 border border-slate-800 rounded-xl p-3 flex flex-col gap-2">
+                    <span class="text-xs font-semibold text-white">🏨 Apaleo verbinden</span>
+                    <p class="text-[10px] text-slate-500">Hotel-Verwaltungssystem. Hier ist nichts einzutragen: Mit „Mit Apaleo verbinden“ meldet ihr euch bei <b>eurem eigenen</b> Apaleo-Konto an und gebt frei, welche Häuser AuraChat sehen darf. Die Zugangsdaten der App stellt der Hersteller bereit. Danach beantwortet Aura Fragen wie „Wer reist heute an?“, „Wer reist morgen ab?“, „Wer ist im Haus?“, „Wie viele Zimmer sind heute frei?“ und „Reservierung von Müller“. Zugriff haben <b>Administratoren</b> und alle Personen, bei denen in der Benutzerverwaltung das 🏨 eingeschaltet ist. Gäste haben nie Zugriff.</p>
+                    <label class="flex items-start gap-2 cursor-pointer">
+                        <input type="checkbox" id="apaleo-guest-enabled" class="w-4 h-4 accent-blue-600 cursor-pointer mt-0.5">
+                        <span class="text-[11px] text-slate-300">Gäste dürfen Fragen zu ihrer <b>eigenen</b> Reservierung stellen
+                            <span class="block text-[10px] text-slate-500 mt-0.5">Standard: aus. Braucht „Gäste dürfen mit Aura chatten“ (Reiter „Benutzer“). Ein Gast weist sich auf dem Anmeldebildschirm („🏨 Hotelgast: mit Buchungsnummer anmelden“) oder im Menü „Mein Aufenthalt“ mit Reservierungsnummer und Nachname aus und sieht danach nur seine eigene Reservierung (Anreise, Abreise, Nächte, Personen, Zimmerkategorie, Zimmernummer erst nach dem Check-in). Nie Preise, Notizen oder andere Gäste.</span>
+                        </span>
+                    </label>
+                    <ul id="apaleo-guest-check" class="hidden flex flex-col gap-0.5 text-[10px] ml-6"></ul>
+                    <div class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 flex flex-col gap-1.5">
+                        <p id="apaleo-conn-status" class="text-[11px] text-slate-300">Noch nicht mit Apaleo verbunden.</p>
+                        <p class="text-[10px] text-slate-500">Mit einem Klick bei Apaleo anmelden und dort freigeben, welche Häuser AuraChat sehen darf (OAuth 2.0). Zugangsdaten werden nicht von Hand eingetragen. Die Verbindung läuft über den Vermittler <span id="apaleo-connect-host" class="text-slate-400"></span>: Vor der Weiterleitung zu Apaleo zeigt er, wohin die Zugangsdaten gehen; er speichert keine Token. Die Token liegen hier verschlüsselt. Wird die App in Apaleo getrennt, muss neu verbunden werden.</p>
+                        <div class="flex gap-2 flex-wrap">
+                            <button id="apaleo-connect-btn" class="bg-blue-600 hover:bg-blue-500 text-white font-medium px-3 py-1.5 rounded-lg text-[11px] transition cursor-pointer">Mit Apaleo verbinden</button>
+                            <button id="apaleo-disconnect-btn" class="hidden bg-slate-800 hover:bg-red-900/60 border border-slate-700 text-white font-medium px-3 py-1.5 rounded-lg text-[11px] transition cursor-pointer">Trennen</button>
+                        </div>
+                    </div>
+                    <div id="apaleo-houses-box" class="hidden bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 flex flex-col gap-1.5">
+                        <p class="text-[11px] text-slate-300">Häuser, mit denen AuraChat arbeitet</p>
+                        <div id="apaleo-houses" class="flex flex-col gap-1"></div>
+                        <p class="text-[10px] text-slate-500">Abfragen („Wer reist heute an?“) zeigen alle gewählten Häuser oder nur das genannte. Aktionen (Check-in, Check-out, Zimmer zuweisen, Zimmer melden) brauchen bei mehreren Häusern das genannte Haus in der Frage. Welche Häuser zur Auswahl stehen, bestimmt der Kunde bei der Freigabe in Apaleo (jederzeit änderbar unter „Apps → Verbundene Apps“).</p>
+                        <div><button id="apaleo-save-btn" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white font-medium px-3 py-1.5 rounded-lg text-[11px] transition cursor-pointer">Auswahl speichern</button></div>
+                    </div>
+                    <div class="flex gap-2">
+                        <button id="apaleo-test-btn" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white font-medium px-3 py-1.5 rounded-lg text-[11px] transition cursor-pointer">Verbindung testen</button>
+                    </div>
+                    <div id="apaleo-status" class="text-[11px] hidden"></div>
+                    <div id="apaleo-test-result" class="text-[10px] text-slate-400 whitespace-pre-wrap hidden"></div>
+                    <div class="border-t border-slate-800 pt-2 mt-1 flex flex-col gap-1.5">
+                        <span class="text-xs font-semibold text-white">✏️ Änderungen in Apaleo (optional)</span>
+                        <p class="text-[10px] text-slate-500">Standard: <b>aus</b>. AuraChat kann dann Check-in, Check-out und Zimmer zuweisen, aber nur auf Zuruf im Chat <b>mit Bestätigung</b>: Aura zeigt zuerst, was passieren würde, und führt es erst nach „Ausführen“ aus (2 Minuten gültig, einmalig). Zusätzlich braucht jede Person das Recht ✏️ in der Benutzerliste (Administratoren immer). Stornieren und „No-Show“ gibt es bewusst nicht. Jede Änderung steht im Protokoll unten. Die App in Apaleo braucht dafür das Recht „reservations.manage“ (für die Zimmerliste „units.read“). Am besten erst an einem Test-Haus ausprobieren.</p>
+                        <label class="flex items-start gap-2 cursor-pointer">
+                            <input type="checkbox" id="apaleo-write-enabled" class="w-4 h-4 accent-blue-600 cursor-pointer mt-0.5">
+                            <span class="text-[11px] text-slate-300">Änderungen in Apaleo erlauben <span class="block text-[10px] text-slate-500 mt-0.5">Hauptschalter. Ohne ihn geschieht in Apaleo nie etwas.</span></span>
+                        </label>
+                        <div class="flex flex-col gap-1 pl-6">
+                            <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="apaleo-write-checkin" class="w-3.5 h-3.5 accent-blue-600 cursor-pointer"><span class="text-[11px] text-slate-300">Check-in <span class="text-slate-500">(„Check-in für Müller“, nur bei heutiger Anreise mit Zimmer)</span></span></label>
+                            <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="apaleo-write-checkout" class="w-3.5 h-3.5 accent-blue-600 cursor-pointer"><span class="text-[11px] text-slate-300">Check-out <span class="text-slate-500">(„Check-out für Zimmer 401“)</span></span></label>
+                            <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="apaleo-write-assign" class="w-3.5 h-3.5 accent-blue-600 cursor-pointer"><span class="text-[11px] text-slate-300">Zimmer zuweisen <span class="text-slate-500">(„Weise Müller Zimmer 305 zu“ oder „… ein Zimmer zu“)</span></span></label>
+                            <label class="flex items-start gap-2 cursor-pointer"><input type="checkbox" id="apaleo-write-dirty" class="w-3.5 h-3.5 accent-blue-600 cursor-pointer mt-0.5"><span class="text-[11px] text-slate-300">Zimmer als schmutzig markieren <span class="text-slate-500">(„Markiere Zimmer 201 als schmutzig“, und als Angebot nach einer Meldung „nicht sauber“). Nur in Richtung „schmutzig“, nie „sauber“. Braucht in Apaleo zusätzlich das Recht „units.manage“, das auch das Umbenennen von Zimmern erlaubt; AuraChat ändert damit nur den Zustand.</span></span></label>
+                        </div>
+                        <div class="flex items-center justify-between mt-1">
+                            <span class="text-[11px] text-slate-300">Protokoll der letzten Änderungen</span>
+                            <button id="apaleo-audit-refresh" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white font-medium px-2.5 py-1 rounded-lg text-[11px] transition cursor-pointer">Aktualisieren</button>
+                        </div>
+                        <div id="apaleo-audit-list" class="text-[10px] text-slate-400 flex flex-col gap-0.5 max-h-40 overflow-y-auto"></div>
+                    </div>
+                    <div class="border-t border-slate-800 pt-2 mt-1 flex flex-col gap-1.5">
+                        <span class="text-xs font-semibold text-white">🧹 Housekeeping (Abfragen und Meldungen)</span>
+                        <p class="text-[10px] text-slate-500"><b>Abfragen</b> („Welche Zimmer sind nicht sauber?“, „Ist Zimmer 201 sauber?“, „Housekeeping“) sind immer an und brauchen in Apaleo nur das Leserecht „units.read“. Aura zeigt auch, in welchen noch nicht sauberen Zimmern heute Gäste anreisen. <b>Meldungen</b> („Zimmer 305 braucht Toilettenpapier“, „In Zimmer 305 fehlen Handtücher“, „Zimmer 201 ist nicht sauber“) legen ein Ticket in <b>AuraTicket</b> an, das dafür unter „AuraTicket verbinden“ eingerichtet sein muss (Apaleo selbst kennt keine Meldungen). Standard: aus.</p>
+                        <label class="flex items-start gap-2 cursor-pointer">
+                            <input type="checkbox" id="hk-staff-report" class="w-4 h-4 accent-blue-600 cursor-pointer mt-0.5">
+                            <span class="text-[11px] text-slate-300">Mitarbeitende dürfen Housekeeping melden <span class="block text-[10px] text-slate-500 mt-0.5">Per Chat, mit Zimmernummer. Dieselbe Meldung wird 30 Minuten lang nur einmal angelegt. Bei „nicht sauber“ bietet Aura (wenn oben erlaubt) an, das Zimmer auch in Apaleo auf „schmutzig“ zu setzen.</span></span>
+                        </label>
+                        <label class="flex items-start gap-2 cursor-pointer">
+                            <input type="checkbox" id="hk-guest-report" class="w-4 h-4 accent-blue-600 cursor-pointer mt-0.5">
+                            <span class="text-[11px] text-slate-300">Gäste dürfen für ihr eigenes Zimmer melden <span class="block text-[10px] text-slate-500 mt-0.5">Erst nach „Mein Aufenthalt“ (eingecheckt, mit Zimmer), in allen fünf Sprachen. Nur feste Bausteine (Zimmer reinigen, Toilettenpapier, Handtücher, Seife/Shampoo, Bettwäsche/Decken/Kissen), nie freier Text des Gastes im Ticket. Höchstens 5 Meldungen pro Gast und Stunde. Braucht oben „Gäste dürfen Fragen zu ihrer eigenen Reservierung stellen“.</span></span>
+                        </label>
+                    </div>
+                </div>
+
+                </div>
+                <div id="appstore-setup-ikea" class="hidden flex flex-col gap-3">
+<div class="bg-slate-950 border border-slate-800 rounded-xl p-3 flex flex-col gap-2">
+                    <span class="text-xs font-semibold text-white">IKEA Dirigera koppeln</span>
+                    <div class="flex gap-2">
+                        <input type="text" id="dirigera-ip-input" placeholder="Hub-IP, z.B. 192.168.1.50" class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500">
+                        <button id="dirigera-pair-btn" class="bg-blue-600 hover:bg-blue-500 text-white font-medium px-3 py-1.5 rounded-lg text-xs transition cursor-pointer shrink-0">Koppeln</button>
+                    </div>
+                    <p class="text-[10px] text-slate-500">Nach Klick auf "Koppeln": innerhalb von ca. 90 Sekunden den Action-Knopf auf der Unterseite des Hubs drücken.</p>
+                    <div id="dirigera-pair-status" class="text-[11px] hidden"></div>
+                </div>
+                    <div class="bg-slate-950 border border-slate-800 rounded-xl p-3 flex flex-col gap-2">
+                        <span class="text-xs font-semibold text-white">📋 Gekoppelte Geräte</span>
+                        <div id="ikea-devices-list" class="flex flex-col gap-2"></div>
+                    </div>
+                </div>
+                <div id="appstore-setup-sonos" class="hidden flex flex-col gap-3">
+<div class="bg-slate-950 border border-slate-800 rounded-xl p-3 flex flex-col gap-2">
+                    <span class="text-xs font-semibold text-white">🔊 Sonos-Lautsprecher hinzufügen</span>
+                    <div class="flex gap-2">
+                        <input type="text" id="sonos-name-input" placeholder="Name, z.B. 'Wohnzimmer'" class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500">
+                        <input type="text" id="sonos-ip-input" placeholder="Lautsprecher-IP" class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500">
+                        <button id="sonos-add-btn" class="bg-blue-600 hover:bg-blue-500 text-white font-medium px-3 py-1.5 rounded-lg text-xs transition cursor-pointer shrink-0">Hinzufügen</button>
+                    </div>
+                    <p class="text-[10px] text-slate-500">Kein Pairing nötig - Sonos braucht keine Anmeldung im lokalen Netz.</p>
+                    <div id="sonos-add-status" class="text-[11px] hidden"></div>
+
+                    <div class="border-t border-slate-800 pt-2 mt-1 flex flex-col gap-1.5">
+                        <span class="text-[11px] font-semibold text-slate-300">📢 Für Durchsagen: Lokale Server-Adresse</span>
+                        <input type="text" id="local-media-base-url-input" placeholder="z.B. http://10.0.55.251:8092" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500">
+                        <p class="text-[10px] text-slate-500">Adresse, unter der eure Sonos-Lautsprecher AuraChat im lokalen Netz erreichen (nicht "localhost" - die tatsächliche IP/Domain + Port). Nötig, damit Sonos die per Sprachbefehl erzeugte Durchsage-Audiodatei abrufen kann, z.B. "Durchsage auf Wohnzimmer: Essen ist fertig".</p>
+                        <button id="local-media-base-url-save-btn" class="self-start bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white font-medium px-3 py-1.5 rounded-lg text-[11px] transition cursor-pointer">Speichern</button>
+                        <div id="local-media-base-url-status" class="text-[11px] hidden"></div>
+                    </div>
+                </div>
+                    <div class="bg-slate-950 border border-slate-800 rounded-xl p-3 flex flex-col gap-2">
+                        <span class="text-xs font-semibold text-white">📋 Eingetragene Lautsprecher</span>
+                        <div id="sonos-speakers-list" class="flex flex-col gap-2"></div>
+                    </div>
+                </div>
+                <div id="appstore-setup-nuki" class="hidden flex flex-col gap-3">
+<div class="bg-slate-950 border border-slate-800 rounded-xl p-3 flex flex-col gap-2">
+                    <span class="text-xs font-semibold text-white">🔒 Nuki Türschloss hinzufügen</span>
+                    <p class="text-[10px] text-slate-500">Lokale Bridge-API, kein Cloud-Umweg. Token einmalig über die Nuki-App oder die lokale Bridge-Weboberfläche erzeugen ("API aktivieren"/"Token erzeugen").</p>
+                    <div class="flex gap-2">
+                        <input type="text" id="nuki-name-input" placeholder="Name, z.B. 'Haustür'" class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500">
+                        <input type="text" id="nuki-ip-input" placeholder="Bridge-IP" class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500">
+                    </div>
+                    <div class="flex gap-2">
+                        <input type="text" id="nuki-token-input" placeholder="Bridge-Token" class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500">
+                        <button id="nuki-add-btn" class="bg-blue-600 hover:bg-blue-500 text-white font-medium px-3 py-1.5 rounded-lg text-xs transition cursor-pointer shrink-0">Hinzufügen</button>
+                    </div>
+                    <div id="nuki-add-status" class="text-[11px] hidden"></div>
+                </div>
+                    <div class="bg-slate-950 border border-slate-800 rounded-xl p-3 flex flex-col gap-2">
+                        <span class="text-xs font-semibold text-white">📋 Eingetragene Schlösser</span>
+                        <div id="nuki-doors-list" class="flex flex-col gap-2"></div>
+                    </div>
+                </div>
+                </div>
+            </div>
             <div id="admin-tab-branding" class="hidden flex flex-col gap-4 min-h-0 overflow-y-auto pr-1">
                 <div class="flex flex-col gap-3 shrink-0">
                     <label class="text-xs font-semibold text-slate-300">🎨 Eigenes Branding</label>
                     <div id="branding-premium-banner" class="hidden bg-amber-500/10 border border-amber-500/30 rounded-xl px-4 py-3 text-[11px] text-amber-300">
-                        🔒 Eigenes Logo ist ein Premium-Feature. Lizenz aktivieren im Tab "🔑 Lizenz".
+                        🔒 Eigenes Logo ist ein Premium-Feature. Die Lizenz wird in AuraControl eingetragen (Admin Panel → Lizenz) und kommt automatisch hierher.
                     </div>
                     <p class="text-[10px] text-slate-500 -mt-1">Ersetzt das AuraChat-Logo/-Icon überall in der Oberfläche (Kopfzeile, Login, Favicon, Erinnerungen, PDF-Exporte) durch eigene Dateien - z.B. für Wiederverkäufer, die das Produkt unter eigenem Namen anbieten. PNG, JPG oder SVG.</p>
 
@@ -828,7 +967,7 @@
             <!-- Tab: TTS/STT (Premium-Feature - Browser bleibt immer kostenlos) -->
             <div id="admin-tab-ttsstt" class="hidden flex flex-col gap-3 min-h-0 overflow-y-auto pr-1">
                 <div id="tts-stt-premium-banner" class="hidden bg-amber-500/10 border border-amber-500/30 rounded-xl px-4 py-3 text-[11px] text-amber-300">
-                    🔒 Eigene TTS/STT-Server sind ein Premium-Feature. "Browser" bleibt kostenlos nutzbar. Lizenz aktivieren im Tab "🔑 Lizenz".
+                    🔒 Eigene TTS/STT-Server sind ein Premium-Feature. "Browser" bleibt kostenlos nutzbar. Die Lizenz wird in AuraControl eingetragen (Admin Panel → Lizenz) und kommt automatisch hierher.
                 </div>
                 <div>
                     <label class="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Plattform</label>
@@ -950,7 +1089,7 @@
             <!-- Tab: API (Premium-Feature) -->
             <div id="admin-tab-api" class="hidden flex flex-col gap-3 min-h-0 overflow-y-auto pr-1">
                 <div id="api-premium-banner" class="hidden bg-amber-500/10 border border-amber-500/30 rounded-xl px-4 py-3 text-[11px] text-amber-300">
-                    🔒 Die externe API ist ein Premium-Feature. Lizenz aktivieren im Tab "🔑 Lizenz".
+                    🔒 Die externe API ist ein Premium-Feature. Die Lizenz wird in AuraControl eingetragen (Admin Panel → Lizenz) und kommt automatisch hierher.
                 </div>
                 <p class="text-[10px] text-slate-500">Externe Plattformen können über einen API-Key mit AuraChat chatten. Beispiel:</p>
                 <p class="text-[10px] text-slate-500">Für die Telefon-Anbindung <b>AuraCall</b> braucht der Schlüssel zusätzlich die Lizenzfunktion "Telefonie" (Wege /api/v1/stt, /api/v1/tts und /api/v1/chat).</p>
@@ -987,54 +1126,12 @@
                     <label class="text-xs font-semibold text-slate-300">🏠 Integrationen (Geräte & Anwendungen)</label>
                     <p class="text-[10px] text-slate-500 -mt-1">Erkennt Befehle direkt im Chat (z.B. "Wohnzimmerlampe ein") und führt sie sofort aus, ohne Umweg über die KI.</p>
                 </div>
+                <p class="text-[10px] text-slate-500 -mt-1">📦 Apaleo, IKEA SmartHome, Sonos und Nuki findest du im Reiter „🧩 App Store“.</p>
                 <div id="integrations-premium-banner" class="hidden bg-amber-500/10 border border-amber-500/30 rounded-xl px-4 py-3 text-[11px] text-amber-300">
-                    🔒 Integrationen sind ein Premium-Feature. Lizenz aktivieren im Tab "🔑 Lizenz".
+                    🔒 Integrationen sind ein Premium-Feature. Die Lizenz wird in AuraControl eingetragen (Admin Panel → Lizenz) und kommt automatisch hierher.
                 </div>
 
-                <div class="bg-slate-950 border border-slate-800 rounded-xl p-3 flex flex-col gap-2">
-                    <span class="text-xs font-semibold text-white">IKEA Dirigera koppeln</span>
-                    <div class="flex gap-2">
-                        <input type="text" id="dirigera-ip-input" placeholder="Hub-IP, z.B. 192.168.1.50" class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500">
-                        <button id="dirigera-pair-btn" class="bg-blue-600 hover:bg-blue-500 text-white font-medium px-3 py-1.5 rounded-lg text-xs transition cursor-pointer shrink-0">Koppeln</button>
-                    </div>
-                    <p class="text-[10px] text-slate-500">Nach Klick auf "Koppeln": innerhalb von ca. 90 Sekunden den Action-Knopf auf der Unterseite des Hubs drücken.</p>
-                    <div id="dirigera-pair-status" class="text-[11px] hidden"></div>
-                </div>
-
-                <div class="bg-slate-950 border border-slate-800 rounded-xl p-3 flex flex-col gap-2">
-                    <span class="text-xs font-semibold text-white">🔊 Sonos-Lautsprecher hinzufügen</span>
-                    <div class="flex gap-2">
-                        <input type="text" id="sonos-name-input" placeholder="Name, z.B. 'Wohnzimmer'" class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500">
-                        <input type="text" id="sonos-ip-input" placeholder="Lautsprecher-IP" class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500">
-                        <button id="sonos-add-btn" class="bg-blue-600 hover:bg-blue-500 text-white font-medium px-3 py-1.5 rounded-lg text-xs transition cursor-pointer shrink-0">Hinzufügen</button>
-                    </div>
-                    <p class="text-[10px] text-slate-500">Kein Pairing nötig - Sonos braucht keine Anmeldung im lokalen Netz.</p>
-                    <div id="sonos-add-status" class="text-[11px] hidden"></div>
-
-                    <div class="border-t border-slate-800 pt-2 mt-1 flex flex-col gap-1.5">
-                        <span class="text-[11px] font-semibold text-slate-300">📢 Für Durchsagen: Lokale Server-Adresse</span>
-                        <input type="text" id="local-media-base-url-input" placeholder="z.B. http://10.0.55.251:8092" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500">
-                        <p class="text-[10px] text-slate-500">Adresse, unter der eure Sonos-Lautsprecher AuraChat im lokalen Netz erreichen (nicht "localhost" - die tatsächliche IP/Domain + Port). Nötig, damit Sonos die per Sprachbefehl erzeugte Durchsage-Audiodatei abrufen kann, z.B. "Durchsage auf Wohnzimmer: Essen ist fertig".</p>
-                        <button id="local-media-base-url-save-btn" class="self-start bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white font-medium px-3 py-1.5 rounded-lg text-[11px] transition cursor-pointer">Speichern</button>
-                        <div id="local-media-base-url-status" class="text-[11px] hidden"></div>
-                    </div>
-                </div>
-
-                <div class="bg-slate-950 border border-slate-800 rounded-xl p-3 flex flex-col gap-2">
-                    <span class="text-xs font-semibold text-white">🔒 Nuki Türschloss hinzufügen</span>
-                    <p class="text-[10px] text-slate-500">Lokale Bridge-API, kein Cloud-Umweg. Token einmalig über die Nuki-App oder die lokale Bridge-Weboberfläche erzeugen ("API aktivieren"/"Token erzeugen").</p>
-                    <div class="flex gap-2">
-                        <input type="text" id="nuki-name-input" placeholder="Name, z.B. 'Haustür'" class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500">
-                        <input type="text" id="nuki-ip-input" placeholder="Bridge-IP" class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500">
-                    </div>
-                    <div class="flex gap-2">
-                        <input type="text" id="nuki-token-input" placeholder="Bridge-Token" class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500">
-                        <button id="nuki-add-btn" class="bg-blue-600 hover:bg-blue-500 text-white font-medium px-3 py-1.5 rounded-lg text-xs transition cursor-pointer shrink-0">Hinzufügen</button>
-                    </div>
-                    <div id="nuki-add-status" class="text-[11px] hidden"></div>
-                </div>
-
-                <div class="bg-slate-950 border border-slate-800 rounded-xl p-3 flex flex-col gap-2">
+                                                                <div class="bg-slate-950 border border-slate-800 rounded-xl p-3 flex flex-col gap-2">
                     <span class="text-xs font-semibold text-white">📅 AuraPlan verbinden</span>
                     <p class="text-[10px] text-slate-500">Eigenständige Zeiterfassungs-, Schichtplan- und Ferien-App. Adresse eintragen, damit ein Menüpunkt zu eurer AuraPlan-Installation erscheint (eigenes Login, eigene Oberfläche).</p>
                     <input type="text" id="auraplan-url-input" placeholder="z.B. http://10.0.55.251:3210" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500">
@@ -1070,68 +1167,7 @@
                     <div id="auracall-status" class="text-[11px] hidden"></div>
                 </div>
 
-                <div class="bg-slate-950 border border-slate-800 rounded-xl p-3 flex flex-col gap-2">
-                    <span class="text-xs font-semibold text-white">🏨 Apaleo verbinden</span>
-                    <p class="text-[10px] text-slate-500">Hotel-Verwaltungssystem. In Apaleo eine App vom Typ „OAuth simple client (custom)“ anlegen und ihr <b>lesende</b> Rechte geben (Reservierungen, Verfügbarkeit, Häuser). Nur wenn ihr unten das Ändern einschaltet, braucht sie zusätzlich „reservations.manage“. Danach beantwortet Aura Fragen wie „Wer reist heute an?“, „Wer reist morgen ab?“, „Wer ist im Haus?“, „Wie viele Zimmer sind heute frei?“ und „Reservierung von Müller“. Zugriff haben <b>Administratoren</b> und alle Personen, bei denen in der Benutzerverwaltung das 🏨 eingeschaltet ist. Gäste haben nie Zugriff.</p>
-                    <label class="flex items-start gap-2 cursor-pointer">
-                        <input type="checkbox" id="apaleo-guest-enabled" class="w-4 h-4 accent-blue-600 cursor-pointer mt-0.5">
-                        <span class="text-[11px] text-slate-300">Gäste dürfen Fragen zu ihrer <b>eigenen</b> Reservierung stellen
-                            <span class="block text-[10px] text-slate-500 mt-0.5">Standard: aus. Braucht oben „Gäste dürfen mit Aura chatten“. Ein Gast weist sich im Menü „Mein Aufenthalt“ mit Reservierungsnummer und Nachname aus und sieht danach nur seine eigene Reservierung (Anreise, Abreise, Nächte, Personen, Zimmerkategorie, Zimmernummer erst nach dem Check-in). Nie Preise, Notizen oder andere Gäste.</span>
-                        </span>
-                    </label>
-                    <div class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 flex flex-col gap-1.5">
-                        <p id="apaleo-conn-status" class="text-[11px] text-slate-300">Noch nicht mit Apaleo verbunden.</p>
-                        <p class="text-[10px] text-slate-500">Mit einem Klick bei Apaleo anmelden und dort freigeben, welche Häuser AuraChat sehen darf (OAuth 2.0). Zugangsdaten werden nicht von Hand eingetragen. Die Verbindung läuft über den Vermittler <span id="apaleo-connect-host" class="text-slate-400"></span>: Vor der Weiterleitung zu Apaleo zeigt er, wohin die Zugangsdaten gehen; er speichert keine Token. Die Token liegen hier verschlüsselt. Wird die App in Apaleo getrennt, muss neu verbunden werden.</p>
-                        <div class="flex gap-2 flex-wrap">
-                            <button id="apaleo-connect-btn" class="bg-blue-600 hover:bg-blue-500 text-white font-medium px-3 py-1.5 rounded-lg text-[11px] transition cursor-pointer">Mit Apaleo verbinden</button>
-                            <button id="apaleo-disconnect-btn" class="hidden bg-slate-800 hover:bg-red-900/60 border border-slate-700 text-white font-medium px-3 py-1.5 rounded-lg text-[11px] transition cursor-pointer">Trennen</button>
-                        </div>
-                    </div>
-                    <div id="apaleo-houses-box" class="hidden bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 flex flex-col gap-1.5">
-                        <p class="text-[11px] text-slate-300">Häuser, mit denen AuraChat arbeitet</p>
-                        <div id="apaleo-houses" class="flex flex-col gap-1"></div>
-                        <p class="text-[10px] text-slate-500">Abfragen („Wer reist heute an?“) zeigen alle gewählten Häuser oder nur das genannte. Aktionen (Check-in, Check-out, Zimmer zuweisen, Zimmer melden) brauchen bei mehreren Häusern das genannte Haus in der Frage. Welche Häuser zur Auswahl stehen, bestimmt der Kunde bei der Freigabe in Apaleo (jederzeit änderbar unter „Apps → Verbundene Apps“).</p>
-                        <div><button id="apaleo-save-btn" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white font-medium px-3 py-1.5 rounded-lg text-[11px] transition cursor-pointer">Auswahl speichern</button></div>
-                    </div>
-                    <div class="flex gap-2">
-                        <button id="apaleo-test-btn" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white font-medium px-3 py-1.5 rounded-lg text-[11px] transition cursor-pointer">Verbindung testen</button>
-                    </div>
-                    <div id="apaleo-status" class="text-[11px] hidden"></div>
-                    <div id="apaleo-test-result" class="text-[10px] text-slate-400 whitespace-pre-wrap hidden"></div>
-                    <div class="border-t border-slate-800 pt-2 mt-1 flex flex-col gap-1.5">
-                        <span class="text-xs font-semibold text-white">✏️ Änderungen in Apaleo (optional)</span>
-                        <p class="text-[10px] text-slate-500">Standard: <b>aus</b>. AuraChat kann dann Check-in, Check-out und Zimmer zuweisen, aber nur auf Zuruf im Chat <b>mit Bestätigung</b>: Aura zeigt zuerst, was passieren würde, und führt es erst nach „Ausführen“ aus (2 Minuten gültig, einmalig). Zusätzlich braucht jede Person das Recht ✏️ in der Benutzerliste (Administratoren immer). Stornieren und „No-Show“ gibt es bewusst nicht. Jede Änderung steht im Protokoll unten. Die App in Apaleo braucht dafür das Recht „reservations.manage“ (für die Zimmerliste „units.read“). Am besten erst an einem Test-Haus ausprobieren.</p>
-                        <label class="flex items-start gap-2 cursor-pointer">
-                            <input type="checkbox" id="apaleo-write-enabled" class="w-4 h-4 accent-blue-600 cursor-pointer mt-0.5">
-                            <span class="text-[11px] text-slate-300">Änderungen in Apaleo erlauben <span class="block text-[10px] text-slate-500 mt-0.5">Hauptschalter. Ohne ihn geschieht in Apaleo nie etwas.</span></span>
-                        </label>
-                        <div class="flex flex-col gap-1 pl-6">
-                            <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="apaleo-write-checkin" class="w-3.5 h-3.5 accent-blue-600 cursor-pointer"><span class="text-[11px] text-slate-300">Check-in <span class="text-slate-500">(„Check-in für Müller“, nur bei heutiger Anreise mit Zimmer)</span></span></label>
-                            <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="apaleo-write-checkout" class="w-3.5 h-3.5 accent-blue-600 cursor-pointer"><span class="text-[11px] text-slate-300">Check-out <span class="text-slate-500">(„Check-out für Zimmer 401“)</span></span></label>
-                            <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="apaleo-write-assign" class="w-3.5 h-3.5 accent-blue-600 cursor-pointer"><span class="text-[11px] text-slate-300">Zimmer zuweisen <span class="text-slate-500">(„Weise Müller Zimmer 305 zu“ oder „… ein Zimmer zu“)</span></span></label>
-                            <label class="flex items-start gap-2 cursor-pointer"><input type="checkbox" id="apaleo-write-dirty" class="w-3.5 h-3.5 accent-blue-600 cursor-pointer mt-0.5"><span class="text-[11px] text-slate-300">Zimmer als schmutzig markieren <span class="text-slate-500">(„Markiere Zimmer 201 als schmutzig“, und als Angebot nach einer Meldung „nicht sauber“). Nur in Richtung „schmutzig“, nie „sauber“. Braucht in Apaleo zusätzlich das Recht „units.manage“, das auch das Umbenennen von Zimmern erlaubt; AuraChat ändert damit nur den Zustand.</span></span></label>
-                        </div>
-                        <div class="flex items-center justify-between mt-1">
-                            <span class="text-[11px] text-slate-300">Protokoll der letzten Änderungen</span>
-                            <button id="apaleo-audit-refresh" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white font-medium px-2.5 py-1 rounded-lg text-[11px] transition cursor-pointer">Aktualisieren</button>
-                        </div>
-                        <div id="apaleo-audit-list" class="text-[10px] text-slate-400 flex flex-col gap-0.5 max-h-40 overflow-y-auto"></div>
-                    </div>
-                    <div class="border-t border-slate-800 pt-2 mt-1 flex flex-col gap-1.5">
-                        <span class="text-xs font-semibold text-white">🧹 Housekeeping (Abfragen und Meldungen)</span>
-                        <p class="text-[10px] text-slate-500"><b>Abfragen</b> („Welche Zimmer sind nicht sauber?“, „Ist Zimmer 201 sauber?“, „Housekeeping“) sind immer an und brauchen in Apaleo nur das Leserecht „units.read“. Aura zeigt auch, in welchen noch nicht sauberen Zimmern heute Gäste anreisen. <b>Meldungen</b> („Zimmer 305 braucht Toilettenpapier“, „In Zimmer 305 fehlen Handtücher“, „Zimmer 201 ist nicht sauber“) legen ein Ticket in <b>AuraTicket</b> an, das dafür unter „AuraTicket verbinden“ eingerichtet sein muss (Apaleo selbst kennt keine Meldungen). Standard: aus.</p>
-                        <label class="flex items-start gap-2 cursor-pointer">
-                            <input type="checkbox" id="hk-staff-report" class="w-4 h-4 accent-blue-600 cursor-pointer mt-0.5">
-                            <span class="text-[11px] text-slate-300">Mitarbeitende dürfen Housekeeping melden <span class="block text-[10px] text-slate-500 mt-0.5">Per Chat, mit Zimmernummer. Dieselbe Meldung wird 30 Minuten lang nur einmal angelegt. Bei „nicht sauber“ bietet Aura (wenn oben erlaubt) an, das Zimmer auch in Apaleo auf „schmutzig“ zu setzen.</span></span>
-                        </label>
-                        <label class="flex items-start gap-2 cursor-pointer">
-                            <input type="checkbox" id="hk-guest-report" class="w-4 h-4 accent-blue-600 cursor-pointer mt-0.5">
-                            <span class="text-[11px] text-slate-300">Gäste dürfen für ihr eigenes Zimmer melden <span class="block text-[10px] text-slate-500 mt-0.5">Erst nach „Mein Aufenthalt“ (eingecheckt, mit Zimmer), in allen fünf Sprachen. Nur feste Bausteine (Zimmer reinigen, Toilettenpapier, Handtücher, Seife/Shampoo, Bettwäsche/Decken/Kissen), nie freier Text des Gastes im Ticket. Höchstens 5 Meldungen pro Gast und Stunde. Braucht oben „Gäste dürfen Fragen zu ihrer eigenen Reservierung stellen“.</span></span>
-                        </label>
-                    </div>
-                </div>
-
-                <div class="bg-slate-950 border border-slate-800 rounded-xl p-3 flex flex-col gap-2">
+                                <div class="bg-slate-950 border border-slate-800 rounded-xl p-3 flex flex-col gap-2">
                     <span class="text-xs font-semibold text-white">📧 AuraMail verbinden</span>
                     <p class="text-[10px] text-slate-500">Damit AuraChat per Chat oder Sprache E-Mails senden kann, z.B. "Aura, verfasse mir bitte ein Mail an muster@muster.net, dass ...". AuraChat schreibt einen Entwurf und sendet erst nach deinem "ja". Absender ist die E-Mail-Adresse der angemeldeten Person (aus ihrem Konto).</p>
                     <input type="text" id="auramail-url-input" placeholder="z.B. http://10.0.55.160:3300" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500">
@@ -1187,13 +1223,10 @@
                     <div class="text-xs text-slate-500">Lade Lizenzstatus...</div>
                 </div>
 
-                <div class="flex flex-col gap-2">
-                    <label class="text-xs font-semibold text-slate-300">Lizenzschlüssel aktivieren</label>
-                    <p class="text-[10px] text-slate-500 -mt-1">Seriennummer einfügen ODER eine .lic-Datei auswählen (füllt das Feld automatisch).</p>
-                    <textarea id="admin-license-input" rows="3" placeholder="eyJjdXN0b21lci..." class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-blue-500 resize-none"></textarea>
-                    <input type="file" id="admin-license-file-input" accept=".lic,.txt" class="w-full text-[11px] text-slate-400 bg-slate-950 border border-slate-800 rounded-xl p-2">
-                    <button id="admin-license-activate-btn" class="bg-blue-600 hover:bg-blue-500 text-white font-medium py-2 rounded-xl text-xs transition cursor-pointer">Aktivieren</button>
-                    <div id="admin-license-status" class="text-[11px] hidden"></div>
+                <div class="bg-blue-500/10 border border-blue-500/30 rounded-xl px-4 py-3 flex flex-col gap-1">
+                    <span class="text-xs font-semibold text-blue-300">🔑 Lizenz zentral in AuraControl</span>
+                    <p class="text-[11px] text-slate-300">Die Lizenz der Aura-Suite wird in AuraControl eingetragen (Admin Panel → Lizenz). AuraControl prüft sie beim Lizenzserver und überträgt sie automatisch an AuraChat und alle anderen Produkte. Hier ist nichts einzutragen.</p>
+                    <div id="license-sync-status" class="text-[11px] text-slate-500">-</div>
                 </div>
 
                 <div class="border-t border-slate-800 pt-3 flex flex-col gap-1">
@@ -1213,35 +1246,9 @@
 
             <!-- Tab: Aura-Academy -->
 
-                <div id="admin-tab-cockpit" class="hidden flex flex-col gap-3 min-h-0 overflow-y-auto pr-1">
-                    <div class="flex items-center justify-between gap-2">
-                        <div id="cockpit-headline" class="text-sm font-semibold text-slate-300">Cockpit</div>
-                        <div class="flex items-center gap-2">
-                            <span id="cockpit-updated" class="text-[10px] text-slate-500"></span>
-                            <button id="cockpit-refresh-btn" title="Jetzt aktualisieren" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white font-medium px-2.5 py-1 rounded-lg text-[11px] transition cursor-pointer">⟳</button>
-                        </div>
-                    </div>
-                    <div id="cockpit-host-info" class="text-[11px] text-slate-500"></div>
-                    <div id="cockpit-error" class="hidden bg-red-500/10 border border-red-500/30 rounded-xl px-3 py-2 text-[11px] text-red-300 whitespace-pre-wrap"></div>
-                    <div id="cockpit-warnings" class="flex flex-col gap-1"></div>
-                    <div id="cockpit-cards" class="grid grid-cols-2 gap-2"></div>
-                    <div class="flex flex-col gap-1.5">
-                        <span class="text-xs font-semibold text-white">🐳 Docker-Container</span>
-                        <div id="cockpit-containers" class="flex flex-col gap-1"></div>
-                        <div id="cockpit-docker-usage" class="text-[11px] text-slate-400"></div>
-                    </div>
-                    <div class="flex flex-col gap-1.5">
-                        <span class="text-xs font-semibold text-white">🛡️ Schwachstellen in den Images</span>
-                        <div id="cockpit-vulns" class="flex flex-col gap-1"></div>
-                    </div>
-                    <div class="flex flex-col gap-1.5">
-                        <span class="text-xs font-semibold text-white">🔄 Updates des Servers</span>
-                        <div id="cockpit-updates" class="flex flex-col gap-1"></div>
-                    </div>
-                </div>
             <div id="admin-tab-academy" class="hidden flex flex-col gap-3 min-h-0 overflow-y-auto pr-1">
                 <div id="academy-premium-banner" class="hidden bg-amber-500/10 border border-amber-500/30 rounded-xl px-4 py-3 text-[11px] text-amber-300">
-                    🔒 Aura-Academy ist ein Premium-Feature. Lizenz aktivieren im Tab "🔑 Lizenz".
+                    🔒 Aura-Academy ist ein Premium-Feature. Die Lizenz wird in AuraControl eingetragen (Admin Panel → Lizenz) und kommt automatisch hierher.
                 </div>
                 <p class="text-[10px] text-slate-500">Experimentelles Nebenmodell: feintunt jede Nacht um 01:00 Uhr ein kleines offenes Modell (0.5B Parameter) mit den gesammelten Gedächtnis-Fakten aller Nutzer:innen. Läuft direkt in diesem Container - kein separates Deployment. Ergebnis landet als <code class="text-slate-400">Aura-AI-05b.gguf</code> im <code class="text-slate-400">models/</code>-Ordner.</p>
 
@@ -1511,7 +1518,7 @@
                 <button class="close-modal-btn text-slate-400 hover:text-white text-lg font-bold cursor-pointer">×</button>
             </div>
             <div id="email-premium-banner" class="hidden bg-amber-500/10 border border-amber-500/30 rounded-xl px-4 py-3 text-[11px] text-amber-300 shrink-0">
-                🔒 Die E-Mail-Integration ist ein Premium-Feature. Lizenz aktivieren im Admin Panel → 🔑 Lizenz.
+                🔒 Die E-Mail-Integration ist ein Premium-Feature. Die Lizenz wird in AuraControl eingetragen (Admin Panel → Lizenz) und kommt automatisch hierher.
             </div>
 
             <!-- Verbindung einrichten -->

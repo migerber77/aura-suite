@@ -96,18 +96,10 @@
         if (info.valid) return true;
         document.getElementById('modal-license').classList.remove('hidden');
         if (currentUser.role === 'admin') {
-            document.getElementById('license-modal-text').textContent = 'Für diese Installation ist keine gültige Lizenz hinterlegt. Bitte Lizenzschlüssel eintragen:';
-            document.getElementById('license-modal-admin-form').classList.remove('hidden');
-            document.getElementById('license-save-btn').onclick = async () => {
-                const errorEl = document.getElementById('license-modal-error');
-                errorEl.classList.add('hidden');
-                try {
-                    await api('/admin/license', { method: 'POST', body: JSON.stringify({ key: document.getElementById('license-key-input').value }) });
-                    document.getElementById('modal-license').classList.add('hidden');
-                    await loadTickets();
-                } catch (err) { errorEl.textContent = err.message; errorEl.classList.remove('hidden'); }
-            };
+            document.getElementById('license-modal-text').textContent = 'Für diese Installation ist keine gültige Lizenz vorhanden. Die Lizenz wird zentral in AuraControl eingetragen (Admin Panel → Lizenz) und kommt automatisch hierher (spätestens nach 15 Minuten).';
         }
+        const recheck = document.getElementById('license-recheck-btn');
+        if (recheck) recheck.onclick = () => location.reload();
         return false;
     }
     async function doLogout() {
@@ -412,24 +404,7 @@
             loadUserAdmin();
         }));
     }
-    document.getElementById('new-user-btn').addEventListener('click', async () => {
-        try {
-            await api('/admin/users', {
-                method: 'POST',
-                body: JSON.stringify({
-                    username: document.getElementById('new-user-username').value,
-                    password: document.getElementById('new-user-password').value,
-                    firstname: document.getElementById('new-user-firstname').value,
-                    lastname: document.getElementById('new-user-lastname').value,
-                    role: document.getElementById('new-user-role').value
-                })
-            });
-            ['username', 'password', 'firstname', 'lastname'].forEach(f => document.getElementById(`new-user-${f}`).value = '');
-            loadUserAdmin();
-            loadUsersForAssignment();
-        } catch (err) { alert(err.message); }
-    });
-
+    // Neue Benutzer werden nicht mehr hier angelegt: das geschieht zentral in AuraDirect (kostenlos).
     async function loadSecuritySettings() {
         const s = await api('/admin/security');
         document.getElementById('twofa-required-toggle').checked = s.twofaRequired;
@@ -470,22 +445,10 @@
             statusEl.textContent = `✗ Keine gültige Lizenz (${info.error || 'unbekannt'})`;
             statusEl.className = 'text-xs text-red-400 mb-3';
         }
-        document.getElementById('license-admin-remove-btn').classList.toggle('hidden', !info.licenseValid);
+        if (info.licenseValid) statusEl.textContent += info.managedBy === 'auracontrol' ? ' · von AuraControl übertragen' : '';
+        if (info.plan) statusEl.textContent += ' · ' + (info.plan === 'advanced' ? 'Business Advanced' : info.plan === 'solo' ? 'Business Solo' : 'Aura-Suite');
     }
-    document.getElementById('license-admin-save-btn').addEventListener('click', async () => {
-        const errorEl = document.getElementById('license-admin-error');
-        errorEl.classList.add('hidden');
-        try {
-            await api('/admin/license', { method: 'POST', body: JSON.stringify({ key: document.getElementById('license-admin-key-input').value }) });
-            document.getElementById('license-admin-key-input').value = '';
-            loadLicenseAdminStatus();
-        } catch (err) { errorEl.textContent = err.message; errorEl.classList.remove('hidden'); }
-    });
-    document.getElementById('license-admin-remove-btn').addEventListener('click', async () => {
-        if (!confirm('Lizenz wirklich entfernen?')) return;
-        await api('/admin/license/remove', { method: 'POST' });
-        loadLicenseAdminStatus();
-    });
+    // Lizenz eintragen/entfernen gibt es hier nicht mehr: sie kommt aus AuraControl
 
     document.getElementById('backup-create-btn').addEventListener('click', () => { window.location.href = '/api/admin/backup'; });
     document.getElementById('backup-restore-btn').addEventListener('click', async () => {

@@ -105,21 +105,10 @@
         if (info.valid) return true;
         document.getElementById('modal-license').classList.remove('hidden');
         if (currentUser.role === 'admin') {
-            document.getElementById('license-modal-text').textContent = 'Für diese Installation ist keine gültige Lizenz hinterlegt. Bitte Lizenzschlüssel eintragen:';
-            document.getElementById('license-modal-admin-form').classList.remove('hidden');
-            document.getElementById('license-save-btn').onclick = async () => {
-                const errorEl = document.getElementById('license-modal-error');
-                errorEl.classList.add('hidden');
-                try {
-                    await api('/admin/license', { method: 'POST', body: JSON.stringify({ key: document.getElementById('license-key-input').value }) });
-                    document.getElementById('modal-license').classList.add('hidden');
-                    await loadMailboxes();
-                } catch (err) {
-                    errorEl.textContent = err.message;
-                    errorEl.classList.remove('hidden');
-                }
-            };
+            document.getElementById('license-modal-text').textContent = 'Für diese Installation ist keine gültige Lizenz vorhanden. Die Lizenz wird zentral in AuraControl eingetragen (Admin Panel → Lizenz) und kommt automatisch hierher (spätestens nach 15 Minuten).';
         }
+        const recheck = document.getElementById('license-recheck-btn');
+        if (recheck) recheck.onclick = () => location.reload();
         return false;
     }
 
@@ -578,28 +567,7 @@
             });
         });
     }
-    document.getElementById('new-user-btn').addEventListener('click', async () => {
-        try {
-            await api('/admin/users', {
-                method: 'POST',
-                body: JSON.stringify({
-                    username: document.getElementById('new-user-username').value,
-                    password: document.getElementById('new-user-password').value,
-                    firstname: document.getElementById('new-user-firstname').value,
-                    lastname: document.getElementById('new-user-lastname').value,
-                    role: document.getElementById('new-user-role').value
-                })
-            });
-            document.getElementById('new-user-username').value = '';
-            document.getElementById('new-user-password').value = '';
-            document.getElementById('new-user-firstname').value = '';
-            document.getElementById('new-user-lastname').value = '';
-            loadUserAdmin();
-        } catch (err) {
-            alert(err.message);
-        }
-    });
-
+    // Neue Benutzer werden nicht mehr hier angelegt: das geschieht zentral in AuraDirect (kostenlos).
     // AuraDirect
     async function loadAuraDirectSettings() {
         const s = await api('/admin/auradirect');
@@ -690,35 +658,17 @@
         if (info.licenseValid) {
             statusEl.textContent = `✓ Lizenziert für "${info.customer}"${info.expiresAt ? ' · gültig bis ' + fmtDateDisplay(info.expiresAt.slice(0, 10)) : ' · unbegrenzt'}`;
             statusEl.className = 'text-xs text-emerald-400 mb-3';
-        } else if (info.freeTier) {
-            statusEl.textContent = '✓ Kostenlose Stufe aktiv (1 Benutzer: der Admin) - für weitere Konten wird eine Lizenz benötigt.';
-            statusEl.className = 'text-xs text-emerald-400 mb-3';
         } else if (info.trial) {
-            statusEl.textContent = `⏳ Testphase aktiv - noch ${info.trialDaysRemaining} Tag(e).`;
+            statusEl.textContent = `⏳ Testphase aktiv - noch ${info.trialDaysRemaining} Tag(e). Danach braucht AuraMail eine Lizenz (Business Solo oder Business Advanced).`;
             statusEl.className = 'text-xs text-amber-400 mb-3';
         } else {
-            statusEl.textContent = `✗ Keine gültige Lizenz (${info.error || 'unbekannt'})`;
+            statusEl.textContent = `✗ Keine gültige Lizenz (${info.error || 'unbekannt'}). AuraMail ist in Business Solo und Business Advanced enthalten.`;
             statusEl.className = 'text-xs text-red-400 mb-3';
         }
-        document.getElementById('license-admin-remove-btn').classList.toggle('hidden', !info.licenseValid);
+        if (info.licenseValid) statusEl.textContent += info.managedBy === 'auracontrol' ? ' · von AuraControl übertragen' : '';
+        if (info.plan) statusEl.textContent += ' · ' + (info.plan === 'advanced' ? 'Business Advanced' : info.plan === 'solo' ? 'Business Solo' : 'Aura-Suite');
     }
-    document.getElementById('license-admin-save-btn').addEventListener('click', async () => {
-        const errorEl = document.getElementById('license-admin-error');
-        errorEl.classList.add('hidden');
-        try {
-            await api('/admin/license', { method: 'POST', body: JSON.stringify({ key: document.getElementById('license-admin-key-input').value }) });
-            document.getElementById('license-admin-key-input').value = '';
-            loadLicenseAdminStatus();
-        } catch (err) {
-            errorEl.textContent = err.message;
-            errorEl.classList.remove('hidden');
-        }
-    });
-    document.getElementById('license-admin-remove-btn').addEventListener('click', async () => {
-        if (!confirm('Lizenz wirklich entfernen?')) return;
-        await api('/admin/license/remove', { method: 'POST' });
-        loadLicenseAdminStatus();
-    });
+    // Lizenz eintragen/entfernen gibt es hier nicht mehr: sie kommt aus AuraControl
 
     // Backup
     document.getElementById('backup-create-btn').addEventListener('click', () => { window.location.href = '/api/admin/backup'; });

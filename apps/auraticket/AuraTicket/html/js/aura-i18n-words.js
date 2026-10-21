@@ -143,6 +143,12 @@
   "fr": "Dernière version",
   "es": "Última versión"
  },
+ "wird beim nächsten Abgleich mit dem Lizenzserver übernommen": {
+  "en": "will be taken over at the next sync with the licence server",
+  "it": "verrà ripresa alla prossima sincronizzazione con il server delle licenze",
+  "fr": "sera reprise lors de la prochaine synchronisation avec le serveur de licences",
+  "es": "se aplicará en la próxima sincronización con el servidor de licencias"
+ },
  "Update verfügbar": {
   "en": "Update available",
   "it": "Aggiornamento disponibile",
@@ -1000,6 +1006,18 @@
   "it": "Eliminare davvero?",
   "fr": "Vraiment supprimer ?",
   "es": "¿Eliminar de verdad?"
+ },
+ "Neue Benutzer legst du zentral in AuraDirect an (kostenlos). Sie erscheinen hier nach ihrer ersten Anmeldung.": {
+  "en": "Create new users centrally in AuraDirect (free). They appear here after their first sign-in.",
+  "it": "Crea i nuovi utenti centralmente in AuraDirect (gratuito). Compaiono qui dopo il primo accesso.",
+  "fr": "Créez les nouveaux utilisateurs de façon centralisée dans AuraDirect (gratuit). Ils apparaissent ici après leur première connexion.",
+  "es": "Crea los nuevos usuarios de forma centralizada en AuraDirect (gratis). Aparecen aquí tras su primer inicio de sesión."
+ },
+ "Mit der kostenlosen Version genügt der Administrator. Für weitere Benutzer verbindest du AuraDirect.": {
+  "en": "With the free version the administrator is enough. To add more users, connect AuraDirect.",
+  "it": "Con la versione gratuita basta l’amministratore. Per altri utenti collega AuraDirect.",
+  "fr": "Avec la version gratuite, l’administrateur suffit. Pour d’autres utilisateurs, connectez AuraDirect.",
+  "es": "Con la versión gratuita basta el administrador. Para más usuarios, conecta AuraDirect."
  }
 });
 })();

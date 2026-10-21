@@ -1,5 +1,9 @@
 """Lizenz, Testphase, Gratis-Stufe, anonyme Rückmeldung beim Lizenzserver und Aura-Suite-Version für AuraControl.
 
+Suite-Lizenz (Business Solo / Advanced): EIN Schlüssel (Produkt "suite") wird hier eingetragen. AuraControl holt beim Abgleich mit dem Lizenzserver
+neuere Fassungen derselben Lizenz (z. B. mehr Mitarbeiter) und gibt den Schlüssel an AuraChat, AuraPlan, AuraTicket, AuraMail und AuraCall weiter
+(GET /api/license/suite-key, Zugang mit sync_token(LICENSE_SECRET)).
+
 Einheitlich mit allen Aura-Produkten:
   * 14 Tage Testphase (alles erlaubt), danach eine gültige Lizenz oder die Gratis-Stufe (höchstens 1 aktives Konto: der Admin), sonst gesperrt.
   * Alle 12 Stunden meldet sich die Installation ANONYM beim Lizenzserver: zufällige Kennung, Produkt, Version, Suite-Version, Zustand, Zahl der Konten und
@@ -21,6 +25,9 @@ from datetime import datetime, timezone
 
 PRODUCT_KEY = "control"          # Name beim Lizenzserver (Check-in)
 LICENSE_PRODUCT = "auracontrol"  # Produktname in Lizenzschlüsseln
+SUITE_PRODUCT = "suite"          # Suite-Lizenz: EIN Schlüssel für alle Produkte (Business Solo / Advanced), wird hier eingetragen und an die Produkte verteilt
+SYNC_LABEL = b"aura-suite-license-sync"   # Zugangsschlüssel der Produkte zum Abholen: HMAC(LICENSE_SECRET, SYNC_LABEL), braucht keine eigene Einstellung
+SYNC_PRODUCTS = {"chat": "AuraChat", "plan": "AuraPlan", "ticket": "AuraTicket", "mail": "AuraMail", "call": "AuraCall"}
 TRIAL_DAYS = 14
 DAY = 86400
 CHECKIN_PORT = 8451
@@ -94,7 +101,7 @@ def verify_license_key(key, secret, now=None):
         return {"valid": False, "error": "Die Lizenzdaten sind beschädigt."}
     if not isinstance(payload, dict):
         return {"valid": False, "error": "Die Lizenzdaten sind beschädigt."}
-    if payload.get("product") != LICENSE_PRODUCT:
+    if payload.get("product") not in (LICENSE_PRODUCT, SUITE_PRODUCT):
         return {"valid": False, "error": "Diese Lizenz ist nicht für AuraControl ausgestellt."}
     exp = payload.get("expiresAt")
     if exp:
@@ -108,6 +115,21 @@ def verify_license_key(key, secret, now=None):
         if t < now:
             return {"valid": False, "error": "Die Lizenz ist abgelaufen.", "payload": payload}
     return {"valid": True, "payload": payload}
+
+
+def sync_token(secret):
+    """Zugangsschlüssel, mit dem die Produkte die Suite-Lizenz bei AuraControl abholen (aus LICENSE_SECRET abgeleitet, das alle Produkte ohnehin kennen)."""
+    if not secret:
+        return ""
+    return base64.urlsafe_b64encode(hmac.new(secret.encode(), SYNC_LABEL, hashlib.sha256).digest()).decode().rstrip("=")
+
+
+def _issued(payload):
+    try:
+        t = datetime.fromisoformat(str(payload.get("issuedAt")).replace("Z", "+00:00"))
+        return (t if t.tzinfo else t.replace(tzinfo=timezone.utc)).timestamp()
+    except Exception:
+        return 0.0
 
 
 def _short(v, n=120):
@@ -145,6 +167,8 @@ class SuiteState:
         self._timer = None
         self._stopped = False
         self._lock = threading.Lock()
+        self.deliveries = {}       # Produkt -> Zeitpunkt, zu dem es die Suite-Lizenz zuletzt abgeholt hat (nur Anzeige, nur im Speicher)
+        self.last_update = None    # zuletzt vom Lizenzserver übernommene neuere Fassung
         os.makedirs(self.dir, exist_ok=True)
         self._load_suite()
 
@@ -214,6 +238,46 @@ class SuiteState:
 
     def remove_key(self):
         self._remove("license.key")
+
+    # ---- Suite-Lizenz: Verteilung an die Produkte ----
+    def suite_payload(self):
+        """Payload der gespeicherten Suite-Lizenz, wenn sie gültig ist, sonst None."""
+        key = self.stored_key()
+        if not key:
+            return None
+        r = verify_license_key(key, self.secret, self.now())
+        p = r.get("payload") if r.get("valid") else None
+        return p if isinstance(p, dict) and p.get("product") == SUITE_PRODUCT else None
+
+    def suite_key(self):
+        return self.stored_key() if self.suite_payload() else None
+
+    def note_delivery(self, product):
+        if product in SYNC_PRODUCTS:
+            self.deliveries[product] = datetime.fromtimestamp(self.now(), timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+    def suite_summary(self):
+        p = self.suite_payload()
+        if not p:
+            return None
+        users = p.get("users") if isinstance(p.get("users"), int) else p.get("maxUsers")
+        return {"plan": {"solo": "Business Solo", "advanced": "Business Advanced"}.get(p.get("plan"), "Aura-Suite"), "users": users,
+                "deliveries": [{"product": k, "name": v, "at": self.deliveries.get(k)} for k, v in SYNC_PRODUCTS.items()], "lastUpdate": self.last_update}
+
+    def _take_newer(self, key):
+        """Neuere Fassung der Suite-Lizenz vom Lizenzserver übernehmen: nur gültig, nur dieselbe Lizenz (licenseId), nur wirklich neuer."""
+        if not isinstance(key, str) or len(key) > 4000:
+            return False
+        cur = self.suite_payload()
+        r = verify_license_key(key, self.secret, self.now())
+        p = r.get("payload") if r.get("valid") else None
+        if not (cur and isinstance(p, dict) and p.get("product") == SUITE_PRODUCT and p.get("licenseId") and p.get("licenseId") == cur.get("licenseId")):
+            return False
+        if _issued(p) <= _issued(cur) or key == self.stored_key():
+            return False
+        self._write("license.key", key + "\n")
+        self.last_update = {"at": datetime.fromtimestamp(self.now(), timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"), "users": p.get("users")}
+        return True
 
     def license_info(self):
         now = float(self.now())
@@ -299,6 +363,9 @@ class SuiteState:
             # Nur eine echte Antwort ({ok: true, ...}) ändert die Anzeige; eine Anmeldeseite im Hotel-WLAN (200, anderer Inhalt) lässt sie unberührt.
             if ok and isinstance(data, dict) and data.get("ok") is True:
                 self._set_suite(parse_suite_info(data.get("suite")))
+                lic = data.get("license")
+                if isinstance(lic, dict):
+                    self._take_newer(lic.get("key"))   # z. B. mehr Mitarbeiter: neue Fassung übernehmen, die Produkte holen sie dann hier ab
             self.last_checkin = {"success": ok, "status": status, "retryable": (not ok) and status >= 500, "at": stamp()}
         except Exception:
             self.last_checkin = {"success": False, "status": 0, "retryable": True, "at": stamp()}

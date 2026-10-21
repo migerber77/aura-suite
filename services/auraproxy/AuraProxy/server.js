@@ -128,7 +128,7 @@ app.get('/api/version', requireAuth, (req, res) => { const suite = suitePing.sui
 // Aus der Antwort kommt die Aura-Suite-Version, die im Lizenzserver eingetragen ist: sie erscheint unter "Über Aura-Suite" (siehe /api/version).
 const suitePing = createSuitePing({
     product: 'proxy', version: AURA_APP_VERSION, suiteInstalled: AURA_SUITE_INSTALLED, dataDir, host: process.env.LICENSE_CHECKIN_HOST,
-    getState: async () => { const i = await getStoredLicenseInfo(); return i.licenseValid ? 'licensed' : i.trial ? 'trial' : i.freeTier ? 'free' : 'expired'; },
+    getState: async () => 'free',   // AuraProxy ist kostenlos
     getCounts: () => new Promise((resolve) => db.get(`SELECT COUNT(*) AS c FROM users WHERE active = 1`, [], (err, row) => resolve(err || !row ? null : { totalUsers: row.c, totalAdmins: null }))),
     getLicenseKey: () => getSetting('license_key')
 });
@@ -143,64 +143,16 @@ const auraPrivacy = require('./aura-privacy-server');
 const DEFAULT_PRIVACY_POLICY = "# Datenschutzerklärung\n\nDiese Anwendung (AuraProxy) leitet Verbindungen zu den Anwendungen des Betreibers weiter und verwaltet dafür folgende Daten:\n\n- Benutzername und Name der Personen, die AuraProxy verwalten (das Passwort nur als Prüfwert, bei Zwei-Faktor-Anmeldung zusätzlich das Geheimnis der Authenticator-App)\n- Zuordnungen von Domains zu Zielen sowie Zertifikate, bei eigenen Zertifikaten auch den zugehörigen privaten Schlüssel\n- Die Zertifizierungsstelle für interne Namen mit ihrem privaten Schlüssel\n- Beim automatischen Zertifikat von Let's Encrypt werden die Domainnamen an Let's Encrypt übermittelt\n- In den technischen Protokollen des Weiterleitungsdienstes können IP-Adressen der Besucherinnen und Besucher erscheinen\n\nDiese Daten werden ausschliesslich auf dem Server des Betreibers gespeichert und, abgesehen von der genannten Übermittlung an Let's Encrypt, nicht an Dritte weitergegeben. Auskunft, Berichtigung und Löschung erhaltet ihr bei den Administrator:innen." + '\n\n' + auraPrivacy.CHECKIN_NOTICE;
 auraPrivacy.register(app, { db, requireAuth, requireAdmin: requireAuth, getUserId: (req) => (req.session && req.session.userId) || null, defaultText: DEFAULT_PRIVACY_POLICY });
 
-// --- LIZENZMANAGEMENT ---
-// Lizenzregel (einheitlich für alle Aura-Produkte): 14 Tage Testphase mit allem, danach eine gültige Lizenz oder die Gratis-Stufe
-// (höchstens 1 aktives Konto: der Admin). Mehr Konten brauchen eine Lizenz.
-const TRIAL_DAYS = 14;
-
-function verifyLicenseKey(licenseKey) {
-    if (!licenseKey || typeof licenseKey !== 'string' || !licenseKey.includes('.')) return { valid: false, error: 'Ungültiges Lizenzformat.' };
-    const [payloadB64, signatureB64] = licenseKey.trim().split('.');
-    if (!payloadB64 || !signatureB64) return { valid: false, error: 'Ungültiges Lizenzformat.' };
-    const secret = process.env.LICENSE_SECRET || '';
-    if (!secret) return { valid: false, error: 'Lizenzsystem ist serverseitig nicht konfiguriert (LICENSE_SECRET fehlt).' };
-    const expectedSig = crypto.createHmac('sha256', secret).update(payloadB64).digest('base64url');
-    const sigBuf = Buffer.from(signatureB64);
-    const expectedBuf = Buffer.from(expectedSig);
-    if (sigBuf.length !== expectedBuf.length || !crypto.timingSafeEqual(sigBuf, expectedBuf)) return { valid: false, error: 'Lizenzsignatur ist ungültig.' };
-    let payload;
-    try { payload = JSON.parse(Buffer.from(payloadB64, 'base64url').toString('utf-8')); } catch { return { valid: false, error: 'Lizenz-Daten sind beschädigt.' }; }
-    if (payload.product !== 'auraproxy') return { valid: false, error: 'Diese Lizenz ist nicht für AuraProxy ausgestellt.' };
-    if (payload.expiresAt && new Date(payload.expiresAt).getTime() < Date.now()) return { valid: false, error: 'Lizenz ist abgelaufen.', payload };
-    return { valid: true, payload };
-}
-function getTrialInfo() {
-    return getSetting('install_date').then(async (installDate) => {
-        if (!installDate) { installDate = new Date().toISOString(); await setSetting('install_date', installDate); }
-        const daysElapsed = (Date.now() - new Date(installDate).getTime()) / (1000 * 60 * 60 * 24);
-        return { active: daysElapsed < TRIAL_DAYS, daysRemaining: Math.max(0, Math.ceil(TRIAL_DAYS - daysElapsed)) };
-    });
-}
-// Dauerhafte Gratis-Stufe nach der Testphase: EIN aktives Konto, und das ist der Admin. Jedes weitere Konto braucht eine Lizenz.
-function isWithinFreeTier() {
-    return new Promise((resolve) => db.get(`SELECT COUNT(*) as c FROM users WHERE active = 1`, [], (err, row) => resolve(!err && !!row && row.c <= 1)));
-}
+// --- KOSTENLOS ---
+// AuraProxy ist KOSTENLOS: es wird für die zentrale Benutzerverwaltung (zusammen mit AuraDirect) gebraucht. Keine Testphase, keine Lizenz, keine Sperre.
+// (In der kostenlosen 1-Benutzer-Version der anderen Produkte muss es nicht eingerichtet werden: dort genügt der Administrator.)
 function recordProductConnection(product) {
     if (!['aurachat', 'auraplan', 'auradirect', 'auramail', 'auraticket'].includes(product)) return;
     db.run(`INSERT INTO connected_products (product, lastSeenAt) VALUES (?, ?) ON CONFLICT(product) DO UPDATE SET lastSeenAt = excluded.lastSeenAt`, [product, new Date().toISOString()], () => {});
 }
 async function getStoredLicenseInfo() {
-    const key = await getSetting('license_key');
-    let base = { valid: false, customer: null, expiresAt: null, error: 'Keine Lizenz hinterlegt.' };
-    if (key) {
-        const result = verifyLicenseKey(key);
-        base = { valid: result.valid, customer: (result.payload && result.payload.customer) || null, expiresAt: (result.payload && result.payload.expiresAt) || null, error: result.valid ? null : result.error };
-    }
-    // Reihenfolge: erst die 14 Tage Testphase (alles erlaubt), dann eine gültige Lizenz, sonst die Gratis-Stufe (höchstens 1 aktives Konto: der Admin), sonst gesperrt.
-    const trial = await getTrialInfo();
-    if (trial.active) return { ...base, valid: true, licenseValid: base.valid, trial: true, trialDaysRemaining: trial.daysRemaining, freeTier: false };
-    if (base.valid) return { ...base, licenseValid: true, trial: false, trialDaysRemaining: 0, freeTier: false };
-    if (await isWithinFreeTier()) return { ...base, valid: true, licenseValid: false, trial: false, trialDaysRemaining: 0, freeTier: true, freeTierReason: 'users' };
-    return { ...base, licenseValid: false, trial: false, trialDaysRemaining: 0, freeTier: false };
+    return { valid: true, licenseValid: false, trial: false, trialDaysRemaining: 0, freeTier: true, freeTierReason: 'always-free', free: true, customer: null, expiresAt: null, error: null };
 }
-async function requireLicense(req, res, next) {
-    const exempt = ['/api/login', '/api/logout', '/api/me', '/api/license', '/api/admin/license', '/api/admin/license/remove', '/api/public/info'];
-    if (!req.path.startsWith('/api/') || exempt.includes(req.path)) return next();
-    const info = await getStoredLicenseInfo();
-    if (info.valid) return next();
-    res.status(402).json({ error: 'Keine gültige Lizenz für AuraProxy hinterlegt.', licenseRequired: true });
-}
-app.use(requireLicense);
 
 function getConfig(key) { return getSetting(key); }
 function setConfig(key, value) { return setSetting(key, value); }
@@ -356,18 +308,6 @@ app.get('/api/logout', (req, res) => req.session.destroy(() => res.json({ succes
 app.get('/api/me', requireAuth, (req, res) => res.json(req.session.user));
 
 app.get('/api/license', requireAuth, async (req, res) => res.json(await getStoredLicenseInfo()));
-app.post('/api/admin/license', requireAuth, async (req, res) => {
-    const key = (req.body.key || '').trim();
-    if (!key) return res.status(400).json({ error: 'Bitte einen Lizenzschlüssel eintragen.' });
-    const result = verifyLicenseKey(key);
-    if (!result.valid) return res.status(400).json({ error: result.error });
-    await setSetting('license_key', key);
-    res.json({ success: true, customer: result.payload.customer, expiresAt: result.payload.expiresAt });
-});
-app.post('/api/admin/license/remove', requireAuth, async (req, res) => {
-    await setSetting('license_key', '');
-    res.json({ success: true });
-});
 app.post('/api/change-password', requireAuth, async (req, res) => {
     const { currentPassword, newPassword } = req.body;
     if (!newPassword || newPassword.length < 8) return res.status(400).json({ error: 'Das neue Passwort muss mindestens 8 Zeichen haben.' });

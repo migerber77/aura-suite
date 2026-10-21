@@ -50,34 +50,17 @@
     async function completeLogin(data) {
         currentUser = data;
         // Einheitliches Menü der Aura-Suite (aura-menu.js): AuraProxy hat keine Rollen, alle Angemeldeten verwalten
-        window.AuraAppMenu = { logout: doLogout, settings: () => openPanel('settings'), admin: { users: () => openPanel('users'), license: () => openPanel('license'), security: () => openPanel('security'), system: () => openPanel('system') } };
+        window.AuraAppMenu = { logout: doLogout, settings: () => openPanel('settings'), admin: { users: () => openPanel('users'), security: () => openPanel('security'), system: () => openPanel('system') } };
         if (window.AuraMenuCtl) window.AuraMenuCtl.refresh();
         window.AuraPrivacy.check({ onLogout: doLogout });   // Datenschutzerklärung beim ersten Login (und nach jeder Änderung) bestätigen
         document.getElementById('login-screen').classList.add('hidden');
         document.getElementById('app').classList.remove('hidden');
         document.getElementById('user-name').textContent = currentUser.firstname || currentUser.username;
-        const licenseOk = await checkLicense();
-        if (!licenseOk) return;
         loadAvailablePorts();
         loadDomains();
         loadCertificates();
         loadCa();
         checkCaddyStatus();
-    }
-    async function checkLicense() {
-        const info = await api('/license');
-        if (info.valid) return true;
-        document.getElementById('modal-license').classList.remove('hidden');
-        document.getElementById('license-save-btn').onclick = async () => {
-            const errorEl = document.getElementById('license-modal-error');
-            errorEl.classList.add('hidden');
-            try {
-                await api('/admin/license', { method: 'POST', body: JSON.stringify({ key: document.getElementById('license-key-input').value }) });
-                document.getElementById('modal-license').classList.add('hidden');
-                loadDomains();
-            } catch (err) { errorEl.textContent = err.message; errorEl.classList.remove('hidden'); }
-        };
-        return false;
     }
     async function doLogout() { await api('/logout'); location.reload(); }
     window.AuraAppMenu = { logout: doLogout };   // schon vor der Anmeldung da; nach der Anmeldung kommt das Admin Panel dazu
@@ -265,7 +248,7 @@
 
     // --- Einstellungen ---
     // Admin Panel: ein Fenster, das je nach Menüpunkt EINEN Bereich zeigt (Benutzer, Sicherheit, Lizenz, System)
-    const PANEL_TITLES = { users: '👥 Benutzer', security: '🛡️ Sicherheit', license: '🔑 Lizenz', system: '🖥️ System', privacy: '📄 Datenschutzerklärung' };
+    const PANEL_TITLES = { users: '👥 Benutzer', security: '🛡️ Sicherheit', system: '🖥️ System', privacy: '📄 Datenschutzerklärung' };
     function openPanel(section) {
         // "settings" = Einstellungen: Darstellung und Datenschutzerklärung zusammen; alle anderen Bereiche gehören zum Admin Panel (je einer)
         const shown = section === 'settings' ? ['appearance', 'privacy'] : [section];
@@ -273,7 +256,6 @@
         document.getElementById('settings-modal-title').textContent = section === 'settings' ? '⚙️ Einstellungen' : '🛠️ Admin Panel — ' + PANEL_TITLES[section];
         document.querySelectorAll('[data-panel-section]').forEach(el => el.classList.toggle('hidden', !shown.includes(el.dataset.panelSection)));
         if (section === 'users') loadAuradirectConfig();
-        if (section === 'license') loadLicenseAdminStatus();
         if (section === 'settings') { window.AuraPrefs.card(document.getElementById('admin-prefs-card')); window.AuraPrivacy.editor(document.getElementById('admin-privacy-editor'), {}); }
     }
     document.getElementById('settings-close-btn').addEventListener('click', () => document.getElementById('modal-settings').classList.add('hidden'));
@@ -317,27 +299,6 @@
             document.getElementById('password-current').value = ''; document.getElementById('password-new').value = '';
             statusEl.textContent = '✓ Passwort geändert.'; statusEl.className = 'text-xs text-emerald-400'; statusEl.classList.remove('hidden');
         } catch (err) { statusEl.textContent = '✗ ' + err.message; statusEl.className = 'text-xs text-red-400'; statusEl.classList.remove('hidden'); }
-    });
-
-    async function loadLicenseAdminStatus() {
-        const info = await api('/license');
-        const statusEl = document.getElementById('license-admin-status');
-        if (info.licenseValid) { statusEl.textContent = `✓ Lizenziert für "${info.customer}"${info.expiresAt ? ' · gültig bis ' + fmtDateDisplay(info.expiresAt.slice(0, 10)) : ' · unbegrenzt'}`; statusEl.className = 'text-xs text-emerald-400 mb-3'; }
-        else if (info.freeTier) { statusEl.textContent = '✓ Kostenlose Stufe aktiv (1 Benutzer: der Admin) - für weitere Konten wird eine Lizenz benötigt.'; statusEl.className = 'text-xs text-emerald-400 mb-3'; }
-        else if (info.trial) { statusEl.textContent = `⏳ Testphase aktiv - noch ${info.trialDaysRemaining} Tag(e).`; statusEl.className = 'text-xs text-amber-400 mb-3'; }
-        else { statusEl.textContent = `✗ Keine gültige Lizenz (${info.error || 'unbekannt'})`; statusEl.className = 'text-xs text-red-400 mb-3'; }
-        document.getElementById('license-admin-remove-btn').classList.toggle('hidden', !info.licenseValid);
-    }
-    document.getElementById('license-admin-save-btn').addEventListener('click', async () => {
-        const errorEl = document.getElementById('license-admin-error');
-        errorEl.classList.add('hidden');
-        try { await api('/admin/license', { method: 'POST', body: JSON.stringify({ key: document.getElementById('license-admin-key-input').value }) }); document.getElementById('license-admin-key-input').value = ''; loadLicenseAdminStatus(); }
-        catch (err) { errorEl.textContent = err.message; errorEl.classList.remove('hidden'); }
-    });
-    document.getElementById('license-admin-remove-btn').addEventListener('click', async () => {
-        if (!confirm('Lizenz wirklich entfernen?')) return;
-        await api('/admin/license/remove', { method: 'POST' });
-        loadLicenseAdminStatus();
     });
 
     document.getElementById('backup-create-btn').addEventListener('click', () => { window.location.href = '/api/admin/backup'; });
